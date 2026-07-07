@@ -7,8 +7,13 @@
   `;
   document.head.append(style);
 
-  const extension = document.createElement('script');
-  extension.src = 'src/icon-and-import-quickstart.js';
-  extension.defer = true;
-  document.head.append(extension);
+  const loadScript = (src) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = false;
+    document.head.append(script);
+  };
+
+  loadScript('src/icon-and-import-quickstart.js');
+  loadScript('src/import-start-chooser.js');
 })();
