@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="JSON連携に対応した、ローカル保存型のガントチャートツール">
+  <title>Gantt Desk</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="project-bar">
+        <div class="project-title-wrap">
+          <span class="app-mark" aria-hidden="true">G</span>
+          <label class="sr-only" for="project-title">プロジェクト名</label>
+          <input id="project-title" class="project-title" type="text" value="新しいガント" autocomplete="off">
+        </div>
+        <div class="project-actions">
+          <span id="save-status" class="save-status" aria-live="polite">この端末に保存済み</span>
+          <button id="import-json-btn" class="button button-primary" type="button">JSON読込</button>
+          <div class="menu-wrap">
+            <button id="export-json-btn" class="button button-secondary" type="button" aria-haspopup="menu" aria-expanded="false">書き出し</button>
+            <div id="export-menu" class="popup-menu" role="menu" hidden>
+              <button type="button" data-export="backup" role="menuitem">完全バックアップJSON</button>
+              <button type="button" data-export="ai" role="menuitem">AI連携用JSON</button>
+              <button type="button" data-export="prompt" role="menuitem">AI用プロンプトをコピー</button>
+            </div>
+          </div>
+          <div class="menu-wrap">
+            <button id="more-btn" class="icon-button" type="button" aria-label="その他の操作" aria-haspopup="menu" aria-expanded="false">•••</button>
+            <div id="more-menu" class="popup-menu popup-menu-right" role="menu" hidden>
+              <button id="toggle-completed-btn" type="button" role="menuitem">完了タスクを隠す</button>
+              <button id="load-sample-btn" type="button" role="menuitem">サンプルを読み込む</button>
+              <button id="reset-project-btn" class="menu-danger" type="button" role="menuitem">プロジェクトを初期化</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar" aria-label="ガントの操作">
+        <div class="toolbar-group">
+          <button id="add-task-btn" class="button button-primary" type="button"><span aria-hidden="true">＋</span> タスク</button>
+          <button id="add-milestone-btn" class="button button-secondary" type="button"><span aria-hidden="true">◆</span> マイルストーン</button>
+          <span class="toolbar-divider" aria-hidden="true"></span>
+          <button id="undo-btn" class="icon-button" type="button" aria-label="元に戻す" title="元に戻す (Ctrl/⌘ + Z)">↶</button>
+          <button id="redo-btn" class="icon-button" type="button" aria-label="やり直す" title="やり直す (Ctrl/⌘ + Shift + Z)">↷</button>
+        </div>
+
+        <div class="toolbar-group toolbar-group-view">
+          <button id="today-btn" class="button button-quiet" type="button">今日へ</button>
+          <label class="compact-field">表示開始<input id="timeline-start" type="date"></label>
+          <span class="range-separator">〜</span>
+          <label class="compact-field">表示終了<input id="timeline-end" type="date"></label>
+        </div>
+
+        <div class="toolbar-group toolbar-group-zoom">
+          <span class="toolbar-label">ズーム</span>
+          <button id="zoom-out-btn" class="icon-button compact-icon" type="button" aria-label="縮小">−</button>
+          <input id="zoom-range" class="zoom-range" type="range" min="10" max="56" step="2" value="28" aria-label="日付幅">
+          <button id="zoom-in-btn" class="icon-button compact-icon" type="button" aria-label="拡大">＋</button>
+          <output id="zoom-value" class="zoom-value" for="zoom-range">28px</output>
+        </div>
+      </div>
+    </header>
+
+    <main class="work-area">
+      <section id="task-panel" class="task-panel" aria-label="タスク一覧">
+        <div class="task-panel-head">
+          <div class="task-head-name">タスク</div>
+          <div class="task-head-category">カテゴリ</div>
+          <div class="task-head-date">開始</div>
+          <div class="task-head-date">終了</div>
+        </div>
+        <div id="task-scroll" class="task-scroll">
+          <div id="task-list" class="task-list"></div>
+        </div>
+      </section>
+
+      <div id="pane-resizer" class="pane-resizer" role="separator" aria-orientation="vertical" aria-label="タスク一覧の幅を変更"></div>
+
+      <section class="timeline-panel" aria-label="ガントチャート">
+        <div id="timeline-scroll" class="timeline-scroll">
+          <div id="timeline-canvas" class="timeline-canvas"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside id="inspector" class="inspector" aria-label="タスクを編集" aria-hidden="true">
+    <div class="inspector-head">
+      <div>
+        <p class="eyebrow">TASK DETAILS</p>
+        <h2 id="inspector-heading">タスクを編集</h2>
+      </div>
+      <button id="close-inspector-btn" class="icon-button" type="button" aria-label="編集パネルを閉じる">×</button>
+    </div>
+    <div id="inspector-content" class="inspector-content"></div>
+  </aside>
+  <div id="inspector-backdrop" class="inspector-backdrop" hidden></div>
+
+  <div id="json-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="json-modal-title" hidden>
+    <div class="modal-backdrop" data-close-modal="json"></div>
+    <section class="modal-card modal-card-wide">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">IMPORT JSON</p>
+          <h2 id="json-modal-title">JSONを読み込む</h2>
+          <p class="modal-copy">外部AIで整形したJSONを、確認してから反映します。エラーがある場合は現在のデータを変更しません。</p>
+        </div>
+        <button class="icon-button" type="button" data-close-modal="json" aria-label="閉じる">×</button>
+      </div>
+
+      <div class="import-layout">
+        <div class="import-main">
+          <div id="json-drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="JSONファイルをドラッグ＆ドロップ、またはクリックして選択">
+            <strong>JSONファイルをここにドロップ</strong>
+            <span>またはクリックして選択</span>
+            <input id="json-file-input" type="file" accept="application/json,.json" hidden>
+          </div>
+          <label class="field-label" for="json-input">JSONを貼り付け</label>
+          <textarea id="json-input" class="code-area" spellcheck="false" placeholder='{
+  "title": "開幕プロモーション",
+  "tasks": []
+}'></textarea>
+          <div class="import-controls">
+            <fieldset class="segmented-control">
+              <legend class="sr-only">反映方法</legend>
+              <label><input type="radio" name="import-mode" value="append" checked><span>追加</span></label>
+              <label><input type="radio" name="import-mode" value="replace"><span>置き換え</span></label>
+            </fieldset>
+            <button id="validate-json-btn" class="button button-secondary" type="button">検証する</button>
+          </div>
+        </div>
+        <div id="import-result" class="import-result" aria-live="polite">
+          <div class="import-empty">JSONを貼り付けて「検証する」を押すと、反映内容をここで確認できます。</div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button class="button button-quiet" type="button" data-close-modal="json">キャンセル</button>
+        <button id="apply-json-btn" class="button button-primary" type="button" disabled>この内容で反映</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <template id="empty-state-template">
+    <div class="empty-state">
+      <div class="empty-mark" aria-hidden="true">＋</div>
+      <h2>まずはタスクを1件追加</h2>
+      <p>手入力でも、外部AIで整えたJSONの読み込みでも始められます。</p>
+      <div class="empty-actions">
+        <button class="button button-primary" type="button" data-empty-action="task">タスクを追加</button>
+        <button class="button button-secondary" type="button" data-empty-action="json">JSONを読み込む</button>
+      </div>
+    </div>
+  </template>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
