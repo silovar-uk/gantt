@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "title": "開幕プロモーション",
+  "memo": "関係者確認用のサンプルです。",
+  "view": {
+    "start": "2026-07-01",
+    "end": "2026-08-20"
+  },
+  "tasks": [
+    {
+      "name": "企画骨子を確定",
+      "start": "2026-07-03",
+      "end": "2026-07-07",
+      "category": "企画",
+      "color": "blue",
+      "milestone": false,
+      "deadline": false,
+      "note": "社内関係者との目線合わせを含む"
+    },
+    {
+      "name": "KV初稿提出",
+      "start": "2026-07-08",
+      "end": "2026-07-10",
+      "category": "制作",
+      "color": "purple",
+      "milestone": false,
+      "deadline": false,
+      "note": "デザイン方向性の確認"
+    },
+    {
+      "name": "チケット告知開始",
+      "start": "2026-07-14",
+      "end": "2026-07-14",
+      "category": "券売",
+      "color": "amber",
+      "milestone": true,
+      "deadline": false,
+      "note": "公式サイト、SNS、メルマガ"
+    },
+    {
+      "name": "掲出物入稿",
+      "start": "2026-07-16",
+      "end": "2026-07-22",
+      "category": "広告",
+      "color": "green",
+      "milestone": false,
+      "deadline": false,
+      "note": "駅・商業施設媒体"
+    },
+    {
+      "name": "最終確認締切",
+      "start": "2026-07-30",
+      "end": "2026-07-30",
+      "category": "運営",
+      "color": "red",
+      "milestone": true,
+      "deadline": true,
+      "note": "担当別チェックリストを確認"
+    },
+    {
+      "name": "試合当日",
+      "start": "2026-08-01",
+      "end": "2026-08-01",
+      "category": "運営",
+      "color": "red",
+      "milestone": true,
+      "deadline": false,
+      "note": ""
+    }
+  ]
+}
