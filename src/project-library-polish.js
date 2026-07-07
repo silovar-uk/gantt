@@ -6,4 +6,9 @@
     .project-card__controls .library-mini { white-space:nowrap; }
   `;
   document.head.append(style);
+
+  const extension = document.createElement('script');
+  extension.src = 'src/icon-and-import-quickstart.js';
+  extension.defer = true;
+  document.head.append(extension);
 })();
