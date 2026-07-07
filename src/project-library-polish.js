@@ -16,4 +16,5 @@
 
   loadScript('src/icon-and-import-quickstart.js');
   loadScript('src/import-start-chooser.js');
+  loadScript('src/import-start-chooser-fix.js');
 })();
