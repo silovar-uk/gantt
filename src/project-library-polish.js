@@ -109,7 +109,7 @@
   // Step 2 restore: category display.
   loadScript('src/category-display-layer.js?v=20260709-safe-category-v2');
   // Bulk operations: select multiple tasks and apply category/color/completed/delete.
-  loadScript('src/bulk-task-layer.js?v=20260709-bulk-v2');
+  loadScript('src/bulk-task-layer.js?v=20260709-bulk-context-v1');
   // Step 3 restore: calendar highlights and legend.
   loadScript('src/calendar-highlight-layer.js?v=20260709-safe-calendar-v1');
   // Step 5/6 restore: share header and calendar-aware PNG / Excel outputs.
