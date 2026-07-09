@@ -81,7 +81,7 @@
     if (share) { share.textContent = '共有'; share.title = '共有ビューと画像出力を開く'; share.classList.add('action-share'); }
     if (library) { library.textContent = '保存'; library.title = '保存済みガントを管理する'; library.classList.add('action-library'); }
     if (importer) { importer.textContent = 'JSON読込'; importer.title = 'JSONを読み込む'; importer.classList.add('action-import'); }
-    if (exporter) { exporter.textContent = '書き出し'; exporter.title = 'JSONを書き出す'; exporter.closest('.menu-wrap')?.classList.add('action-export-wrap'); }
+    if (exporter) { exporter.textContent = 'コピー'; exporter.title = 'JSONやAI用プロンプトをコピーする'; exporter.closest('.menu-wrap')?.classList.add('action-export-wrap'); }
     if (more) more.closest('.menu-wrap')?.classList.add('action-more-wrap');
   }
 
@@ -92,7 +92,7 @@
   // Separate panel width resizing from row height changes, and add row-height drag.
   loadScript('src/display-resize-control-layer.js?v=20260709-resize-control-v1');
   // Step 2 restore: category display.
-  loadScript('src/category-display-layer.js?v=20260709-safe-category-v1');
+  loadScript('src/category-display-layer.js?v=20260709-safe-category-v2');
   // Bulk operations: select multiple tasks and apply category/color/completed/delete.
   loadScript('src/bulk-task-layer.js?v=20260709-bulk-v2');
   // Step 3 restore: calendar highlights and legend.
