@@ -91,6 +91,8 @@
   loadScript('src/display-settings-inline-layer.js?v=20260709-inline-display-v1');
   // Step 2 restore: category display.
   loadScript('src/category-display-layer.js?v=20260709-safe-category-v1');
+  // Bulk operations: select multiple tasks and apply category/color/completed/delete.
+  loadScript('src/bulk-task-layer.js?v=20260709-bulk-v1');
   // Step 3 restore: calendar highlights and legend.
   loadScript('src/calendar-highlight-layer.js?v=20260709-safe-calendar-v1');
   // Step 5/6 restore: share header and calendar-aware PNG / Excel outputs.
@@ -103,7 +105,7 @@
   setTimeout(polishHeaderActions, 520);
 
   window.GANTT_DESK_SAFE_MODE = true;
-  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'display-settings-inline-layer', 'category-display-layer', 'calendar-highlight-layer', 'header-action-polish', 'share-safe-upgrade', 'import-json-step-lite'];
+  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'display-settings-inline-layer', 'category-display-layer', 'bulk-task-layer', 'calendar-highlight-layer', 'header-action-polish', 'share-safe-upgrade', 'import-json-step-lite'];
   window.GANTT_DESK_DISABLED_POLISH_LAYERS = [
     'icon-and-import-quickstart',
     'import-start-chooser-v2',
