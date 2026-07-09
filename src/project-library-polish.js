@@ -7,11 +7,19 @@
   `;
   document.head.append(style);
 
+  const loadedScripts = new Set();
   const loadScript = (src) => {
+    if (loadedScripts.has(src) || document.querySelector(`script[src="${src}"]`)) return;
+    loadedScripts.add(src);
     const script = document.createElement('script');
     script.src = src;
     script.async = false;
     document.head.append(script);
+  };
+
+  const loadSharePolish = () => {
+    loadScript('src/calendar-output-layer.js');
+    loadScript('src/share-header-polish.js');
   };
 
   loadScript('src/icon-and-import-quickstart.js');
@@ -23,6 +31,11 @@
   loadScript('src/share-density-bridge.js');
   loadScript('src/header-ux-layer.js');
   loadScript('src/calendar-highlight-layer.js');
-  loadScript('src/calendar-output-layer.js');
-  loadScript('src/share-header-polish.js');
+
+  document.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('#share-open-btn, #share-settings-btn, [data-share-action]')) loadSharePolish();
+  }, true);
+
+  const idle = window.requestIdleCallback || ((callback) => setTimeout(callback, 1800));
+  idle(loadSharePolish, { timeout: 4200 });
 })();
