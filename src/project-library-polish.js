@@ -22,4 +22,5 @@
   loadScript('src/category-display-layer.js');
   loadScript('src/share-density-bridge.js');
   loadScript('src/header-ux-layer.js');
+  loadScript('src/calendar-highlight-layer.js');
 })();
