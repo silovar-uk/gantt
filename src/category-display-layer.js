@@ -54,7 +54,9 @@
       body.gantt-category-hide .task-panel-head,
       body.gantt-category-hide .task-row { grid-template-columns:minmax(190px,1.9fr) 88px 88px; }
       body.gantt-category-hide.gantt-density-compact .task-panel-head,
-      body.gantt-category-hide.gantt-density-compact .task-row { grid-template-columns:minmax(170px,1.9fr) 72px; }
+      body.gantt-category-hide.gantt-density-compact .task-row { grid-template-columns:minmax(170px,1.9fr) 72px 72px; }
+      body.gantt-category-hide.gantt-density-ultra .task-panel-head,
+      body.gantt-category-hide.gantt-density-ultra .task-row { grid-template-columns:minmax(145px,1.9fr) 50px 50px; }
     `;
     document.head.append(style);
   }
