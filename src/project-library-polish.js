@@ -86,7 +86,7 @@
   }
 
   // Step 1 restore: display density.
-  loadScript('src/display-density-layer.js?v=20260709-safe-density-v1');
+  loadScript('src/display-density-layer.js?v=20260709-ultra-density-v1');
   // Step 2 restore: category display.
   loadScript('src/category-display-layer.js?v=20260709-safe-category-v1');
   // Step 3 restore: calendar highlights and legend.
