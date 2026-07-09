@@ -34,17 +34,18 @@
     document.head.append(script);
   };
 
-  // Step 1 restore: display density only. Other polish layers stay disabled.
+  // Step 1 restore: display density.
   loadScript('src/display-density-layer.js?v=20260709-safe-density-v1');
+  // Step 2 restore: category display only. Other polish layers stay disabled.
+  loadScript('src/category-display-layer.js?v=20260709-safe-category-v1');
 
   window.GANTT_DESK_SAFE_MODE = true;
-  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer'];
+  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'category-display-layer'];
   window.GANTT_DESK_DISABLED_POLISH_LAYERS = [
     'icon-and-import-quickstart',
     'import-start-chooser-v2',
     'json-modal-close-fix',
     'import-validate-cta',
-    'category-display-layer',
     'share-density-bridge',
     'header-ux-layer',
     'calendar-highlight-layer',
