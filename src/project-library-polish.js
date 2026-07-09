@@ -4,6 +4,28 @@
     .project-card__main { padding:0; border:0; background:transparent; cursor:pointer; }
     .project-card__main:focus-visible { outline:3px solid rgba(36,74,143,.22); outline-offset:3px; border-radius:6px; }
     .project-card__controls .library-mini { white-space:nowrap; }
+
+    /* Safety net: hidden overlays must never intercept pointer events. */
+    [hidden],
+    .modal[hidden],
+    .share-modal[hidden],
+    .project-library-modal[hidden],
+    #json-modal[hidden],
+    #share-modal[hidden] {
+      display:none !important;
+      pointer-events:none !important;
+    }
+    body:not(.gantt-share-mode) #share-mode-header {
+      display:none !important;
+      pointer-events:none !important;
+    }
+    .holiday-band,
+    .weekend-layer,
+    .selected-row-band,
+    .today-line,
+    .today-dot {
+      pointer-events:none !important;
+    }
   `;
   document.head.append(style);
 
@@ -17,11 +39,6 @@
     document.head.append(script);
   };
 
-  const loadSharePolish = () => {
-    loadScript('src/calendar-output-layer.js');
-    loadScript('src/share-header-polish.js');
-  };
-
   loadScript('src/icon-and-import-quickstart.js');
   loadScript('src/import-start-chooser-v2.js');
   loadScript('src/json-modal-close-fix.js');
@@ -32,10 +49,7 @@
   loadScript('src/header-ux-layer.js');
   loadScript('src/calendar-highlight-layer.js');
 
-  document.addEventListener('pointerdown', (event) => {
-    if (event.target.closest('#share-open-btn, #share-settings-btn, [data-share-action]')) loadSharePolish();
-  }, true);
-
-  const idle = window.requestIdleCallback || ((callback) => setTimeout(callback, 1800));
-  idle(loadSharePolish, { timeout: 4200 });
+  // Disabled for now because these late polish layers caused UI event blocking on some browsers.
+  // Re-enable only after they are folded into share-layer.js without capture listeners/observers.
+  window.GANTT_DESK_SHARE_POLISH_DISABLED = true;
 })();
