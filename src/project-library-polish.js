@@ -18,4 +18,5 @@
   loadScript('src/import-start-chooser-v2.js');
   loadScript('src/json-modal-close-fix.js');
   loadScript('src/import-validate-cta.js');
+  loadScript('src/display-density-layer.js');
 })();
