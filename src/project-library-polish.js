@@ -19,4 +19,7 @@
   loadScript('src/json-modal-close-fix.js');
   loadScript('src/import-validate-cta.js');
   loadScript('src/display-density-layer.js');
+  loadScript('src/category-display-layer.js');
+  loadScript('src/share-density-bridge.js');
+  loadScript('src/header-ux-layer.js');
 })();
