@@ -75,9 +75,7 @@
   }
 
   function readCustomHolidays(project = getProject()) {
-    const source = [
-      ...extractHolidays(project),
-    ];
+    const source = [...extractHolidays(project)];
     try {
       const stored = JSON.parse(localStorage.getItem(customKey(project)) || '[]');
       if (Array.isArray(stored)) source.push(...stored.map(normalizeHolidayEntry).filter(Boolean));
@@ -288,7 +286,8 @@
         const holidays = extractHolidays($('#json-input')?.value || '');
         pendingImportHolidays = holidays;
         setTimeout(() => {
-          if (pendingImportHolidays.length) saveCustomHolidays(pendingImportHolidays, getProject(), { merge: mode !== 'replace' });
+          if (mode === 'replace') saveCustomHolidays(pendingImportHolidays, getProject(), { merge: false });
+          else if (pendingImportHolidays.length) saveCustomHolidays(pendingImportHolidays, getProject(), { merge: true });
           pendingImportHolidays = [];
           scheduleApply();
         }, 720);
