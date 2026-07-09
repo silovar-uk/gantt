@@ -104,6 +104,8 @@
   loadScript('src/display-settings-inline-layer.js?v=20260709-inline-display-v1');
   // Separate panel width resizing from row height changes, and add row-height drag.
   loadScript('src/display-resize-control-layer.js?v=20260709-resize-control-v1');
+  // Bridge display settings into project.view and publish rendered events.
+  loadScript('src/app-display-state-bridge.js?v=20260709-display-bridge-v1');
   // Step 2 restore: category display.
   loadScript('src/category-display-layer.js?v=20260709-safe-category-v2');
   // Bulk operations: select multiple tasks and apply category/color/completed/delete.
@@ -120,7 +122,7 @@
   setTimeout(polishHeaderActions, 520);
 
   window.GANTT_DESK_SAFE_MODE = true;
-  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'display-settings-inline-layer', 'display-resize-control-layer', 'category-display-layer', 'bulk-task-layer', 'calendar-highlight-layer', 'header-action-polish', 'share-safe-upgrade', 'import-json-step-lite'];
+  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'display-settings-inline-layer', 'display-resize-control-layer', 'app-display-state-bridge', 'category-display-layer', 'bulk-task-layer', 'calendar-highlight-layer', 'header-action-polish', 'share-safe-upgrade', 'import-json-step-lite'];
   window.GANTT_DESK_DISABLED_POLISH_LAYERS = [
     'icon-and-import-quickstart',
     'import-start-chooser-v2',
