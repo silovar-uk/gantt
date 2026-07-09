@@ -11,9 +11,12 @@
     text: '#64748b',
   };
   const $ = (selector) => document.querySelector(selector);
+  const holidayCache = new Map();
   let pendingImportHolidays = [];
   let applying = false;
   let scheduleTimer = null;
+  let lastClassSignature = '';
+  let lastBandSignature = '';
 
   function pad(value) { return String(value).padStart(2, '0'); }
   function iso(year, month, day) { return `${year}-${pad(month)}-${pad(day)}`; }
@@ -26,21 +29,17 @@
   function toISO(date) { return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`; }
   function addDays(value, amount) {
     const date = typeof value === 'string' ? parseISO(value) : new Date(value.getTime());
+    if (!date) return value;
     date.setUTCDate(date.getUTCDate() + amount);
     return typeof value === 'string' ? toISO(date) : date;
   }
   function diffDays(start, end) { return Math.round((parseISO(end) - parseISO(start)) / 86400000); }
   function nthMonday(year, month, nth) {
     const date = new Date(Date.UTC(year, month - 1, 1));
-    const firstMondayOffset = (8 - date.getUTCDay()) % 7;
-    return 1 + firstMondayOffset + (nth - 1) * 7;
+    return 1 + ((8 - date.getUTCDay()) % 7) + (nth - 1) * 7;
   }
-  function springEquinoxDay(year) {
-    return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
-  }
-  function autumnEquinoxDay(year) {
-    return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
-  }
+  function springEquinoxDay(year) { return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4)); }
+  function autumnEquinoxDay(year) { return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4)); }
 
   function getProject() {
     try { return JSON.parse(localStorage.getItem(PROJECT_KEY) || '{}'); }
@@ -96,10 +95,13 @@
     const latest = getProject();
     latest.holidays = normalized;
     localStorage.setItem(PROJECT_KEY, JSON.stringify(latest));
+    lastClassSignature = '';
+    lastBandSignature = '';
     return normalized;
   }
 
   function baseJapaneseHolidays(year) {
+    if (holidayCache.has(year)) return holidayCache.get(year);
     const holidays = [
       { date: iso(year, 1, 1), name: '元日' },
       { date: iso(year, 1, nthMonday(year, 1, 2)), name: '成人の日' },
@@ -138,7 +140,9 @@
         byDate.set(between, { date: between, name: '国民の休日' });
       }
     }
-    return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const result = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    holidayCache.set(year, result);
+    return result;
   }
 
   function holidayMapForRange(start, end) {
@@ -221,13 +225,20 @@
 
   function addHolidayClasses(range, holidayMap) {
     const dayCells = [...document.querySelectorAll('.day-row .day-cell')];
+    const holidayKeys = [...holidayMap.keys()].filter((date) => date >= range.start && date <= range.end).join('|');
+    const signature = `${range.start}_${range.end}_${dayCells.length}_${holidayKeys}`;
+    if (signature === lastClassSignature) return;
+    lastClassSignature = signature;
+
     dayCells.forEach((cell, index) => {
       const date = addDays(range.start, index);
       const holiday = holidayMap.get(date);
       cell.classList.toggle('is-holiday', Boolean(holiday));
       if (holiday) {
         cell.title = `${date} ${holiday.name}`;
-        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label') || date} ${holiday.name}`);
+        cell.setAttribute('aria-label', `${date} ${holiday.name}`);
+      } else if (cell.classList.contains('is-holiday') === false) {
+        if (cell.title?.includes('休業') || cell.title?.includes('休日') || cell.title?.includes('祝')) cell.removeAttribute('title');
       }
     });
   }
@@ -237,18 +248,27 @@
     const timelineBody = $('.timeline-body');
     const dayCell = $('.day-row .day-cell');
     if (!weekendLayer || !timelineBody || !dayCell) return;
-    weekendLayer.querySelectorAll('.holiday-band').forEach((node) => node.remove());
     const dayWidth = Number.parseFloat(dayCell.style.width || dayCell.getBoundingClientRect().width || 0);
     const height = Number.parseFloat(timelineBody.style.height || timelineBody.getBoundingClientRect().height || 0);
     if (!dayWidth || !height) return;
     const totalDays = diffDays(range.start, range.end) + 1;
     const bands = [];
+    const bandKeys = [];
     for (let index = 0; index < totalDays; index += 1) {
       const date = addDays(range.start, index);
       const holiday = holidayMap.get(date);
       if (!holiday) continue;
-      bands.push(`<div class="holiday-band" style="left:${index * dayWidth}px;width:${dayWidth}px;height:${height}px" title="${escapeHTML(holiday.name)}"></div>`);
+      const left = Math.round(index * dayWidth * 100) / 100;
+      const width = Math.round(dayWidth * 100) / 100;
+      const bandHeight = Math.round(height * 100) / 100;
+      bandKeys.push(`${date}:${left}:${width}:${bandHeight}`);
+      bands.push(`<div class="holiday-band" style="left:${left}px;width:${width}px;height:${bandHeight}px" title="${escapeHTML(holiday.name)}"></div>`);
     }
+    const signature = `${range.start}_${range.end}_${bandKeys.join('|')}`;
+    if (weekendLayer.dataset.holidaySignature === signature && signature === lastBandSignature) return;
+    weekendLayer.dataset.holidaySignature = signature;
+    lastBandSignature = signature;
+    weekendLayer.querySelectorAll('.holiday-band').forEach((node) => node.remove());
     if (bands.length) weekendLayer.insertAdjacentHTML('beforeend', bands.join(''));
   }
 
@@ -273,7 +293,7 @@
 
   function scheduleApply() {
     clearTimeout(scheduleTimer);
-    scheduleTimer = setTimeout(() => requestAnimationFrame(applyHighlights), 40);
+    scheduleTimer = setTimeout(() => requestAnimationFrame(applyHighlights), 120);
   }
 
   function bindImportHolidayBridge() {
@@ -295,26 +315,17 @@
     }, true);
   }
 
-  function keepCustomHolidaysAlive() {
-    setInterval(() => {
-      const project = getProject();
-      const stored = readCustomHolidays(project);
-      if (!stored.length) return;
-      const current = extractHolidays(project);
-      if (current.length === stored.length && current.every((item, index) => item.date === stored[index].date && item.name === stored[index].name)) return;
-      project.holidays = stored;
-      localStorage.setItem(PROJECT_KEY, JSON.stringify(project));
-    }, 1500);
-  }
-
   function startObserver() {
     const start = () => {
       const canvas = $('#timeline-canvas');
-      const header = $('.app-header');
-      if (!canvas || !header) return setTimeout(start, 80);
-      const observer = new MutationObserver(scheduleApply);
-      observer.observe(canvas, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
-      observer.observe(header, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+      const taskList = $('#task-list');
+      if (!canvas || !taskList) return setTimeout(start, 120);
+      const observer = new MutationObserver((records) => {
+        const shouldApply = records.some((record) => !record.target?.classList?.contains('weekend-layer'));
+        if (shouldApply) scheduleApply();
+      });
+      observer.observe(canvas, { childList: true, attributes: true, attributeFilter: ['style', 'class'] });
+      observer.observe(taskList, { childList: true });
       scheduleApply();
     };
     start();
@@ -324,10 +335,14 @@
     addStyles();
     ensureLegend();
     bindImportHolidayBridge();
-    keepCustomHolidaysAlive();
     startObserver();
-    window.addEventListener('resize', scheduleApply);
-    window.addEventListener('storage', (event) => { if (event.key === PROJECT_KEY || event.key?.startsWith(CUSTOM_PREFIX)) scheduleApply(); });
+    ['timeline-start', 'timeline-end', 'zoom-range'].forEach((id) => {
+      const input = document.getElementById(id);
+      if (input) input.addEventListener('change', () => { lastClassSignature = ''; lastBandSignature = ''; scheduleApply(); });
+      if (input) input.addEventListener('input', () => { lastBandSignature = ''; scheduleApply(); });
+    });
+    window.addEventListener('resize', () => { lastBandSignature = ''; scheduleApply(); });
+    window.addEventListener('storage', (event) => { if (event.key === PROJECT_KEY || event.key?.startsWith(CUSTOM_PREFIX)) { lastClassSignature = ''; lastBandSignature = ''; scheduleApply(); } });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize);
