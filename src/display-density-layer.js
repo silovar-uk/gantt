@@ -169,12 +169,55 @@
     document.body.classList.toggle('gantt-density-ultra', settings.density === 'ultra' || settings.rowHeight <= 22);
   }
 
-  function setPanelWidth(width) {
+  function maxPanelWidth() {
+    return Math.max(320, Math.min(window.innerWidth * 0.72, 920));
+  }
+
+  function updatePanelControls(value) {
+    const panel = $('#panel-width-slider');
+    const panelOut = $('#panel-width-output');
+    if (panel) panel.value = Math.round(value);
+    if (panelOut) panelOut.value = `${Math.round(value)}px`;
+  }
+
+  function updateRowControls(value) {
+    const row = $('#row-height-slider');
+    const rowOut = $('#row-height-output');
+    if (row) row.value = Math.round(value);
+    if (rowOut) rowOut.value = `${Math.round(value)}px`;
+  }
+
+  function updateDayControls(value) {
+    const day = $('#day-width-slider');
+    const dayOut = $('#day-width-output');
+    if (day) day.value = Math.round(value);
+    if (dayOut) dayOut.value = `${Math.round(value)}px`;
+  }
+
+  function updateDensityControls() {
+    const current = $('#display-density-current');
+    if (current) current.textContent = PRESETS[settings.density]?.label || 'カスタム';
+    document.querySelectorAll('[data-density-preset]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.densityPreset === settings.density);
+    });
+  }
+
+  function syncControls() {
+    updateRowControls(settings.rowHeight);
+    updateDayControls(settings.dayWidth);
+    updatePanelControls(settings.panelWidth);
+    updateDensityControls();
+  }
+
+  function applyPanelWidth(width, { persist = true } = {}) {
     const panel = $('#task-panel');
-    const max = Math.max(320, Math.min(window.innerWidth * 0.72, 920));
-    const value = clamp(width, 320, max);
+    const value = clamp(width, 320, maxPanelWidth());
+    settings.panelWidth = value;
     setStyle(panel, 'width', `${value}px`);
     document.documentElement.style.setProperty('--task-panel-width', `${value}px`);
+    updatePanelControls(value);
+    if (persist) saveSettings();
+    window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { panelWidth: Math.round(value), source: 'panel-width' } }));
   }
 
   function updateNativeZoom(dayWidth, { dispatch = true } = {}) {
@@ -188,13 +231,23 @@
     if (output) output.value = `${value}px`;
   }
 
-  function reflowRows() {
-    const rowHeight = clamp(settings.rowHeight, MIN_ROW_HEIGHT, 72);
+  function applyDayWidth(dayWidth, { dispatchZoom = true, persist = true } = {}) {
+    const value = clamp(dayWidth, 10, 56);
+    settings.dayWidth = value;
+    updateNativeZoom(value, { dispatch: dispatchZoom });
+    updateDayControls(value);
+    updateDensityControls();
+    if (persist) saveSettings();
+    window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { dayWidth: value, source: 'day-width' } }));
+  }
+
+  function reflowRows(rowHeight = settings.rowHeight) {
+    const value = clamp(rowHeight, MIN_ROW_HEIGHT, 72);
     const rows = [...document.querySelectorAll('#task-list .task-row')];
     const timelineBody = $('.timeline-body');
-    document.documentElement.style.setProperty('--row-height', `${rowHeight}px`);
+    document.documentElement.style.setProperty('--row-height', `${value}px`);
     if (!rows.length || !timelineBody) return;
-    const bodyHeight = `${Math.max(rows.length * rowHeight, 1)}px`;
+    const bodyHeight = `${Math.max(rows.length * value, 1)}px`;
     setStyle(timelineBody, 'height', bodyHeight);
     document.querySelectorAll('.weekend-band').forEach((band) => setStyle(band, 'height', bodyHeight));
     document.querySelectorAll('.holiday-band').forEach((band) => setStyle(band, 'height', bodyHeight));
@@ -204,11 +257,11 @@
     rows.forEach((row, index) => {
       const taskId = row.dataset.taskId;
       if (!taskId) return;
-      const baseTop = index * rowHeight;
-      const barHeight = Math.max(10, Math.min(rowHeight <= 22 ? 12 : 18, rowHeight - 4));
-      const barTop = baseTop + Math.max(1, Math.round((rowHeight - barHeight) / 2));
-      const milestoneTop = baseTop + Math.max(1, Math.round((rowHeight - Math.min(14, rowHeight - 2)) / 2));
-      const labelTop = baseTop + Math.max(0, Math.round((rowHeight - 14) / 2));
+      const baseTop = index * value;
+      const barHeight = Math.max(10, Math.min(value <= 22 ? 12 : 18, value - 4));
+      const barTop = baseTop + Math.max(1, Math.round((value - barHeight) / 2));
+      const milestoneTop = baseTop + Math.max(1, Math.round((value - Math.min(14, value - 2)) / 2));
+      const labelTop = baseTop + Math.max(0, Math.round((value - 14) / 2));
       const bar = bars.find((item) => item.dataset.taskId === taskId);
       if (bar) {
         setStyle(bar, 'top', `${barTop}px`);
@@ -224,29 +277,24 @@
     const selectedTaskId = document.querySelector('#task-list .task-row.is-selected')?.dataset.taskId;
     const selectedIndex = selectedTaskId ? rows.findIndex((row) => row.dataset.taskId === selectedTaskId) : -1;
     if (selected && selectedIndex >= 0) {
-      setStyle(selected, 'height', `${rowHeight}px`);
-      setStyle(selected, 'top', `${selectedIndex * rowHeight}px`);
+      setStyle(selected, 'height', `${value}px`);
+      setStyle(selected, 'top', `${selectedIndex * value}px`);
     }
   }
 
-  function syncControls() {
-    const row = $('#row-height-slider');
-    const day = $('#day-width-slider');
-    const panel = $('#panel-width-slider');
-    if (row) row.value = settings.rowHeight;
-    if (day) day.value = settings.dayWidth;
-    if (panel) panel.value = settings.panelWidth;
-    const rowOut = $('#row-height-output');
-    const dayOut = $('#day-width-output');
-    const panelOut = $('#panel-width-output');
-    if (rowOut) rowOut.value = `${settings.rowHeight}px`;
-    if (dayOut) dayOut.value = `${settings.dayWidth}px`;
-    if (panelOut) panelOut.value = `${settings.panelWidth}px`;
-    const current = $('#display-density-current');
-    if (current) current.textContent = PRESETS[settings.density]?.label || 'カスタム';
-    document.querySelectorAll('[data-density-preset]').forEach((button) => {
-      button.classList.toggle('is-active', button.dataset.densityPreset === settings.density);
-    });
+  function applyRowHeight(rowHeight, { persist = true, delayedReflow = true } = {}) {
+    const value = clamp(rowHeight, MIN_ROW_HEIGHT, 72);
+    settings.rowHeight = value;
+    settings.density = settings.density === 'relaxed' || settings.density === 'standard' || settings.density === 'compact' || settings.density === 'ultra'
+      ? settings.density
+      : (value <= 22 ? 'ultra' : 'custom');
+    setBodyDensity();
+    updateRowControls(value);
+    updateDensityControls();
+    if (persist) saveSettings();
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(() => reflowRows(value), delayedReflow ? 80 : 0);
+    window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { rowHeight: value, source: 'row-height' } }));
   }
 
   function applySettings({ dispatchZoom = true, persist = true, delayedReflow = true } = {}) {
@@ -254,12 +302,12 @@
     settings.dayWidth = clamp(settings.dayWidth, 10, 56);
     settings.panelWidth = clamp(settings.panelWidth, 320, 920);
     setBodyDensity();
-    setPanelWidth(settings.panelWidth);
-    updateNativeZoom(settings.dayWidth, { dispatch: dispatchZoom });
+    applyPanelWidth(settings.panelWidth, { persist: false });
+    applyDayWidth(settings.dayWidth, { dispatchZoom, persist: false });
     syncControls();
     if (persist) saveSettings();
     clearTimeout(applyTimer);
-    applyTimer = setTimeout(reflowRows, delayedReflow ? 80 : 0);
+    applyTimer = setTimeout(() => reflowRows(settings.rowHeight), delayedReflow ? 80 : 0);
   }
 
   function applyPreset(name) {
@@ -287,7 +335,7 @@
       const starts = tasks.map((task) => task.start).filter(Boolean).sort();
       const ends = tasks.map((task) => task.end || task.start).filter(Boolean).sort();
       const start = addDays(starts[0], -2);
-      const end = addDays(ends.at(-1), 2);
+      const end = addDays(ends[ends.length - 1], 2);
       const startInput = $('#timeline-start');
       const endInput = $('#timeline-end');
       if (startInput && endInput) {
@@ -328,6 +376,10 @@
     }, 1300);
   }
 
+  function markCustomDensity() {
+    settings.density = settings.rowHeight <= 22 ? 'ultra' : 'custom';
+  }
+
   function bindEvents() {
     $('#display-compact-btn')?.addEventListener('click', () => applyPreset('ultra'));
     $('#display-settings-btn')?.addEventListener('click', (event) => {
@@ -353,29 +405,31 @@
 
     $('#row-height-slider')?.addEventListener('input', (event) => {
       settings.rowHeight = clamp(event.target.value, MIN_ROW_HEIGHT, 72);
-      settings.density = settings.rowHeight <= 22 ? 'ultra' : 'custom';
-      applySettings({ dispatchZoom: false, persist: true });
+      markCustomDensity();
+      applyRowHeight(settings.rowHeight, { persist: true });
     });
     $('#day-width-slider')?.addEventListener('input', (event) => {
       settings.dayWidth = clamp(event.target.value, 10, 56);
-      settings.density = settings.rowHeight <= 22 ? 'ultra' : 'custom';
-      applySettings({ dispatchZoom: true, persist: true });
+      markCustomDensity();
+      applyDayWidth(settings.dayWidth, { dispatchZoom: true, persist: true });
     });
     $('#panel-width-slider')?.addEventListener('input', (event) => {
       settings.panelWidth = clamp(event.target.value, 320, 920);
-      settings.density = settings.rowHeight <= 22 ? 'ultra' : 'custom';
-      applySettings({ dispatchZoom: false, persist: true });
+      markCustomDensity();
+      applyPanelWidth(settings.panelWidth, { persist: true });
     });
     $('#reset-density-btn')?.addEventListener('click', () => applyPreset('standard'));
     $('#fit-tasks-range-btn')?.addEventListener('click', fitRangeToTasks);
     $('#zoom-range')?.addEventListener('input', (event) => {
       settings.dayWidth = clamp(event.target.value, 10, 56);
-      settings.density = settings.rowHeight <= 22 ? 'ultra' : (settings.density === 'standard' ? 'standard' : 'custom');
+      if (settings.density !== 'standard') markCustomDensity();
       saveSettings();
-      syncControls();
+      updateDayControls(settings.dayWidth);
+      updateDensityControls();
+      window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { dayWidth: settings.dayWidth, source: 'native-zoom' } }));
     });
-    window.addEventListener('resize', () => applySettings({ dispatchZoom: false, persist: false }));
-    document.addEventListener('gantt-desk:rendered', () => reflowRows());
+    window.addEventListener('resize', () => applyPanelWidth(settings.panelWidth, { persist: false }));
+    document.addEventListener('gantt-desk:rendered', () => reflowRows(settings.rowHeight));
   }
 
   function initialize() {
@@ -383,7 +437,7 @@
     createUI();
     bindEvents();
     applySettings({ dispatchZoom: false, persist: false, delayedReflow: true });
-    setTimeout(reflowRows, 360);
+    setTimeout(() => reflowRows(settings.rowHeight), 360);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize);
