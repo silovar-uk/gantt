@@ -16,4 +16,5 @@
 
   loadScript('src/icon-and-import-quickstart.js');
   loadScript('src/import-start-chooser-v2.js');
+  loadScript('src/json-modal-close-fix.js');
 })();
