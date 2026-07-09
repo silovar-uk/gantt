@@ -107,7 +107,9 @@
   // Bridge display settings into project.view and publish rendered events.
   loadScript('src/app-display-state-bridge.js?v=20260709-display-bridge-v1');
   // Step 2 restore: category display.
-  loadScript('src/category-display-layer.js?v=20260709-safe-category-v2');
+  loadScript('src/category-display-layer.js?v=20260709-safe-category-v3');
+  // Redesign display menu into view/vertical/horizontal/columns/helper sections.
+  loadScript('src/display-menu-redesign-layer.js?v=20260709-display-menu-redesign-v1');
   // Bulk operations: select multiple tasks and apply category/color/completed/delete.
   loadScript('src/bulk-task-layer.js?v=20260709-bulk-context-v1');
   // Step 3 restore: calendar highlights and legend.
@@ -122,7 +124,7 @@
   setTimeout(polishHeaderActions, 520);
 
   window.GANTT_DESK_SAFE_MODE = true;
-  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'display-settings-inline-layer', 'display-resize-control-layer', 'app-display-state-bridge', 'category-display-layer', 'bulk-task-layer', 'calendar-highlight-layer', 'header-action-polish', 'share-safe-upgrade', 'import-json-step-lite'];
+  window.GANTT_DESK_RESTORED_LAYERS = ['display-density-layer', 'display-settings-inline-layer', 'display-resize-control-layer', 'app-display-state-bridge', 'category-display-layer', 'display-menu-redesign-layer', 'bulk-task-layer', 'calendar-highlight-layer', 'header-action-polish', 'share-safe-upgrade', 'import-json-step-lite'];
   window.GANTT_DESK_DISABLED_POLISH_LAYERS = [
     'icon-and-import-quickstart',
     'import-start-chooser-v2',
