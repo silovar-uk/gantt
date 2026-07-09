@@ -24,4 +24,5 @@
   loadScript('src/header-ux-layer.js');
   loadScript('src/calendar-highlight-layer.js');
   loadScript('src/calendar-output-layer.js');
+  loadScript('src/share-header-polish.js');
 })();
