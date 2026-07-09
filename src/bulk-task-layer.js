@@ -50,15 +50,33 @@
     const style = document.createElement('style');
     style.id = 'bulk-task-style';
     style.textContent = `
+      .task-panel.has-bulk-task-bar {
+        grid-template-rows:auto auto minmax(0,1fr) !important;
+      }
+      .task-panel.has-bulk-task-bar .task-scroll {
+        min-height:0 !important;
+        grid-row:3 !important;
+      }
       .bulk-task-bar {
+        position:relative;
+        z-index:9;
         display:flex;
         align-items:center;
-        flex-wrap:wrap;
+        flex-wrap:nowrap;
         gap:7px;
-        padding:8px 12px;
+        min-height:44px;
+        padding:7px 10px;
         border-top:1px solid #e7eef6;
         border-bottom:1px solid #dde7f2;
         background:#f8fbff;
+        box-shadow:0 1px 0 rgba(15,23,42,.02);
+        overflow-x:auto;
+        overflow-y:hidden;
+        scrollbar-color:#c9d5e2 transparent;
+        isolation:isolate;
+      }
+      .bulk-task-bar * {
+        box-sizing:border-box;
       }
       .bulk-task-bar__summary {
         display:inline-flex;
@@ -70,6 +88,7 @@
         font-size:12px;
         font-weight:850;
         white-space:nowrap;
+        flex:0 0 auto;
       }
       .bulk-task-bar__count {
         min-width:24px;
@@ -90,6 +109,9 @@
         color:#334155;
         font-size:12px;
         font-weight:800;
+        flex:0 0 auto;
+        opacity:1;
+        box-shadow:0 1px 0 rgba(15,23,42,.03);
       }
       .bulk-task-button {
         padding:5px 9px;
@@ -98,9 +120,9 @@
       .bulk-task-button:hover { background:#eef4ff; border-color:#8aa8dc; color:#244a8f; }
       .bulk-task-button.is-danger { color:#b4232b; border-color:#f0b8bd; background:#fff8f8; }
       .bulk-task-button.is-danger:hover { color:#fff; background:#c3474d; border-color:#c3474d; }
-      .bulk-task-select { padding:5px 8px; max-width:150px; }
-      .bulk-task-input { padding:5px 8px; width:150px; max-width:42vw; font-weight:700; }
-      .bulk-task-separator { width:1px; height:22px; background:#dbe5ef; margin-inline:1px; }
+      .bulk-task-select { padding:5px 8px; width:126px; max-width:126px; }
+      .bulk-task-input { padding:5px 8px; width:132px; max-width:132px; font-weight:700; }
+      .bulk-task-separator { flex:0 0 1px; width:1px; height:22px; background:#dbe5ef; margin-inline:1px; }
       .bulk-checkbox-wrap {
         display:inline-flex;
         align-items:center;
@@ -129,11 +151,13 @@
         font-weight:850;
       }
       .bulk-task-bar[data-empty="true"] .bulk-requires-selection {
-        opacity:.45;
+        opacity:.52;
         pointer-events:none;
+        filter:saturate(.75);
       }
       body.gantt-density-ultra .bulk-task-bar {
-        padding:5px 8px;
+        min-height:34px;
+        padding:4px 7px;
         gap:5px;
       }
       body.gantt-density-ultra .bulk-task-button,
@@ -143,6 +167,8 @@
         font-size:11px;
         border-radius:7px;
       }
+      body.gantt-density-ultra .bulk-task-input { width:108px; max-width:108px; }
+      body.gantt-density-ultra .bulk-task-select { width:102px; max-width:102px; }
       body.gantt-density-ultra .bulk-task-bar__summary {
         min-height:26px;
         font-size:11px;
@@ -158,7 +184,7 @@
       }
       @media (max-width:760px) {
         .bulk-task-bar {
-          align-items:stretch;
+          align-items:center;
           overflow-x:auto;
           flex-wrap:nowrap;
         }
@@ -174,10 +200,11 @@
   }
 
   function ensureBar() {
-    if ($('#bulk-task-bar')) return;
     const taskPanel = $('#task-panel');
     const head = taskPanel?.querySelector('.task-panel-head');
     if (!taskPanel || !head) return;
+    taskPanel.classList.add('has-bulk-task-bar');
+    if ($('#bulk-task-bar')) return;
     const bar = document.createElement('div');
     bar.id = 'bulk-task-bar';
     bar.className = 'bulk-task-bar';
