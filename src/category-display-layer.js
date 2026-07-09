@@ -34,10 +34,10 @@
     style.id = 'category-display-style';
     style.textContent = `
       .category-mode-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
-      .category-mode-button { min-height:38px; padding:7px 8px; border:1px solid #d7e0eb; border-radius:9px; color:#475569; background:#fff; font-size:12px; font-weight:850; cursor:pointer; }
+      .category-mode-button { min-height:36px; padding:7px 8px; border:1px solid #d7e0eb; border-radius:9px; color:#475569; background:#fff; font-size:12px; font-weight:850; cursor:pointer; }
       .category-mode-button:hover { background:#f8fafc; border-color:#a9b8c9; }
       .category-mode-button.is-active { color:#244a8f; border-color:#87a4d5; background:#eef4ff; box-shadow:inset 0 0 0 1px rgba(36,74,143,.08); }
-      .category-mode-help { margin:8px 0 0; color:#64748b; font-size:11px; line-height:1.45; }
+      .category-mode-help { margin:7px 0 0; color:#64748b; font-size:10.5px; line-height:1.45; }
 
       body.gantt-category-color .category-cell { justify-content:center; }
       body.gantt-category-color .task-category {
@@ -69,16 +69,20 @@
     section.id = 'category-mode-controls';
     section.className = 'display-panel__section';
     section.innerHTML = `
-      <div class="display-panel__label"><span>カテゴリ表示</span><span id="category-mode-current" class="display-panel__value"></span></div>
+      <div class="display-panel__label"><span>カテゴリ</span><span id="category-mode-current" class="display-panel__value"></span></div>
       <div class="category-mode-row">
         <button class="category-mode-button" type="button" data-category-mode="show">表示</button>
         <button class="category-mode-button" type="button" data-category-mode="color">色だけ</button>
         <button class="category-mode-button" type="button" data-category-mode="hide">非表示</button>
       </div>
-      <p class="category-mode-help">最小表示や共有前は「色だけ」「非表示」にすると、横幅を詰めやすくなります。</p>`;
-    const quick = panel.querySelector('.display-panel__quick');
-    if (quick) quick.insertAdjacentElement('beforebegin', section);
-    else panel.append(section);
+      <p class="category-mode-help">一覧・共有前は「色だけ」「非表示」にすると、左の表を詰めやすくなります。</p>`;
+    const slot = $('#category-mode-slot');
+    if (slot) slot.append(section);
+    else {
+      const quick = panel.querySelector('.display-panel__quick');
+      if (quick) quick.insertAdjacentElement('beforebegin', section);
+      else panel.append(section);
+    }
     section.querySelectorAll('[data-category-mode]').forEach((button) => {
       button.addEventListener('click', () => {
         const next = { ...readSettings(), categoryMode: button.dataset.categoryMode };
@@ -150,6 +154,7 @@
         scheduleAnnotate(700);
       }
     });
+    document.addEventListener('gantt-desk:rendered', () => scheduleAnnotate(120));
   }
 
   function initialize() {
