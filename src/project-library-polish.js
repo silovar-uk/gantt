@@ -1,4 +1,17 @@
 (() => {
+  if (!Array.prototype.at) {
+    Object.defineProperty(Array.prototype, 'at', {
+      value(index) {
+        const length = this.length >>> 0;
+        const relative = Math.trunc(index) || 0;
+        const target = relative < 0 ? length + relative : relative;
+        return target < 0 || target >= length ? undefined : this[target];
+      },
+      writable: true,
+      configurable: true,
+    });
+  }
+
   const style = document.createElement('style');
   style.textContent = `
     /* Safe mode guard: keep the base app interactive. */
@@ -86,7 +99,7 @@
   }
 
   // Step 1 restore: display density.
-  loadScript('src/display-density-layer.js?v=20260709-ultra-density-v1');
+  loadScript('src/display-density-layer.js?v=20260709-density-separated-v1');
   // Keep display controls inside the top menu instead of opening a floating popup.
   loadScript('src/display-settings-inline-layer.js?v=20260709-inline-display-v1');
   // Separate panel width resizing from row height changes, and add row-height drag.
