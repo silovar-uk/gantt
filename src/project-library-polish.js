@@ -102,8 +102,8 @@
   loadScript('src/display-density-layer.js?v=20260709-density-separated-v1');
   // Keep display controls inside the top menu instead of opening a floating popup.
   loadScript('src/display-settings-inline-layer.js?v=20260709-inline-display-v1');
-  // Separate panel width resizing from row height changes, and add row-height drag.
-  loadScript('src/display-resize-control-layer.js?v=20260709-resize-control-v1');
+  // Separate panel width resizing from row height changes, including row-boundary drag handles.
+  loadScript('src/display-resize-control-layer.js?v=20260709-row-boundary-resize-v1');
   // Bridge display settings into project.view and publish rendered events.
   loadScript('src/app-display-state-bridge.js?v=20260709-display-bridge-v1');
   // Step 2 restore: category display.
