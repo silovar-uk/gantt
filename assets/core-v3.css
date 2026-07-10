@@ -4,6 +4,8 @@
 }
 
 .app-header {
+  position: relative;
+  z-index: 40;
   border-bottom: 1px solid #dfe8f2;
   background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
 }
