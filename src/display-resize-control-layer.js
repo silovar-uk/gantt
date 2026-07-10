@@ -53,7 +53,7 @@
     window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { panelWidth: Math.round(value), source: 'pane-resize' } }));
   }
 
-  function setRowHeight(value, { persist = true, notify = false } = {}) {
+  function setRowHeight(value, { persist = true, notify = false, source = 'row-height-drag' } = {}) {
     const rowHeight = clamp(value, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
     const slider = $('#row-height-slider');
     if (slider) {
@@ -66,7 +66,7 @@
     if (persist) writeSettings({ rowHeight, density: rowHeight <= 22 ? 'ultra' : 'custom' });
     const output = $('#row-height-output');
     if (output) output.value = `${rowHeight}px`;
-    window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { rowHeight, source: 'row-height-drag' } }));
+    window.dispatchEvent(new CustomEvent('gantt-display-updated', { detail: { rowHeight, source } }));
     if (notify) showTinyToast(`行高 ${rowHeight}px`);
   }
 
@@ -88,6 +88,56 @@
       body.is-panel-width-dragging * { cursor:col-resize !important; }
       body.is-row-height-dragging * { cursor:ns-resize !important; }
       .task-panel-head { position:relative; }
+      .task-row.has-row-height-boundary {
+        position:relative;
+        overflow:visible;
+      }
+      .row-height-boundary {
+        position:absolute;
+        z-index:14;
+        left:0;
+        right:0;
+        bottom:-4px;
+        height:8px;
+        cursor:ns-resize;
+        touch-action:none;
+      }
+      .row-height-boundary::after {
+        content:'';
+        position:absolute;
+        left:8px;
+        right:8px;
+        top:3px;
+        height:2px;
+        border-radius:999px;
+        background:#5b83c7;
+        opacity:0;
+        transform:scaleX(.98);
+        transition:opacity .12s, transform .12s;
+        pointer-events:none;
+      }
+      .row-height-boundary:hover::after,
+      .row-height-boundary:focus-visible::after,
+      .row-height-boundary.is-dragging::after {
+        opacity:1;
+        transform:scaleX(1);
+      }
+      .row-height-boundary:focus-visible {
+        outline:none;
+      }
+      body.is-row-height-dragging .row-height-boundary::after {
+        opacity:.18;
+      }
+      body.is-row-height-dragging .row-height-boundary.is-dragging::after {
+        opacity:1;
+        height:3px;
+        top:2px;
+        background:#244a8f;
+      }
+      body.gantt-density-ultra .row-height-boundary {
+        bottom:-3px;
+        height:6px;
+      }
       .row-height-drag-handle {
         position:absolute;
         z-index:8;
@@ -164,6 +214,36 @@
     head.append(button);
   }
 
+  function ensureRowBoundaries() {
+    document.querySelectorAll('#task-list .task-row[data-task-id]').forEach((row) => {
+      row.classList.add('has-row-height-boundary');
+      if (row.querySelector(':scope > .row-height-boundary')) return;
+      const boundary = document.createElement('span');
+      boundary.className = 'row-height-boundary';
+      boundary.tabIndex = 0;
+      boundary.setAttribute('role', 'separator');
+      boundary.setAttribute('aria-orientation', 'horizontal');
+      boundary.setAttribute('aria-label', '上下にドラッグしてすべての行の高さを変更');
+      boundary.title = '上下にドラッグして行の高さを変更';
+      boundary.addEventListener('pointerdown', (event) => beginRowDrag(event, boundary, 'row-boundary'));
+      boundary.addEventListener('dblclick', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setRowHeight(40, { notify: true, source: 'row-boundary-reset' });
+        syncHandleLabel();
+      });
+      boundary.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        event.preventDefault();
+        event.stopPropagation();
+        const delta = event.key === 'ArrowDown' ? 1 : -1;
+        setRowHeight(currentRowHeight() + delta, { notify: false, source: 'row-boundary-keyboard' });
+        syncHandleLabel();
+      });
+      row.append(boundary);
+    });
+  }
+
   function syncHandleLabel() {
     const value = $('#row-height-drag-value');
     if (value) value.textContent = String(currentRowHeight());
@@ -208,28 +288,33 @@
     syncPanelSlider();
   }
 
+  function beginRowDrag(event, sourceElement, source = 'row-height-drag') {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    rowDrag = {
+      startY: event.clientY,
+      initialHeight: currentRowHeight(),
+      lastHeight: currentRowHeight(),
+      source,
+      sourceElement,
+    };
+    sourceElement?.classList.add('is-dragging');
+    document.body.classList.add('is-row-height-dragging');
+    try { sourceElement?.setPointerCapture(event.pointerId); } catch {}
+    window.addEventListener('pointermove', onRowMove, true);
+    window.addEventListener('pointerup', onRowUp, { once: true, capture: true });
+  }
+
   function bindRowHeightDrag() {
     const handle = $('#row-height-drag-handle');
     if (!handle || handle.dataset.rowDragBound === '1') return;
     handle.dataset.rowDragBound = '1';
-    handle.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      rowDrag = {
-        startY: event.clientY,
-        initialHeight: currentRowHeight(),
-        lastHeight: currentRowHeight(),
-      };
-      handle.classList.add('is-dragging');
-      document.body.classList.add('is-row-height-dragging');
-      try { handle.setPointerCapture(event.pointerId); } catch {}
-      window.addEventListener('pointermove', onRowMove, true);
-      window.addEventListener('pointerup', onRowUp, { once: true, capture: true });
-    }, true);
+    handle.addEventListener('pointerdown', (event) => beginRowDrag(event, handle, 'row-height-handle'), true);
     handle.addEventListener('dblclick', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      setRowHeight(40, { notify: true });
+      setRowHeight(40, { notify: true, source: 'row-height-handle-reset' });
       syncHandleLabel();
     });
   }
@@ -242,7 +327,7 @@
     const next = clamp(Math.round(raw / step) * step, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
     if (next === rowDrag.lastHeight) return;
     rowDrag.lastHeight = next;
-    setRowHeight(next, { notify: false });
+    setRowHeight(next, { notify: false, source: rowDrag.source });
     syncHandleLabel();
   }
 
@@ -251,10 +336,13 @@
     event.preventDefault();
     window.removeEventListener('pointermove', onRowMove, true);
     const finalHeight = rowDrag.lastHeight;
+    const source = rowDrag.source;
+    const sourceElement = rowDrag.sourceElement;
     rowDrag = null;
+    sourceElement?.classList.remove('is-dragging');
     $('#row-height-drag-handle')?.classList.remove('is-dragging');
     document.body.classList.remove('is-row-height-dragging');
-    setRowHeight(finalHeight, { notify: true });
+    setRowHeight(finalHeight, { notify: true, source });
     syncHandleLabel();
   }
 
@@ -287,18 +375,19 @@
     }, 900);
   }
 
-  function init() {
-    addStyles();
+  function refreshControls() {
     ensureRowHandle();
+    ensureRowBoundaries();
     bindPaneResize();
     bindRowHeightDrag();
     syncHandleLabel();
-    setInterval(() => {
-      ensureRowHandle();
-      bindPaneResize();
-      bindRowHeightDrag();
-      syncHandleLabel();
-    }, 1000);
+  }
+
+  function init() {
+    addStyles();
+    refreshControls();
+    document.addEventListener('gantt-desk:rendered', () => setTimeout(refreshControls, 30));
+    setInterval(refreshControls, 1000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
