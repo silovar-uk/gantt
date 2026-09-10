@@ -1,6 +1,8 @@
 name: Public v5 smoke
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -19,17 +21,20 @@ jobs:
           curl -fsSL --retry 5 --retry-delay 2 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html
           grep -q 'assets/v5-base.css?v=20260910-v5' /tmp/live-index.html
           grep -q 'src/v5/classic/10.js?v=20260910-v5' /tmp/live-index.html
-          curl -fsSL --retry 5 --retry-delay 2 https://silovar-uk.github.io/gantt/assets/v5-base.css?v=20260910-v5 -o /tmp/v5-base.css
-          curl -fsSL --retry 5 --retry-delay 2 https://silovar-uk.github.io/gantt/src/v5/classic/10.js?v=20260910-v5 -o /tmp/v5-10.js
+          curl -fsSL --retry 5 --retry-delay 2 'https://silovar-uk.github.io/gantt/assets/v5-base.css?v=20260910-v5' -o /tmp/v5-base.css
+          curl -fsSL --retry 5 --retry-delay 2 'https://silovar-uk.github.io/gantt/assets/v5-responsive.css?v=20260910-v5' -o /tmp/v5-responsive.css
+          curl -fsSL --retry 5 --retry-delay 2 'https://silovar-uk.github.io/gantt/src/v5/classic/10.js?v=20260910-v5' -o /tmp/v5-10.js
           grep -q 'async function init()' /tmp/v5-10.js
+          grep -q '@media (max-width: 767px)' /tmp/v5-responsive.css
+          grep -q 'min-height: 44px' /tmp/v5-responsive.css
       - name: Render desktop public app
         shell: bash
         run: |
           set -euo pipefail
           google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1440,900 --virtual-time-budget=5000 --user-data-dir=/tmp/chrome-desktop --dump-dom https://silovar-uk.github.io/gantt/ > /tmp/desktop.html
-          grep -q 'class="workspace mode-split' /tmp/desktop.html
           grep -q 'data-action="add"' /tmp/desktop.html
-          grep -q '文章から予定を作る' /tmp/desktop.html
+          grep -q '文章 → 予定' /tmp/desktop.html
+          grep -q 'JSON／回答を取り込む' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
             echo 'App did not finish booting on desktop' >&2
             exit 1
@@ -39,9 +44,9 @@ jobs:
         run: |
           set -euo pipefail
           google-chrome --headless=new --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=5000 --user-data-dir=/tmp/chrome-mobile --dump-dom https://silovar-uk.github.io/gantt/ > /tmp/mobile.html
-          grep -q 'class="workspace mode-list' /tmp/mobile.html
           grep -q 'data-action="add"' /tmp/mobile.html
-          grep -q 'JSON／回答を取り込む' /tmp/mobile.html
+          grep -q '予定を追加' /tmp/mobile.html
+          grep -q 'data-mode="list"' /tmp/mobile.html
           if grep -q 'boot-state' /tmp/mobile.html; then
             echo 'App did not finish booting on mobile' >&2
             exit 1
