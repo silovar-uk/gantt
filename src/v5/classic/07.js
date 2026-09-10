@@ -46,16 +46,24 @@ function saveEditor() {
   const oldMilestone = state.editor.original?.milestone;
   if (!wasNew && oldMilestone === false && task.milestone === true) task.end = task.start;
   if (!wasNew && oldMilestone === true && task.milestone === false) task.end = task.end || task.start;
-  contentCommit((project) => {
-    if (wasNew) project.tasks.push({ ...task, id: uid('task'), order: project.tasks.length });
+  const newTaskId = wasNew ? uid('task') : null;
+  if (newTaskId) state.selectedTaskId = newTaskId;
+  const committed = contentCommit((project) => {
+    if (wasNew) project.tasks.push({ ...task, id: newTaskId, order: project.tasks.length });
     else {
       const target = project.tasks.find((item) => item.id === task.id);
       if (target) Object.assign(target, task);
     }
   }, { reason: wasNew ? 'add-task' : 'edit-task', message: wasNew ? '予定を追加しました' : '予定を保存しました' });
-  if (wasNew) state.selectedTaskId = state.project.tasks.at(-1)?.id || null;
+  if (!committed) {
+    if (newTaskId) state.selectedTaskId = null;
+    return;
+  }
   closeModal({ force: true });
   revealSelectedTask();
+  if (wasNew && !filteredTasks().some((item) => item.id === newTaskId)) {
+    showToast('追加しました。現在の絞り込みでは表示されません。');
+  }
 }
 
 function renderMoveModal() {
