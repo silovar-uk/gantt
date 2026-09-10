@@ -158,6 +158,7 @@ class ProjectStorage {
 
     if (this.fallback) localStorage.setItem(FALLBACK_PROJECT_KEY, JSON.stringify(project));
     else if (!(await this.readIndexedProject())) await this.writeIndexedProject(project, null);
+    this.saveView(project.viewSettings);
 
     this.savedRevision = Number(project.revision || 0);
     return { project: deepCopy(project), migration, fallback: this.fallback };
@@ -173,6 +174,7 @@ class ProjectStorage {
     } else {
       await this.writeIndexedProject(snapshot, expectedRevision);
     }
+    this.saveView(snapshot.viewSettings);
     this.savedRevision = Number(snapshot.revision || 0);
     this.channel?.postMessage({ type: 'saved', tabId: this.tabId, revision: this.savedRevision, updatedAt: snapshot.updatedAt });
     return snapshot;
@@ -182,6 +184,7 @@ class ProjectStorage {
     const snapshot = deepCopy(project);
     if (this.fallback) localStorage.setItem(FALLBACK_PROJECT_KEY, JSON.stringify(snapshot));
     else await this.writeIndexedProject(snapshot, null);
+    this.saveView(snapshot.viewSettings);
     this.savedRevision = Number(snapshot.revision || 0);
     this.channel?.postMessage({ type: 'saved', tabId: this.tabId, revision: this.savedRevision, updatedAt: snapshot.updatedAt });
     return snapshot;
