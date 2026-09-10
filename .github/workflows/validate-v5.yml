@@ -57,5 +57,6 @@ jobs:
         run: |
           set -euo pipefail
           unzip -t /tmp/gantt-v5-test.xlsx
-          unzip -p /tmp/gantt-v5-test.xlsx xl/worksheets/sheet1.xml | grep -q '日本語の予定'
-          unzip -p /tmp/gantt-v5-test.xlsx xl/worksheets/sheet1.xml | grep -q "'=SUM(A1:A2)"
+          unzip -p /tmp/gantt-v5-test.xlsx xl/worksheets/sheet1.xml > /tmp/gantt-v5-sheet1.xml
+          grep -q '日本語の予定' /tmp/gantt-v5-sheet1.xml
+          grep -q '&apos;=SUM(A1:A2)' /tmp/gantt-v5-sheet1.xml
