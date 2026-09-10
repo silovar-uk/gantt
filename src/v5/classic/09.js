@@ -1,10 +1,15 @@
-function copyText(text, fallbackSelector = '') {
-  return navigator.clipboard?.writeText(text).then(() => true).catch(() => {
+async function copyText(text, fallbackSelector = '') {
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
     const area = fallbackSelector ? document.querySelector(fallbackSelector) : null;
-    area?.focus(); area?.select?.();
+    area?.focus();
+    area?.select?.();
     showToast('コピーできませんでした。文章を選択してコピーしてください。', true);
     return false;
-  }) || Promise.resolve(false);
+  }
 }
 
 function chatGPTUrl(prompt) {
@@ -14,14 +19,24 @@ function chatGPTUrl(prompt) {
 async function openChatGPT(prompt, fallbackSelector) {
   const fullUrl = chatGPTUrl(prompt);
   if (fullUrl.length <= 2000) {
-    window.open(fullUrl, '_blank', 'noopener,noreferrer');
-    return;
+    const chatWindow = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    if (!chatWindow) {
+      showToast('ChatGPTを開けませんでした。指示文をコピーして手動で貼り付けてください。', true);
+      return false;
+    }
+    return true;
   }
+
+  const copied = await copyText(prompt, fallbackSelector);
+  if (!copied) return false;
+  showToast('文章が長いため全文をコピーしました。ChatGPTで貼り付けてください。');
   const shortPrompt = '次に貼り付ける指示文と資料を確認してから作業してください';
   const chatWindow = window.open(chatGPTUrl(shortPrompt), '_blank', 'noopener,noreferrer');
-  const copied = await copyText(prompt, fallbackSelector);
-  if (copied) showToast('全文をコピーしました。ChatGPTで貼り付けてください。');
-  if (!chatWindow) showToast('ChatGPTを開けませんでした。コピーした文章を手動で貼り付けてください。', true);
+  if (!chatWindow) {
+    showToast('ChatGPTを開けませんでした。コピー済みの文章を手動で貼り付けてください。', true);
+    return false;
+  }
+  return true;
 }
 
 function backupObject(project = state.project) {
