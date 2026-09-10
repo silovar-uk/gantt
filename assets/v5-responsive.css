@@ -107,37 +107,41 @@
 }
 
 @media (max-width: 767px) {
-  :root { --header-h: 112px; }
+  :root { --header-h: 124px; }
   body { overflow: hidden; }
   .topbar { padding: 7px 10px; gap: 7px; }
-  .app-mark { width: 32px; height: 32px; flex-basis: 32px; }
-  .project-title-button { max-width: 38vw; font-size: 15px; }
+  .app-mark { width: 44px; height: 44px; flex-basis: 44px; }
+  .project-title-button { max-width: 34vw; min-height: 44px; font-size: 15px; }
   .save-pill { display: none; }
   .top-actions { gap: 3px; }
-  .top-actions .icon-button { width: 36px; min-height: 36px; }
-  .top-actions .button { min-height: 36px; padding-inline: 10px; }
+  .top-actions .icon-button { width: 44px; min-height: 44px; }
+  .top-actions .button { min-height: 44px; padding-inline: 10px; }
   .toolbar { padding: 5px 10px 9px; gap: 6px; }
+  .toolbar .button, .toolbar .icon-button, .toolbar .segmented button { min-height: 44px; }
   .toolbar-spacer { display: none; }
   .add-button { order: 0; }
-  .search-box { order: 1; width: 170px; flex: 0 0 170px; }
+  .search-box { order: 1; width: 170px; flex: 0 0 170px; height: 44px; }
   .toolbar [data-action="today"], .toolbar [data-action="fit"], #scale-switch, #mode-switch, .toolbar [data-action="display-settings"] { order: 2; }
+  .popup-menu button { min-height: 44px; }
   .condition-bar { padding-inline: 10px; max-height: 72px; overflow-y: auto; }
   .view-notice { margin-left: 0; width: 100%; }
   .workspace { --text-size: 14px !important; }
   .workspace.mode-list .task-panel { width: 100%; flex-basis: 100%; border-right: 0; }
   .task-head { display: none; }
   .task-panel { grid-template-rows: 1fr; }
-  .task-row { height: auto; min-height: 74px; grid-template-columns: 34px minmax(0, 1fr) 36px; grid-template-rows: 36px 30px; padding: 5px 8px; }
+  .task-row { height: auto; min-height: 74px; grid-template-columns: 44px minmax(0, 1fr) 44px; grid-template-rows: 36px 30px; padding: 5px 8px; }
   .complete-cell { grid-column: 1; grid-row: 1 / span 2; }
   .name-cell { grid-column: 2; grid-row: 1; }
-  .row-menu-button { grid-column: 3; grid-row: 1; }
+  .row-menu-button { grid-column: 3; grid-row: 1; width: 44px; height: 44px; }
   .category-cell { grid-column: 2; grid-row: 2; font-size: 11px; }
   .date-cell { grid-row: 2; display: none; }
   .mobile-timeline-labels { display: grid; grid-template-rows: 38px 1fr; }
   .workspace.mode-gantt .timeline-panel { width: 100%; }
   .modal-layer { padding: 0; align-items: stretch; }
   .modal-card, .modal-card.modal-wide { width: 100%; max-height: 100dvh; height: 100dvh; border-radius: 0; border: 0; }
-  .modal-head { min-height: 64px; padding: 12px 14px; }
+  .modal-head { min-height: 64px; padding: 10px 14px; }
+  .modal-card .button, .modal-card .icon-button { min-height: 44px; }
+  .modal-head .icon-button { width: 44px; }
   .modal-body { padding: 14px; }
   .modal-foot { padding: 10px 14px; }
   .form-grid.two, .form-grid.three, .import-layout, .export-grid { grid-template-columns: 1fr; }
