@@ -51,3 +51,10 @@ jobs:
             echo 'App did not finish booting on mobile' >&2
             exit 1
           fi
+      - name: Run published interaction suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/public-e2e-run.mjs
+          npm install --no-save --no-package-lock playwright-core
+          node scripts/public-e2e-run.mjs
