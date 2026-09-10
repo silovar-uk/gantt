@@ -1,0 +1,62 @@
+name: Validate v5
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in src/v5/classic/*.js; do
+            node --check "$file"
+          done
+      - name: Verify production entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'assets/v5-base.css' index.html
+          grep -q 'assets/v5-responsive.css' index.html
+          grep -q 'src/v5/classic/01.js' index.html
+          grep -q 'src/v5/classic/10.js' index.html
+          if grep -q 'src/main.js' index.html; then
+            echo 'Legacy main runtime is still loaded' >&2
+            exit 1
+          fi
+          if grep -q 'share-layer.js' index.html; then
+            echo 'Legacy share layer is still loaded' >&2
+            exit 1
+          fi
+      - name: Verify no in-app AI API
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'api\.openai\.com|openai\.com/v1|Authorization:[[:space:]]*Bearer|api[_-]?key' src/v5 index.html; then
+            echo 'Unexpected AI API implementation found' >&2
+            exit 1
+          fi
+          grep -R -q 'https://chatgpt.com/?prompt=' src/v5/classic
+      - name: Run data-contract tests
+        run: node scripts/validate-v5.mjs
+      - name: Verify generated XLSX archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -t /tmp/gantt-v5-test.xlsx
+          unzip -p /tmp/gantt-v5-test.xlsx xl/worksheets/sheet1.xml > /tmp/gantt-v5-sheet1.xml
+          grep -q '日本語の予定' /tmp/gantt-v5-sheet1.xml
+          grep -q '&apos;=SUM(A1:A2)' /tmp/gantt-v5-sheet1.xml
