@@ -75,16 +75,28 @@ function bindEvents() {
       if (d.manual && d.prompt && !confirm('手編集した指示文を再作成して置き換えますか？')) return;
       d.prompt = buildInputPrompt(d); d.manual = false; persistInputDraft(); renderModal();
     }
-    else if (action === 'copy-input-prompt') { await copyText(state.inputDraft.prompt, '#input-prompt'); if (state.inputDraft.prompt) showToast('全文をコピーしました'); }
-    else if (action === 'open-input-chatgpt') { await openChatGPT(state.inputDraft.prompt, '#input-prompt'); showToast('ChatGPTを開く操作を行いました'); }
+    else if (action === 'copy-input-prompt') {
+      const copied = await copyText(state.inputDraft.prompt, '#input-prompt');
+      if (copied) showToast('全文をコピーしました');
+    }
+    else if (action === 'open-input-chatgpt') {
+      const opened = await openChatGPT(state.inputDraft.prompt, '#input-prompt');
+      if (opened) showToast('ChatGPTを開く操作を行いました');
+    }
     else if (action === 'paste-answer') { state.inputDraft.answer = state.inputDraft.answer || ''; persistInputDraft(); openModal('import', { prefill: state.inputDraft.answer }); }
     else if (action === 'new-input-draft') {
       if ((state.inputDraft.sourceText || state.inputDraft.prompt) && !confirm('前回の下書きを破棄して新しく作成しますか？')) return;
       state.inputDraft = { sourceText: '', targetYear: '', baseDate: '', category: '', prompt: '', manual: false, answer: '', completed: false }; persistInputDraft(); renderModal();
     }
     else if (action === 'refresh-output') { prepareOutputSession(); renderModal(); }
-    else if (action === 'copy-output-prompt') { await copyText(state.outputSession.prompt, '#output-prompt'); showToast('全文をコピーしました'); }
-    else if (action === 'open-output-chatgpt') { await openChatGPT(state.outputSession.prompt, '#output-prompt'); showToast('ChatGPTを開く操作を行いました'); }
+    else if (action === 'copy-output-prompt') {
+      const copied = await copyText(state.outputSession.prompt, '#output-prompt');
+      if (copied) showToast('全文をコピーしました');
+    }
+    else if (action === 'open-output-chatgpt') {
+      const opened = await openChatGPT(state.outputSession.prompt, '#output-prompt');
+      if (opened) showToast('ChatGPTを開く操作を行いました');
+    }
     else if (action === 'validate-import') { state.importRaw = document.querySelector('#import-input')?.value || ''; if (state.inputDraft) { state.inputDraft.answer = state.importRaw; persistInputDraft(); } validateImport(); }
     else if (action === 'apply-import') applyImport();
     else if (action === 'register-pending') registerPending(actionEl.dataset.pendingId);
@@ -101,8 +113,15 @@ function bindEvents() {
       downloadBlob(blob, `${safeFileName(state.project.title)}-${fileStamp()}-backup.json`);
       showToast('バックアップのダウンロードを開始しました');
     }
-    else if (action === 'copy-backup') { await copyText(JSON.stringify(backupObject(), null, 2)); showToast('バックアップJSONをコピーしました'); }
-    else if (action === 'copy-tsv') { const o = currentExportOptions(); await copyText(tsvText(o.tasks, o.includeNotes)); showToast(`${o.tasks.length}件のTSVをコピーしました`); }
+    else if (action === 'copy-backup') {
+      const copied = await copyText(JSON.stringify(backupObject(), null, 2));
+      if (copied) showToast('バックアップJSONをコピーしました');
+    }
+    else if (action === 'copy-tsv') {
+      const o = currentExportOptions();
+      const copied = await copyText(tsvText(o.tasks, o.includeNotes));
+      if (copied) showToast(`${o.tasks.length}件のTSVをコピーしました`);
+    }
     else if (action === 'download-tsv') { const o = currentExportOptions(); downloadBlob(new Blob([`\ufeff${tsvText(o.tasks, o.includeNotes)}`], { type: 'text/tab-separated-values;charset=utf-8' }), `${safeFileName(state.project.title)}-${fileStamp()}.tsv`); }
     else if (action === 'download-xlsx') { const o = currentExportOptions(); downloadBlob(makeXlsxBlob({ sheetName: '予定', rows: tsvRows(o.tasks, o.includeNotes) }), `${safeFileName(state.project.title)}-${fileStamp()}.xlsx`); }
     else if (action === 'reload-saved') {
