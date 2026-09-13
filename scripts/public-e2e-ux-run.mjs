@@ -50,10 +50,13 @@ try {
   const desktop = await openFresh();
   const { page } = desktop;
 
-  // Core chrome reflects the timeline-first product shape.
+  // Core chrome reflects the timeline-first, overview-first product shape.
   await page.locator('#ux-ai-json').waitFor({ state: 'visible' });
   await page.locator('#ux-present').waitFor({ state: 'visible' });
   await page.locator('#ux-view-controls').waitFor({ state: 'visible' });
+  await page.locator('#ux-density-controls').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '24');
+  assert.equal(await page.locator('#ux-text-size').getAttribute('min'), '10');
   assert.equal(await page.locator('#io-menu [data-action="chat-input"]').isHidden(), true);
   assert.equal(await page.locator('#io-menu [data-action="chat-output"]').isHidden(), true);
 
@@ -66,6 +69,15 @@ try {
   await waitSaved(page);
   let task = await taskRow(page, 'UX E2E タスク');
   assert.ok(await task.row.isVisible());
+
+  // Density controls must change the actual rendered geometry, not just saved settings.
+  await page.locator('#ux-row-height').fill('24');
+  await page.locator('#ux-text-size').fill('10');
+  const rowGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
+  assert.ok(rowGeometry.height <= 25 && rowGeometry.height >= 23, `row height is not compact: ${JSON.stringify(rowGeometry)}`);
+  assert.equal(rowGeometry.fontSize, '10px');
+  const timelineRowHeight = await page.locator(`[data-timeline-row="${task.id}"]`).evaluate((el) => el.getBoundingClientRect().height);
+  assert.ok(timelineRowHeight <= 25 && timelineRowHeight >= 23, `timeline row height is not compact: ${timelineRowHeight}`);
 
   // The compact list must never overlap the timeline or block its own detail button.
   const listBox = await page.locator('.task-panel').boundingBox();
@@ -106,15 +118,27 @@ try {
   assert.equal(await task.row.locator('[data-inline-start]').inputValue(), '2026-09-12');
   assert.equal(await task.row.locator('[data-inline-end]').inputValue(), '2026-09-14');
 
-  // Fit remains a one-click way back to the whole project.
+  // Fit remains a one-click way back to the whole project and keeps density controls valid.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator(`[data-timeline-task="${task.id}"]`).waitFor({ state: 'visible' });
+  const fittedRow = Number(await page.locator('#ux-row-height').inputValue());
+  const fittedText = Number(await page.locator('#ux-text-size').inputValue());
+  assert.ok(fittedRow >= 24 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
+  assert.ok(fittedText >= 10 && fittedText <= 16, `invalid fitted text size: ${fittedText}`);
 
-  // Display settings live in the overflow menu, not the primary toolbar.
+  // Display settings expose the same compact limits as the persistent header controls.
   await openMore(page, 'display-settings');
+  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '24');
+  assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
   await page.locator('#setting-list-width').fill('420');
+  await page.locator('#setting-row-height').fill('24');
+  await page.locator('#setting-text-size').fill('10');
   await page.locator('[data-action="apply-display-settings"]').click();
   assert.equal(await page.locator('.modal-layer').count(), 0);
+  task = await taskRow(page, 'UX E2E タスク');
+  const settingsGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
+  assert.ok(settingsGeometry.height <= 25 && settingsGeometry.height >= 23);
+  assert.equal(settingsGeometry.fontSize, '10px');
 
   // Present mode removes editing chrome and can return cleanly.
   await page.locator('#ux-present').click();
@@ -143,6 +167,7 @@ try {
 
   // Mobile must remain usable and free from document-level horizontal overflow.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
+  await mobile.page.locator('#ux-density-controls').waitFor({ state: 'visible' });
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.equal(await mobile.page.locator('#ux-ai-json').isHidden(), true);
