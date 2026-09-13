@@ -27,7 +27,7 @@ jobs:
           matched=0
           for i in $(seq 1 30); do
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
-            if grep -q 'assets/v6-workspace-ux.css?v=20260913-ux2' /tmp/live-index.html 2>/dev/null && grep -q 'src/v5/classic/11-ux-workspace.js?v=20260913-ux2' /tmp/live-index.html 2>/dev/null; then
+            if grep -q 'assets/v6-workspace-ux.css?v=20260913-ux3' /tmp/live-index.html 2>/dev/null && grep -q 'src/v5/classic/11-ux-workspace.js?v=20260913-ux3' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi
@@ -37,8 +37,8 @@ jobs:
             echo 'Matching UX deployment did not become public in time' >&2
             exit 1
           fi
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260913-ux2' -o /tmp/v6-workspace-ux.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/11-ux-workspace.js?v=20260913-ux2' -o /tmp/v5-11.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260913-ux3' -o /tmp/v6-workspace-ux.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/11-ux-workspace.js?v=20260913-ux3' -o /tmp/v5-11.js
           grep -q 'Timeline first' /tmp/v6-workspace-ux.css
           grep -q 'gantt-desk-ai-input' /tmp/v5-11.js
       - name: Render desktop public app
