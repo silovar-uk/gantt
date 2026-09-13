@@ -73,7 +73,7 @@ try {
   assert.ok(listBox && timelineBox && listBox.x + listBox.width <= timelineBox.x + 2);
   await task.row.locator('[data-action="details"]').click();
   await page.locator('.modal-layer').waitFor({ state: 'visible' });
-  await page.locator('[data-action="close-modal"]').click();
+  await page.locator('[data-action="close-modal"]').first().click();
 
   // AI handoff is JSON-only and contains a return contract for external AI.
   await page.locator('#ux-ai-json').click();
