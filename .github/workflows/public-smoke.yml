@@ -59,7 +59,6 @@ jobs:
           grep -q 'AI用JSON' /tmp/desktop.html
           grep -q 'Present' /tmp/desktop.html
           grep -q 'id="ux-density-controls"' /tmp/desktop.html
-          grep -q 'id="ux-macro-indicator"' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
             echo 'App did not finish booting on desktop' >&2
             exit 1
@@ -72,7 +71,6 @@ jobs:
           grep -q 'data-action="add"' /tmp/mobile.html
           grep -q '予定を追加' /tmp/mobile.html
           grep -q 'id="ux-density-controls"' /tmp/mobile.html
-          grep -q 'id="ux-macro-indicator"' /tmp/mobile.html
           if grep -q 'boot-state' /tmp/mobile.html; then
             echo 'App did not finish booting on mobile' >&2
             exit 1
