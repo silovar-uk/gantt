@@ -28,8 +28,19 @@
 .ux-selection-badge:not([hidden]) { display: inline-flex; }
 .ux-more-wrap { margin-left: 2px; }
 
-.workspace.mode-split .task-panel { flex-basis: var(--list-width, var(--ux-list-ideal)); width: var(--list-width, var(--ux-list-ideal)); }
-.task-head, .task-row { grid-template-columns: 32px minmax(130px, 1fr) minmax(82px, .62fr) 92px 92px 34px; }
+/* Timeline first: keep the list deliberately compact. Dates belong to the chart. */
+.workspace.mode-split .task-panel {
+  flex-basis: var(--list-width, var(--ux-list-ideal));
+  width: var(--list-width, var(--ux-list-ideal));
+  overflow: hidden;
+}
+.workspace.mode-split .task-head,
+.workspace.mode-split .task-row {
+  grid-template-columns: 32px minmax(118px, 1fr) minmax(72px, 88px) 0 0 34px;
+}
+.workspace.mode-split .task-head > :nth-child(4),
+.workspace.mode-split .task-head > :nth-child(5),
+.workspace.mode-split .task-row .date-cell { display: none; }
 .task-head { height: 36px; }
 .timeline-head { height: 36px; }
 .timeline-head-cell { height: 36px; }
@@ -69,7 +80,7 @@ body.is-present-mode .topbar,
 body.is-present-mode .toolbar,
 body.is-present-mode .condition-bar { display: none !important; }
 body.is-present-mode .ux-present-bar { display: grid; }
-body.is-present-mode .task-panel { max-width: 290px; }
+body.is-present-mode .task-panel { max-width: 290px; overflow: hidden; }
 body.is-present-mode .task-head,
 body.is-present-mode .task-row { grid-template-columns: 0 minmax(150px,1fr) 90px 0 0 0; }
 body.is-present-mode .task-head > :first-child,
@@ -88,8 +99,7 @@ body.is-present-mode .ux-resize-handle { display: none; }
 @media (max-width: 1199px) {
   .ux-ai-json { display: none; }
   .workspace.mode-split .task-panel { max-width: 300px; }
-  .task-head, .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
-  .task-head > :nth-child(4), .task-head > :nth-child(5), .task-row .date-cell { display: none; }
+  .workspace.mode-split .task-head, .workspace.mode-split .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
   .ux-present-title span { display: none; }
 }
 
