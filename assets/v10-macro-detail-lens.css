@@ -1,0 +1,145 @@
+/* Gantt Desk macro detail lens — 2026-09-14 */
+
+.macro-detail-lens[hidden] { display: none !important; }
+
+.macro-detail-lens {
+  position: fixed;
+  z-index: 120;
+  width: min(330px, calc(100vw - 20px));
+  max-height: min(420px, calc(100vh - 20px));
+  overflow: auto;
+  border: 1px solid #d8dee8;
+  border-radius: 12px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 14px 40px rgba(16,24,40,.16), 0 2px 8px rgba(16,24,40,.08);
+  backdrop-filter: blur(8px);
+}
+
+.macro-lens-shell {
+  padding: 12px;
+}
+
+.macro-lens-eyebrow {
+  margin-bottom: 7px;
+  color: #98a2b3;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.macro-lens-title-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0,1fr) 28px;
+  align-items: start;
+  gap: 7px;
+}
+
+.macro-lens-title-row .category-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+}
+
+.macro-lens-title-row h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 15px;
+  line-height: 1.32;
+  font-weight: 780;
+}
+
+.macro-lens-close {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #667085;
+  font-size: 18px;
+  line-height: 1;
+}
+.macro-lens-close:hover,
+.macro-lens-close:focus-visible { background: #f2f4f7; color: #344054; }
+
+.macro-lens-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 9px 0 0 17px;
+}
+.macro-lens-meta span {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.macro-lens-period {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #f8f9fb;
+  color: #667085;
+  font-size: 10px;
+}
+.macro-lens-period strong {
+  color: #344054;
+  font-variant-numeric: tabular-nums;
+}
+.macro-lens-period span { text-align: center; color: #98a2b3; }
+
+.macro-lens-note {
+  margin: 10px 0 0;
+  color: #475467;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.macro-lens-list {
+  margin: 10px 0 0;
+  padding: 0 0 0 17px;
+  color: #475467;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.macro-lens-list li { margin: 2px 0; }
+
+.macro-lens-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 12px;
+}
+.macro-lens-actions .button {
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 10px;
+}
+
+.workspace.mode-macro .macro-task-bar.is-lens-focus,
+.workspace.mode-macro .macro-milestone.is-lens-focus {
+  z-index: 14;
+  opacity: 1;
+  filter: saturate(1.18);
+  box-shadow: 0 0 0 2px rgba(54,71,215,.35), 0 2px 8px rgba(16,24,40,.18);
+}
+.workspace.mode-macro .macro-category-row.is-lens-focus,
+.workspace.mode-macro .macro-timeline-row.is-lens-focus {
+  background-color: rgba(54,71,215,.055);
+}
+.workspace.mode-macro .macro-category-row.is-lens-focus {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+@media (max-width: 767px) {
+  .macro-detail-lens { display: none !important; }
+}
