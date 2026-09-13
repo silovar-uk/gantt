@@ -1,4 +1,4 @@
-name: Public v5 smoke
+name: Public UX smoke
 
 on:
   push:
@@ -14,26 +14,41 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Verify published assets
+      - name: Check UX JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsSL --retry 5 --retry-delay 2 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html
-          grep -q 'assets/v5-base.css?v=20260910-v5' /tmp/live-index.html
-          grep -q 'src/v5/classic/10.js?v=20260910-v5' /tmp/live-index.html
-          curl -fsSL --retry 5 --retry-delay 2 'https://silovar-uk.github.io/gantt/assets/v5-base.css?v=20260910-v5' -o /tmp/v5-base.css
-          curl -fsSL --retry 5 --retry-delay 2 'https://silovar-uk.github.io/gantt/assets/v5-responsive.css?v=20260910-v5' -o /tmp/v5-responsive.css
-          curl -fsSL --retry 5 --retry-delay 2 'https://silovar-uk.github.io/gantt/src/v5/classic/10.js?v=20260910-v5' -o /tmp/v5-10.js
-          grep -q 'async function init()' /tmp/v5-10.js
-          grep -q '@media (max-width: 767px)' /tmp/v5-responsive.css
-          grep -q 'min-height: 44px' /tmp/v5-responsive.css
+          node --check src/v5/classic/11-ux-workspace.js
+          node --check scripts/public-e2e-ux-run.mjs
+      - name: Wait for matching public deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          matched=0
+          for i in $(seq 1 30); do
+            curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
+            if grep -q 'assets/v6-workspace-ux.css?v=20260913-ux2' /tmp/live-index.html 2>/dev/null && grep -q 'src/v5/classic/11-ux-workspace.js?v=20260913-ux2' /tmp/live-index.html 2>/dev/null; then
+              matched=1
+              break
+            fi
+            sleep 3
+          done
+          if [ "$matched" -ne 1 ]; then
+            echo 'Matching UX deployment did not become public in time' >&2
+            exit 1
+          fi
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260913-ux2' -o /tmp/v6-workspace-ux.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/11-ux-workspace.js?v=20260913-ux2' -o /tmp/v5-11.js
+          grep -q 'Timeline first' /tmp/v6-workspace-ux.css
+          grep -q 'gantt-desk-ai-input' /tmp/v5-11.js
       - name: Render desktop public app
         shell: bash
         run: |
           set -euo pipefail
           google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1440,900 --virtual-time-budget=5000 --user-data-dir=/tmp/chrome-desktop --dump-dom https://silovar-uk.github.io/gantt/ > /tmp/desktop.html
           grep -q 'data-action="add"' /tmp/desktop.html
-          grep -q '文章 → 予定' /tmp/desktop.html
+          grep -q 'AI用JSON' /tmp/desktop.html
+          grep -q 'Present' /tmp/desktop.html
           grep -q 'JSON／回答を取り込む' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
             echo 'App did not finish booting on desktop' >&2
@@ -51,10 +66,9 @@ jobs:
             echo 'App did not finish booting on mobile' >&2
             exit 1
           fi
-      - name: Run published interaction suite
+      - name: Run published UX interaction suite
         shell: bash
         run: |
           set -euo pipefail
-          node --check scripts/public-e2e-run.mjs
           npm install --no-save --no-package-lock playwright-core
-          node scripts/public-e2e-run.mjs
+          node scripts/public-e2e-ux-run.mjs
