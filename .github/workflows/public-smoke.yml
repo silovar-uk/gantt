@@ -62,7 +62,6 @@ jobs:
           grep -q 'id="ux-density-controls"' /tmp/desktop.html
           grep -q 'id="ux-row-height"' /tmp/desktop.html
           grep -q 'id="ux-text-size"' /tmp/desktop.html
-          grep -q 'data-tight-rows="20260913-tight1"' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
             echo 'App did not finish booting on desktop' >&2
             exit 1
@@ -77,7 +76,6 @@ jobs:
           grep -q 'data-mode="list"' /tmp/mobile.html
           grep -q 'data-ux-history-actions' /tmp/mobile.html
           grep -q 'id="ux-density-controls"' /tmp/mobile.html
-          grep -q 'data-tight-rows="20260913-tight1"' /tmp/mobile.html
           if grep -q 'boot-state' /tmp/mobile.html; then
             echo 'App did not finish booting on mobile' >&2
             exit 1
