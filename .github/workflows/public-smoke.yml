@@ -19,6 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check src/v5/classic/11-ux-workspace.js
+          node --check src/v5/classic/12-overflow-history.js
           node --check scripts/public-e2e-ux-run.mjs
       - name: Wait for matching public deployment
         shell: bash
@@ -27,7 +28,7 @@ jobs:
           matched=0
           for i in $(seq 1 30); do
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
-            if grep -q 'assets/v6-workspace-ux.css?v=20260913-ux3' /tmp/live-index.html 2>/dev/null && grep -q 'src/v5/classic/11-ux-workspace.js?v=20260913-ux3' /tmp/live-index.html 2>/dev/null; then
+            if grep -q 'assets/v6-workspace-ux.css?v=20260913-ux3' /tmp/live-index.html 2>/dev/null && grep -q 'src/v5/classic/11-ux-workspace.js?v=20260913-ux3' /tmp/live-index.html 2>/dev/null && grep -q 'src/v5/classic/12-overflow-history.js?v=20260913-ux1' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi
@@ -39,8 +40,10 @@ jobs:
           fi
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260913-ux3' -o /tmp/v6-workspace-ux.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/11-ux-workspace.js?v=20260913-ux3' -o /tmp/v5-11.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/12-overflow-history.js?v=20260913-ux1' -o /tmp/v5-12.js
           grep -q 'Timeline first' /tmp/v6-workspace-ux.css
           grep -q 'gantt-desk-ai-input' /tmp/v5-11.js
+          grep -q 'uxHistoryActions' /tmp/v5-12.js
       - name: Render desktop public app
         shell: bash
         run: |
@@ -50,6 +53,7 @@ jobs:
           grep -q 'AI用JSON' /tmp/desktop.html
           grep -q 'Present' /tmp/desktop.html
           grep -q 'JSON／回答を取り込む' /tmp/desktop.html
+          grep -q 'data-ux-history-actions' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
             echo 'App did not finish booting on desktop' >&2
             exit 1
@@ -62,6 +66,7 @@ jobs:
           grep -q 'data-action="add"' /tmp/mobile.html
           grep -q '予定を追加' /tmp/mobile.html
           grep -q 'data-mode="list"' /tmp/mobile.html
+          grep -q 'data-ux-history-actions' /tmp/mobile.html
           if grep -q 'boot-state' /tmp/mobile.html; then
             echo 'App did not finish booting on mobile' >&2
             exit 1
