@@ -1,0 +1,195 @@
+/* Gantt Desk overview-density layer — 2026-09-13 */
+:root {
+  --overview-header-normal: 86px;
+  --overview-header-collapsed: 66px;
+}
+
+/* The project should read as a whole before it reads as a list of cards. */
+.topbar {
+  min-height: 46px;
+  padding-block: 4px;
+}
+.toolbar {
+  min-height: 40px;
+  padding-block: 3px 5px;
+  gap: 6px;
+}
+.button,
+.icon-button { min-height: 34px; }
+.search-box { height: 34px; }
+.save-pill { padding-block: 5px; }
+
+.ux-view-controls { gap: 4px; }
+.ux-view-controls > [data-action="fit"] {
+  font-weight: 800;
+  border-color: #bcc5ff;
+  background: #f5f6ff;
+  color: #2735a7;
+}
+.ux-zoom { height: 32px; }
+.ux-zoom button { width: 32px; }
+
+.ux-density-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 7px;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fafbfc;
+  white-space: nowrap;
+}
+.ux-density-controls.is-auto-fit {
+  border-color: #cfd5ff;
+  background: #f8f8ff;
+}
+.ux-density-control {
+  display: inline-grid;
+  grid-template-columns: auto 72px 22px;
+  align-items: center;
+  gap: 4px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+}
+.ux-density-control input[type="range"] {
+  width: 72px;
+  accent-color: var(--primary);
+  cursor: ew-resize;
+}
+.ux-density-control output {
+  min-width: 22px;
+  color: #344054;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dense list: content fields are task + category; dates stay on the timeline. */
+.workspace.mode-split .task-panel {
+  min-width: 200px;
+  max-width: 520px;
+}
+.workspace.mode-split .task-head,
+.workspace.mode-split .task-row {
+  grid-template-columns: 28px minmax(100px, 1fr) minmax(62px, 82px) 0 0 30px;
+  padding-inline: 5px;
+  column-gap: 1px;
+}
+.task-head,
+.timeline-head,
+.timeline-head-cell { height: 30px; }
+.task-panel { grid-template-rows: 30px 1fr; }
+.task-head { font-size: 9px; }
+.timeline-head-cell { font-size: 9px; }
+.timeline-body { min-height: calc(100% - 30px); }
+
+.task-row {
+  height: var(--row-height) !important;
+  min-height: var(--row-height) !important;
+  font-size: var(--text-size) !important;
+}
+.timeline-row {
+  height: var(--row-height) !important;
+  min-height: var(--row-height) !important;
+}
+.inline-name {
+  padding: 2px 4px;
+  line-height: 1.1;
+}
+.category-cell {
+  padding-inline: 3px;
+  gap: 4px;
+  font-size: max(9px, calc(var(--text-size) - 1px));
+}
+.category-dot {
+  width: 7px;
+  height: 7px;
+  flex-basis: 7px;
+}
+.complete-cell input { width: 14px; height: 14px; }
+.row-menu-button { width: 28px; height: 28px; font-size: 11px; }
+
+/* Bars stay visually strong even when rows are compressed. */
+.task-bar {
+  height: max(16px, calc(var(--row-height) - 4px)) !important;
+  padding-inline: 5px;
+  border-radius: 5px;
+  font-size: max(9px, calc(var(--text-size) - 1px));
+  line-height: 1;
+}
+.milestone {
+  width: max(11px, min(16px, calc(var(--row-height) - 8px)));
+  height: max(11px, min(16px, calc(var(--row-height) - 8px)));
+}
+.ux-resize-handle { top: 0; bottom: 0; }
+.ux-create-ghost { height: max(14px, calc(var(--row-height) - 6px)); }
+
+/* When the minimum row size still cannot show every task, reduce secondary reading noise first. */
+.workspace.ux-auto-hide-category.mode-split .task-head,
+.workspace.ux-auto-hide-category.mode-split .task-row {
+  grid-template-columns: 28px minmax(120px, 1fr) 0 0 0 30px;
+}
+.workspace.ux-auto-hide-category .task-head > :nth-child(3),
+.workspace.ux-auto-hide-category .category-cell { display: none !important; }
+
+/* Semantic zoom: remove labels before shrinking the bars into illegibility. */
+.workspace[data-semantic-zoom="macro"] .task-bar > span { display: none; }
+.workspace[data-semantic-zoom="macro"] .timeline-head-cell { font-size: 8px; }
+.workspace[data-semantic-zoom="medium"] .task-bar { padding-inline: 3px; }
+
+/* Collapse chrome when the user is scanning downward. */
+body.ux-header-collapsed .topbar {
+  min-height: 32px;
+  padding-block: 1px;
+}
+body.ux-header-collapsed .app-mark {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  border-radius: 8px;
+}
+body.ux-header-collapsed .project-title-button {
+  padding-block: 2px;
+  font-size: 13px;
+}
+body.ux-header-collapsed .top-actions { display: none; }
+body.ux-header-collapsed .toolbar {
+  min-height: 34px;
+  padding-block: 1px 2px;
+}
+body.ux-header-collapsed .toolbar > .add-button,
+body.ux-header-collapsed .toolbar > .search-box,
+body.ux-header-collapsed .toolbar > [data-action="filter"],
+body.ux-header-collapsed .toolbar > .toolbar-spacer,
+body.ux-header-collapsed .toolbar > .ux-more-wrap { display: none !important; }
+body.ux-header-collapsed .ux-density-controls { min-height: 29px; padding-block: 0; }
+body.ux-header-collapsed .ux-zoom { height: 29px; }
+
+body.is-present-mode .task-head,
+body.is-present-mode .timeline-head,
+body.is-present-mode .timeline-head-cell { height: 30px; }
+body.is-present-mode .task-panel { grid-template-rows: 30px 1fr; }
+
+@media (max-width: 1199px) {
+  .ux-density-control { grid-template-columns: auto 58px 20px; }
+  .ux-density-control input[type="range"] { width: 58px; }
+  .workspace.mode-split .task-head,
+  .workspace.mode-split .task-row { grid-template-columns: 27px minmax(96px, 1fr) 66px 0 0 29px; }
+}
+
+@media (max-width: 767px) {
+  .topbar { min-height: 48px; }
+  .toolbar { min-height: 46px; padding-block: 2px; }
+  .ux-density-controls {
+    order: 3;
+    flex: 0 0 auto;
+    min-height: 42px;
+  }
+  .ux-density-control { grid-template-columns: auto 54px 20px; }
+  .ux-density-control input[type="range"] { width: 54px; }
+  .ux-more-wrap { order: 4; }
+  body.ux-header-collapsed .topbar { min-height: 40px; }
+  body.ux-header-collapsed .toolbar { min-height: 42px; }
+  body.ux-header-collapsed .ux-density-controls { min-height: 40px; }
+}
