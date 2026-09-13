@@ -1,0 +1,115 @@
+/* Gantt Desk UX layer — 2026-09-13 */
+:root {
+  --ux-list-min: 240px;
+  --ux-list-ideal: 300px;
+  --ux-accent: #3647d7;
+}
+
+.app-header { box-shadow: 0 1px 0 rgba(16,24,40,.03); }
+.topbar { min-height: 52px; padding-block: 6px; }
+.toolbar { min-height: 44px; padding-block: 4px 7px; }
+.project-title-button { max-width: min(480px, 42vw); }
+.save-pill { font-size: 11px; background: transparent; padding-inline: 6px; }
+
+.toolbar > [data-action="today"],
+.toolbar > [data-action="fit"],
+.toolbar > #scale-switch,
+.toolbar > #mode-switch,
+.toolbar > [data-action="display-settings"] { display: none !important; }
+
+.ux-ai-json { border-color: #cfd6e2; }
+.ux-present-button { padding-inline: 16px; }
+.ux-view-controls { display: inline-flex; align-items: center; gap: 6px; }
+.ux-zoom { height: 34px; display: inline-flex; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 9px; background: #fff; }
+.ux-zoom button { width: 36px; border: 0; border-right: 1px solid var(--line); background: #fff; font-size: 19px; line-height: 1; }
+.ux-zoom button:last-child { border-right: 0; }
+.ux-zoom button:hover { background: var(--surface-hover); }
+.ux-selection-badge { align-items: center; height: 28px; padding: 0 9px; border-radius: 999px; background: #eef0ff; color: #2d3bb8; font-size: 11px; font-weight: 800; }
+.ux-selection-badge:not([hidden]) { display: inline-flex; }
+.ux-more-wrap { margin-left: 2px; }
+
+.workspace.mode-split .task-panel { flex-basis: var(--list-width, var(--ux-list-ideal)); width: var(--list-width, var(--ux-list-ideal)); }
+.task-head, .task-row { grid-template-columns: 32px minmax(130px, 1fr) minmax(82px, .62fr) 92px 92px 34px; }
+.task-head { height: 36px; }
+.timeline-head { height: 36px; }
+.timeline-head-cell { height: 36px; }
+.task-panel { grid-template-rows: 36px 1fr; }
+.pane-resizer { flex-basis: 4px; background: #f5f6f8; }
+.pane-resizer:hover::after { opacity: .7; }
+.timeline-panel { background: #fff; }
+.timeline-row:hover { background: rgba(54,71,215,.025); }
+.timeline-row.is-multi-selected { background: rgba(54,71,215,.085); }
+.task-row.is-multi-selected { background: #e8ebff; box-shadow: inset 3px 0 0 var(--primary); }
+
+.task-bar.ux-draggable { cursor: grab; overflow: visible; touch-action: none; }
+.task-bar.ux-draggable > span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+.task-bar.ux-draggable:hover { filter: saturate(1.04); box-shadow: 0 2px 7px rgba(16,24,40,.18); }
+.task-bar.ux-draggable.is-dragging { cursor: grabbing; z-index: 20; opacity: .92; box-shadow: 0 6px 16px rgba(16,24,40,.22); }
+.milestone.ux-draggable { cursor: grab; touch-action: none; }
+.task-bar.is-multi-selected, .milestone.is-multi-selected { outline: 2px solid var(--ux-accent); outline-offset: 2px; z-index: 6; }
+.ux-resize-handle { position: absolute; top: -1px; bottom: -1px; width: 8px; opacity: 0; z-index: 3; cursor: ew-resize; background: rgba(255,255,255,.68); border-radius: 5px; transition: opacity .1s ease; }
+.ux-resize-start { left: -2px; }
+.ux-resize-end { right: -2px; }
+.task-bar:hover .ux-resize-handle, .task-bar:focus-visible .ux-resize-handle { opacity: 1; }
+.ux-create-ghost { position: absolute; top: 50%; transform: translateY(-50%); height: min(24px, calc(var(--row-height) - 14px)); min-width: 6px; border: 1px dashed #4f5ee8; border-radius: 6px; background: rgba(79,94,232,.13); pointer-events: none; z-index: 9; }
+
+.inline-name { font-weight: 650; }
+.category-cell { color: #667085; font-size: 12px; }
+.date-cell input { color: #667085; font-size: 11px; }
+.row-menu-button { opacity: .45; }
+.task-row:hover .row-menu-button, .task-row.is-selected .row-menu-button { opacity: 1; }
+
+.ux-present-bar { min-height: 58px; display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 18px; padding: 8px 16px; background: #fff; }
+.ux-present-title { min-width: 0; display: flex; align-items: baseline; gap: 12px; }
+.ux-present-title strong { max-width: 55vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 17px; }
+.ux-present-title span, .ux-present-meta { color: #667085; font-size: 12px; }
+.ux-present-meta { display: flex; gap: 12px; }
+.ux-present-actions { display: flex; gap: 6px; }
+body.is-present-mode .topbar,
+body.is-present-mode .toolbar,
+body.is-present-mode .condition-bar { display: none !important; }
+body.is-present-mode .ux-present-bar { display: grid; }
+body.is-present-mode .task-panel { max-width: 290px; }
+body.is-present-mode .task-head,
+body.is-present-mode .task-row { grid-template-columns: 0 minmax(150px,1fr) 90px 0 0 0; }
+body.is-present-mode .task-head > :first-child,
+body.is-present-mode .task-head > :nth-child(4),
+body.is-present-mode .task-head > :nth-child(5),
+body.is-present-mode .task-head > :last-child,
+body.is-present-mode .complete-cell,
+body.is-present-mode .date-cell,
+body.is-present-mode .row-menu-button { display: none !important; }
+body.is-present-mode .inline-name { pointer-events: none; border-color: transparent !important; }
+body.is-present-mode .pane-resizer { pointer-events: none; width: 1px; flex-basis: 1px; }
+body.is-present-mode .task-bar,
+body.is-present-mode .milestone { pointer-events: none; }
+body.is-present-mode .ux-resize-handle { display: none; }
+
+@media (max-width: 1199px) {
+  .ux-ai-json { display: none; }
+  .workspace.mode-split .task-panel { max-width: 300px; }
+  .task-head, .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
+  .task-head > :nth-child(4), .task-head > :nth-child(5), .task-row .date-cell { display: none; }
+  .ux-present-title span { display: none; }
+}
+
+@media (max-width: 767px) {
+  .topbar { min-height: 54px; }
+  .project-title-button { max-width: 38vw; }
+  .ux-present-button { min-height: 44px; padding-inline: 10px; }
+  .toolbar { min-height: 52px; }
+  .ux-view-controls { order: 2; }
+  .ux-view-controls > [data-action="fit"] { min-height: 44px; }
+  .ux-zoom { height: 44px; }
+  .ux-zoom button { width: 44px; }
+  .ux-more-wrap { order: 3; }
+  .ux-more-wrap > .icon-button { min-height: 44px; width: 44px; }
+  .ux-present-bar { min-height: 64px; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 8px 10px; }
+  .ux-present-title { display: grid; gap: 2px; }
+  .ux-present-title strong { max-width: 58vw; font-size: 15px; }
+  .ux-present-title span { display: block; font-size: 10px; }
+  .ux-present-meta { display: none; }
+  .ux-present-actions .button-secondary { display: none; }
+  body.is-present-mode .mobile-timeline-labels { flex-basis: 112px; width: 112px; }
+  .ux-resize-handle { width: 12px; opacity: .5; }
+}
