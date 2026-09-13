@@ -35,7 +35,7 @@ function denseHandoff() {
       start: iso(start),
       end: iso(end),
       categoryName,
-      note: '',
+      note: index === 0 ? 'Lens keeps the project context visible.' : '',
       milestone: index % 17 === 0,
     };
   });
@@ -57,6 +57,7 @@ try {
   const desktop = await openFresh({ width: 1440, height: 900 });
   const { page } = desktop;
   assert.equal(await page.locator('body').getAttribute('data-macro-overview-version'), '20260914-macro1');
+  assert.equal(await page.locator('body').getAttribute('data-macro-detail-lens-version'), '20260914-lens1');
 
   await importDenseProject(page);
   await page.locator('#ux-view-controls [data-action="fit"]').click();
@@ -68,16 +69,30 @@ try {
   assert.ok(await page.locator('.macro-density-strip i').count() > 30);
   assert.ok((await page.locator('#ux-macro-indicator').innerText()).includes('60→3'));
 
-  // The macro representation should consume far fewer vertical rows than one-task-per-row.
   const macroRows = await page.locator('.macro-timeline-row').count();
   assert.equal(macroRows, 3);
   const macroBodyHeight = await page.locator('.macro-timeline-body').evaluate((el) => el.getBoundingClientRect().height);
   assert.ok(macroBodyHeight < 60 * 20, `macro view did not reduce vertical structure: ${macroBodyHeight}`);
 
-  // Clicking a task moves from overview semantics back to task-level detail without changing scope.
+  // Focus+context: one click reveals detail without destroying the overview.
   const firstMacroTask = page.locator('[data-macro-task]').first();
   const firstId = await firstMacroTask.getAttribute('data-macro-task');
   await firstMacroTask.click();
+  await page.locator('#macro-detail-lens').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.workspace.mode-macro').isVisible(), true);
+  assert.ok((await page.locator('#macro-detail-lens').innerText()).includes('Macro Task'));
+  const lensBox = await page.locator('#macro-detail-lens').boundingBox();
+  assert.ok(lensBox && lensBox.x >= 0 && lensBox.y >= 0 && lensBox.x + lensBox.width <= 1440 && lensBox.y + lensBox.height <= 900);
+
+  // Escape dismisses only the focus lens and leaves Macro intact.
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#macro-detail-lens').isHidden(), true);
+  assert.equal(await page.locator('.workspace.mode-macro').isVisible(), true);
+
+  // Explicit drill-down moves to the task-level row view.
+  await firstMacroTask.click();
+  await page.locator('#macro-detail-lens').waitFor({ state: 'visible' });
+  await page.locator('[data-lens-action="task-row"]').click();
   await page.locator('.workspace.mode-split').waitFor({ state: 'visible' });
   assert.equal(await page.locator(`[data-task-row="${firstId}"]`).count(), 1);
   assert.equal(await page.locator('#ux-macro-indicator').isHidden(), true);
@@ -86,9 +101,13 @@ try {
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
 
-  // Category focus is details-on-demand: click a lane label and return to a filtered task view.
+  // Category focus follows the same rule: inspect first, change scope only on explicit action.
   const categoryButton = page.locator('[data-macro-category-focus]').first();
   await categoryButton.click();
+  await page.locator('#macro-detail-lens').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.workspace.mode-macro').isVisible(), true);
+  assert.ok((await page.locator('#macro-detail-lens').innerText()).includes('FOCUS · CATEGORY'));
+  await page.locator('[data-lens-action="category-focus"]').click();
   await page.locator('.workspace.mode-split').waitFor({ state: 'visible' });
   const resultText = await page.locator('#condition-bar').innerText();
   assert.ok(resultText.includes('カテゴリー 1'));
@@ -96,15 +115,16 @@ try {
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
 
-  // Mobile keeps the normal list/gantt model; Macro must never replace the mobile workspace.
+  // Mobile keeps the normal list/gantt model; Macro and Lens must not replace the mobile workspace.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#ux-macro-indicator').isHidden(), true);
+  assert.equal(await mobile.page.locator('#macro-detail-lens').isHidden(), true);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
   await mobile.context.close();
 
-  console.log('public macro overview suite passed');
+  console.log('public macro overview + detail lens suite passed');
 } finally {
   await browser.close();
 }
