@@ -104,10 +104,17 @@ body.is-present-mode .ux-resize-handle { display: none; }
 }
 
 @media (max-width: 767px) {
-  .topbar { min-height: 54px; }
-  .project-title-button { max-width: 38vw; }
-  .ux-present-button { min-height: 44px; padding-inline: 10px; }
-  .toolbar { min-height: 52px; }
+  html, body, .app-root, .app-shell { max-width: 100vw; overflow-x: hidden; }
+  .topbar { min-height: 54px; width: 100%; min-width: 0; }
+  .brand-area { min-width: 0; flex: 1 1 auto; }
+  .app-mark { flex: 0 0 40px; width: 40px; height: 40px; }
+  .project-title-button { max-width: none; min-width: 0; width: 100%; font-size: 14px; }
+  .top-actions { flex: 0 0 auto; min-width: 0; }
+  .top-actions > [data-action="undo"],
+  .top-actions > [data-action="redo"] { display: none !important; }
+  .top-actions > .menu-wrap .button { padding-inline: 8px; }
+  .ux-present-button { min-height: 44px; padding-inline: 9px; }
+  .toolbar { min-height: 52px; max-width: 100vw; }
   .ux-view-controls { order: 2; }
   .ux-view-controls > [data-action="fit"] { min-height: 44px; }
   .ux-zoom { height: 44px; }
