@@ -55,7 +55,7 @@ try {
   await page.locator('#ux-present').waitFor({ state: 'visible' });
   await page.locator('#ux-view-controls').waitFor({ state: 'visible' });
   await page.locator('#ux-density-controls').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '24');
+  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '20');
   assert.equal(await page.locator('#ux-text-size').getAttribute('min'), '10');
   assert.equal(await page.locator('#io-menu [data-action="chat-input"]').isHidden(), true);
   assert.equal(await page.locator('#io-menu [data-action="chat-output"]').isHidden(), true);
@@ -123,17 +123,17 @@ try {
   await page.locator(`[data-timeline-task="${task.id}"]`).waitFor({ state: 'visible' });
   const fittedRow = Number(await page.locator('#ux-row-height').inputValue());
   const fittedText = Number(await page.locator('#ux-text-size').inputValue());
-  assert.ok(fittedRow >= 24 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
+  assert.ok(fittedRow >= 20 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
   assert.ok(fittedText >= 10 && fittedText <= 16, `invalid fitted text size: ${fittedText}`);
 
   // Display settings expose the same compact limits as the persistent header controls.
   await openMore(page, 'display-settings');
-  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '24');
+  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
   assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
   await page.locator('#setting-list-width').fill('420');
   await page.locator('#setting-row-height').fill('24');
   await page.locator('#setting-text-size').fill('10');
-  await page.locator('[data-action="apply-display-settings"]').click();
+  await page.locator('[data-tight-action="apply-display-settings"]').click();
   assert.equal(await page.locator('.modal-layer').count(), 0);
   task = await taskRow(page, 'UX E2E タスク');
   const settingsGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
