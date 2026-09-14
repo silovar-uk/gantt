@@ -1,6 +1,7 @@
 (() => {
-  const COMPASS_VERSION = '20260914-compass5';
-  const RHYTHM_VERSION = '20260914-rhythm2';
+  const COMPASS_VERSION = '20260914-compass6';
+  const RHYTHM_VERSION = '20260914-rhythm3';
+  const ECHO_VERSION = '20260914-echo1';
   const FULL_COVERAGE = 0.94;
   const BUSY_BUCKETS = 48;
   const RHYTHM_MAX_WINDOWS = 3;
@@ -8,6 +9,8 @@
   const ROW_MIN = 20;
   const ROW_MAX = 56;
   let rowBubbleTimer = 0;
+  let activeEchoKey = '';
+  let activeEchoContext = null;
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
   const tasks = () => state?.project?.tasks || [];
@@ -131,6 +134,7 @@
     ribbon.dataset.projectRhythm = RHYTHM_VERSION;
     document.body.dataset.timeCompassVersion = COMPASS_VERSION;
     document.body.dataset.projectRhythmVersion = RHYTHM_VERSION;
+    document.body.dataset.rhythmContextEchoVersion = ECHO_VERSION;
 
     if (!track.querySelector('.time-compass-meta')) {
       track.insertAdjacentHTML('beforeend', `
@@ -263,9 +267,110 @@
       .map((item, index) => ({ ...item, primary: index === 0 }));
   }
 
-  function rhythmAnnotation(element) {
+  function surfaceTasks() {
+    try {
+      return typeof filteredTasks === 'function' ? filteredTasks() : tasks();
+    } catch {
+      return tasks();
+    }
+  }
+
+  function deriveRhythmContext(start, end) {
+    const matchingTasks = surfaceTasks().filter((task) => task.start && task.end && task.start <= end && task.end >= start);
+    const categoryCounts = new Map();
+    matchingTasks.forEach((task) => categoryCounts.set(task.categoryId, (categoryCounts.get(task.categoryId) || 0) + 1));
+    const categories = [...categoryCounts.entries()].map(([id, count]) => {
+      const category = state.project.categories.find((item) => item.id === id);
+      return { id, name: category?.name || '未分類', count };
+    }).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ja'));
+    return { tasks: matchingTasks, categories };
+  }
+
+  function rhythmMeaning(context) {
+    if (!context?.tasks.length) return '';
+    const categories = context.categories.slice(0, 2).map((item) => `${item.name}${item.count}`).join('・');
+    const rest = Math.max(0, context.categories.length - 2);
+    return `${categories}${rest ? ` +${rest}分類` : ''} · ${context.tasks.length}件`;
+  }
+
+  function rhythmAccessibleMeaning(context) {
+    if (!context?.tasks.length) return '';
+    const categories = context.categories.slice(0, 3).map((item) => `${item.name}${item.count}件`).join('、');
+    const rest = Math.max(0, context.categories.length - 3);
+    return `${categories}${rest ? `、ほか${rest}分類` : ''}。期間に関わる予定${context.tasks.length}件`;
+  }
+
+  function rhythmAnnotation(element, context = null) {
     if (!element) return '';
-    return `集中 ${shortDate(element.dataset.rhythmStart)}–${shortDate(element.dataset.rhythmEnd)} · 最大${element.dataset.rhythmPeak}件`;
+    const base = `集中 ${shortDate(element.dataset.rhythmStart)}–${shortDate(element.dataset.rhythmEnd)} · 最大${element.dataset.rhythmPeak}件`;
+    const meaning = rhythmMeaning(context || deriveRhythmContext(element.dataset.rhythmStart, element.dataset.rhythmEnd));
+    return meaning ? `${base} · ${meaning}` : base;
+  }
+
+  function clearRhythmContext() {
+    const workspace = document.querySelector('#workspace');
+    if (workspace) {
+      workspace.classList.remove('is-rhythm-echo');
+      delete workspace.dataset.rhythmEchoStart;
+      delete workspace.dataset.rhythmEchoEnd;
+      delete workspace.dataset.rhythmEchoCount;
+      delete workspace.dataset.rhythmEchoKey;
+      workspace.querySelectorAll('.is-rhythm-match, .is-rhythm-muted').forEach((element) => {
+        element.classList.remove('is-rhythm-match', 'is-rhythm-muted');
+      });
+    }
+    document.querySelectorAll('.time-compass-rhythm-window[data-rhythm-base-label]').forEach((element) => {
+      element.setAttribute('aria-label', element.dataset.rhythmBaseLabel);
+    });
+    activeEchoKey = '';
+    activeEchoContext = null;
+  }
+
+  function applyRhythmContext(element) {
+    const workspace = document.querySelector('#workspace');
+    const start = element?.dataset.rhythmStart;
+    const end = element?.dataset.rhythmEnd;
+    if (!workspace || !start || !end || breakpoint() === 'mobile') return null;
+    const key = `${start}:${end}:${state.project.revision || 0}`;
+    if (activeEchoKey === key && workspace.dataset.rhythmEchoKey === key && activeEchoContext) return activeEchoContext;
+
+    clearRhythmContext();
+    const context = deriveRhythmContext(start, end);
+    if (!context.tasks.length) return context;
+    const taskIds = new Set(context.tasks.map((task) => task.id));
+    const categoryIds = new Set(context.tasks.map((task) => task.categoryId));
+
+    workspace.classList.add('is-rhythm-echo');
+    workspace.dataset.rhythmEchoKey = key;
+    workspace.dataset.rhythmEchoStart = start;
+    workspace.dataset.rhythmEchoEnd = end;
+    workspace.dataset.rhythmEchoCount = String(context.tasks.length);
+
+    workspace.querySelectorAll('[data-task-row], [data-timeline-row]').forEach((node) => {
+      const id = node.dataset.taskRow || node.dataset.timelineRow;
+      const matched = taskIds.has(id);
+      node.classList.toggle('is-rhythm-match', matched);
+      node.classList.toggle('is-rhythm-muted', !matched);
+    });
+    workspace.querySelectorAll('[data-macro-task]').forEach((node) => {
+      const matched = taskIds.has(node.dataset.macroTask);
+      node.classList.toggle('is-rhythm-match', matched);
+      node.classList.toggle('is-rhythm-muted', !matched);
+    });
+    workspace.querySelectorAll('[data-macro-category-focus]').forEach((node) => {
+      const matched = categoryIds.has(node.dataset.macroCategoryFocus);
+      node.classList.toggle('is-rhythm-match', matched);
+      node.classList.toggle('is-rhythm-muted', !matched);
+    });
+
+    const accessibleMeaning = rhythmAccessibleMeaning(context);
+    if (accessibleMeaning) {
+      element.setAttribute('aria-label', `集中期間 ${shortDate(start)}から${shortDate(end)} 最大${element.dataset.rhythmPeak}件進行。${accessibleMeaning}`);
+    }
+
+    activeEchoKey = key;
+    activeEchoContext = context;
+    return context;
   }
 
   function renderRhythmLandmarks(track, range) {
@@ -283,7 +388,7 @@
       const left = clamp(diffDays(range.start, landmark.start) / denominator, 0, 1);
       const width = clamp(inclusiveDays(landmark.start, landmark.end) / denominator, 0, 1 - left);
       const label = `集中期間 ${shortDate(landmark.start)}から${shortDate(landmark.end)} 最大${landmark.peak}件進行`;
-      return `<button type="button" class="time-compass-rhythm-window ${landmark.primary ? 'is-primary' : ''}" data-rhythm-start="${landmark.start}" data-rhythm-end="${landmark.end}" data-rhythm-peak-date="${landmark.peakDate}" data-rhythm-peak="${landmark.peak}" style="left:${(left * 100).toFixed(3)}%;width:${Math.max(.4, width * 100).toFixed(3)}%" title="${label}" aria-label="${label}"></button>`;
+      return `<button type="button" class="time-compass-rhythm-window ${landmark.primary ? 'is-primary' : ''}" data-rhythm-start="${landmark.start}" data-rhythm-end="${landmark.end}" data-rhythm-peak-date="${landmark.peakDate}" data-rhythm-peak="${landmark.peak}" data-rhythm-base-label="${label}" style="left:${(left * 100).toFixed(3)}%;width:${Math.max(.4, width * 100).toFixed(3)}%" title="${label}" aria-label="${label}"></button>`;
     }).join('');
 
     const primary = landmarks[0];
@@ -371,7 +476,10 @@
   function syncCompass() {
     const dom = ensureCompassDOM();
     const range = projectRange();
-    if (!dom || !range || dom.ribbon.hidden || breakpoint() === 'mobile') return;
+    if (!dom || !range || dom.ribbon.hidden || breakpoint() === 'mobile') {
+      clearRhythmContext();
+      return;
+    }
     const { ribbon, track } = dom;
     const active = scroller();
     const visible = visibleRange(range);
@@ -443,14 +551,17 @@
     }
     const nearestMilestoneElement = nearestMilestone(rail, clientX);
     if (nearestMilestoneElement) {
+      clearRhythmContext();
       setAnnotation(track, `◆ ${nearestMilestoneElement.dataset.compassName}`);
       return;
     }
     const rhythm = nearestRhythmWindow(rail, clientX);
     if (rhythm) {
-      setAnnotation(track, rhythmAnnotation(rhythm));
+      const context = applyRhythmContext(rhythm);
+      setAnnotation(track, rhythmAnnotation(rhythm, context));
       return;
     }
+    clearRhythmContext();
     const stats = dayStats(point.date);
     setAnnotation(track, `${shortDate(point.date)} · 進行${stats.active.length} · 開始${stats.starts.length} · 終了${stats.ends.length}`);
   }
@@ -458,6 +569,7 @@
   function clearHover(rail) {
     const pointer = rail.querySelector('.time-compass-pointer');
     if (pointer) pointer.hidden = true;
+    clearRhythmContext();
     const track = rail.closest('#project-ribbon-track');
     const range = projectRange();
     if (track && range) defaultAnnotation(track, range);
@@ -496,6 +608,7 @@
     const current = view();
     const active = scroller();
     if (!current || !active || !parseISO(start) || !parseISO(end)) return;
+    clearRhythmContext();
     const span = Math.max(1, inclusiveDays(start, end));
     const paddedSpan = Math.max(5, span + Math.max(4, Math.ceil(span * .7)));
     const desiredWidth = clamp(Math.floor((active.clientWidth / paddedSpan) * 10) / 10, 2, 32);
@@ -515,6 +628,7 @@
   function zoomAtDate(date, direction) {
     const current = view();
     if (!current) return;
+    clearRhythmContext();
     const oldWidth = clamp(current.dayWidth || 2, 2, 32);
     const nextWidth = Math.round(clamp(oldWidth * (direction > 0 ? 1.18 : .85), 2, 32) * 10) / 10;
     if (Math.abs(nextWidth - oldWidth) < .05) return;
@@ -541,8 +655,13 @@
       const rhythm = event.target.closest('.time-compass-rhythm-window');
       const milestone = event.target.closest('.time-compass-milestone');
       if (!track) return;
-      if (milestone) setAnnotation(track, `◆ ${milestone.dataset.compassName}`);
-      else if (rhythm) setAnnotation(track, rhythmAnnotation(rhythm));
+      if (milestone) {
+        clearRhythmContext();
+        setAnnotation(track, `◆ ${milestone.dataset.compassName}`);
+      } else if (rhythm) {
+        const context = applyRhythmContext(rhythm);
+        setAnnotation(track, rhythmAnnotation(rhythm, context));
+      }
     });
     rail.addEventListener('focusout', () => {
       requestAnimationFrame(() => {
@@ -560,6 +679,7 @@
     }
     const milestone = target?.closest?.('.time-compass-milestone');
     if (milestone) {
+      clearRhythmContext();
       centerDate(milestone.dataset.compassDate, { zoomIfWhole: true });
       return true;
     }
@@ -607,6 +727,7 @@
   globalThis.ganttProjectRhythm = {
     version: RHYTHM_VERSION,
     derive: deriveRhythmLandmarks,
+    context: deriveRhythmContext,
   };
 
   setTimeout(syncCompass, 0);
