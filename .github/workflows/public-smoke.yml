@@ -38,7 +38,7 @@ jobs:
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
             if grep -q 'assets/v9-macro-overview.css?v=20260914-macro2' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v10-macro-detail-lens.css?v=20260914-lens1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v11-project-surface.css?v=20260914-surface1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v11-project-surface.css?v=20260914-surface2' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/16-macro-detail-lens.js?v=20260914-lens1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/17-project-surface.js?v=20260914-surface1' /tmp/live-index.html 2>/dev/null; then
               matched=1
@@ -50,7 +50,7 @@ jobs:
             echo 'Matching project-surface deployment did not become public in time' >&2
             exit 1
           fi
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260914-surface1' -o /tmp/v11-project-surface.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260914-surface2' -o /tmp/v11-project-surface.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/17-project-surface.js?v=20260914-surface1' -o /tmp/v5-17.js
           grep -q 'project surface' /tmp/v11-project-surface.css
           grep -q 'SURFACE_VERSION' /tmp/v5-17.js
