@@ -1,12 +1,14 @@
 (() => {
-  const DENSITY_VERSION = '20260913-density1';
+  const DENSITY_VERSION = '20260914-density2';
   const MIGRATION_KEY = `gantt-desk:${DENSITY_VERSION}:defaults`;
-  const ROW_MIN = 24;
+  const ROW_MIN = 20;
   const ROW_MAX = 56;
   const TEXT_MIN = 10;
   const TEXT_MAX = 16;
   const LIST_MIN = 200;
   const LIST_MAX = 520;
+  const DEFAULT_ROW = 24;
+  const DEFAULT_TEXT = 11;
   let resizeFitTimer = null;
 
   function densityClamp(value, min, max, fallback = min) {
@@ -25,19 +27,17 @@
     return state?.project?.viewSettings || null;
   }
 
-  function rememberViewPatch(patch) {
+  function previewViewPatch(patch) {
+    const view = currentView();
+    if (!view) return;
+    Object.assign(view, patch, { overviewAutoFit: false });
+  }
+
+  function commitViewPatch(patch) {
     const view = currentView();
     if (!view) return;
     Object.assign(view, patch, { overviewAutoFit: false });
     state.storage?.saveView(view);
-  }
-
-  function densityValues() {
-    const view = currentView();
-    return {
-      rowHeight: densityClamp(view?.rowHeight, ROW_MIN, ROW_MAX, 28),
-      textSize: densityClamp(view?.textSize, TEXT_MIN, TEXT_MAX, 11),
-    };
   }
 
   function semanticZoom(dayWidth) {
@@ -50,8 +50,8 @@
     const view = currentView();
     const workspace = document.querySelector('#workspace');
     if (!view || !workspace) return;
-    const rowHeight = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, 28);
-    const textSize = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, 11);
+    const rowHeight = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    const textSize = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     const dayWidth = densityClamp(view.dayWidth, 2, 40, 12);
     workspace.style.setProperty('--row-height', `${rowHeight}px`);
     workspace.style.setProperty('--text-size', `${textSize}px`);
@@ -69,10 +69,18 @@
     if (!view) return;
     const row = document.querySelector('#ux-row-height');
     const text = document.querySelector('#ux-text-size');
-    const rowValue = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, 28);
-    const textValue = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, 11);
-    if (row && document.activeElement !== row) row.value = String(rowValue);
-    if (text && document.activeElement !== text) text.value = String(textValue);
+    const rowValue = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    const textValue = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
+    if (row) {
+      row.min = String(ROW_MIN);
+      row.max = String(ROW_MAX);
+      if (document.activeElement !== row) row.value = String(rowValue);
+    }
+    if (text) {
+      text.min = String(TEXT_MIN);
+      text.max = String(TEXT_MAX);
+      if (document.activeElement !== text) text.value = String(textValue);
+    }
     const rowOut = document.querySelector('#ux-row-height-value');
     const textOut = document.querySelector('#ux-text-size-value');
     if (rowOut) rowOut.textContent = String(rowValue);
@@ -90,12 +98,12 @@
       <label class="ux-density-control" title="行の高さ">
         <span>行</span>
         <input id="ux-row-height" type="range" min="${ROW_MIN}" max="${ROW_MAX}" step="1" aria-label="行の高さ">
-        <output id="ux-row-height-value">28</output>
+        <output id="ux-row-height-value">${DEFAULT_ROW}</output>
       </label>
       <label class="ux-density-control" title="文字サイズ">
         <span>文字</span>
         <input id="ux-text-size" type="range" min="${TEXT_MIN}" max="${TEXT_MAX}" step="1" aria-label="文字サイズ">
-        <output id="ux-text-size-value">11</output>
+        <output id="ux-text-size-value">${DEFAULT_TEXT}</output>
       </label>`;
     const viewControls = document.querySelector('#ux-view-controls');
     if (viewControls?.parentElement === toolbar) viewControls.insertAdjacentElement('afterend', controls);
@@ -119,18 +127,16 @@
   }
 
   function preferredRowHeight(view) {
-    return densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, 28);
+    return densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
   }
 
   function preferredTextSize(view) {
-    return densityClamp(view.preferredTextSize ?? view.textSize, TEXT_MIN, TEXT_MAX, 11);
+    return densityClamp(view.preferredTextSize ?? view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
   }
 
   function fitTextForRow(rowHeight, preferred) {
-    let suggested = 12;
-    if (rowHeight <= 24) suggested = 10;
-    else if (rowHeight <= 28) suggested = 11;
-    return densityClamp(Math.min(preferred, suggested), TEXT_MIN, TEXT_MAX, TEXT_MIN);
+    const ceiling = rowHeight <= 22 ? 10 : rowHeight <= 26 ? 11 : 12;
+    return densityClamp(Math.min(preferred, ceiling), TEXT_MIN, TEXT_MAX, TEXT_MIN);
   }
 
   function fitOverview() {
@@ -147,7 +153,7 @@
     if (span > 730) {
       end = addDays(start, 729);
       span = 730;
-      state.ui.viewNotice = `全期間は730日を超えています。先頭730日を俯瞰表示中`;
+      state.ui.viewNotice = '全期間は730日を超えています。先頭730日を俯瞰表示中';
     }
 
     const workspace = document.querySelector('#workspace');
@@ -155,12 +161,13 @@
     const availableHeight = Math.max(ROW_MIN, (workspace?.clientHeight || innerHeight * 0.7) - 31);
     const rawRowHeight = Math.floor(availableHeight / Math.max(1, tasks.length));
     const preferredRow = preferredRowHeight(view);
-    const rowHeight = densityClamp(Math.min(preferredRow, Math.max(ROW_MIN, rawRowHeight)), ROW_MIN, ROW_MAX, 28);
+    const rowHeight = densityClamp(Math.min(preferredRow, Math.max(ROW_MIN, rawRowHeight)), ROW_MIN, ROW_MAX, DEFAULT_ROW);
     const preferredText = preferredTextSize(view);
     const textSize = fitTextForRow(rowHeight, preferredText);
     const cannotFitVertically = tasks.length * ROW_MIN > availableHeight;
 
-    const availableWidth = Math.max(120, timeline?.clientWidth || (workspace?.clientWidth || innerWidth) - densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280));
+    const listWidth = densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280);
+    const availableWidth = Math.max(120, timeline?.clientWidth || (workspace?.clientWidth || innerWidth) - listWidth);
     const fittedDayWidth = Math.max(2, Math.floor((availableWidth / Math.max(1, span)) * 10) / 10);
     const preferredDay = Number(view.preferredDayWidth);
     const dayWidth = densityClamp(Number.isFinite(preferredDay) ? Math.min(preferredDay, fittedDayWidth) : fittedDayWidth, 2, 32, 2);
@@ -203,14 +210,14 @@
     const view = state.project.viewSettings;
     const body = `<div class="form-grid two">
       <label class="field"><span>一覧の幅</span><input id="setting-list-width" type="number" min="${LIST_MIN}" max="${LIST_MAX}" value="${densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280)}"><small>${LIST_MIN}〜${LIST_MAX}px</small></label>
-      <label class="field"><span>行の高さ</span><input id="setting-row-height" type="number" min="${ROW_MIN}" max="${ROW_MAX}" value="${densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, 28)}"><small>${ROW_MIN}〜${ROW_MAX}px</small></label>
-      <label class="field"><span>文字サイズ</span><input id="setting-text-size" type="number" min="${TEXT_MIN}" max="${TEXT_MAX}" value="${densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, 11)}"><small>${TEXT_MIN}〜${TEXT_MAX}px</small></label>
+      <label class="field"><span>行の高さ</span><input id="setting-row-height" type="number" min="${ROW_MIN}" max="${ROW_MAX}" value="${densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW)}"><small>${ROW_MIN}〜${ROW_MAX}px</small></label>
+      <label class="field"><span>文字サイズ</span><input id="setting-text-size" type="number" min="${TEXT_MIN}" max="${TEXT_MAX}" value="${densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT)}"><small>${TEXT_MIN}〜${TEXT_MAX}px</small></label>
       <label class="field"><span>日付幅</span><input id="setting-day-width" type="number" min="2" max="32" step="0.5" value="${densityClamp(view.dayWidth, 2, 32, 12)}"><small>2〜32px/日</small></label>
     </div>
     <h3 class="section-title">表示期間</h3>
     <div class="form-grid two"><label class="field"><span>開始</span><input id="setting-view-start" type="date" value="${view.start}"></label><label class="field"><span>終了</span><input id="setting-view-end" type="date" value="${view.end}"></label></div>
-    <p class="form-help">「全体」は縦横を自動最適化します。手動で変えた密度は次回の全体表示でも上限として尊重します。</p><div id="display-error" class="form-error" hidden></div>`;
-    const footer = `<button class="button button-quiet" type="button" data-action="close-modal">キャンセル</button><button class="button button-primary" type="button" data-action="apply-display-settings">適用</button>`;
+    <p class="form-help">行は20pxまで圧縮できます。「全体」は縦横を自動最適化し、手動で変えた密度は次回の全体表示でも上限として尊重します。</p><div id="display-error" class="form-error" hidden></div>`;
+    const footer = `<button class="button button-quiet" type="button" data-action="close-modal">キャンセル</button><button class="button button-primary" type="button" data-density-action="apply-display-settings">適用</button>`;
     return modalFrame('表示設定', 'OVERVIEW DISPLAY', body, footer, true);
   };
 
@@ -218,20 +225,30 @@
     const view = currentView();
     if (!view) return;
     if (event.target.id === 'ux-row-height') {
-      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, 28);
-      rememberViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false });
+      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+      previewViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false });
       applyDensityToDom();
       syncDensityControls();
     } else if (event.target.id === 'ux-text-size') {
-      const value = densityClamp(event.target.value, TEXT_MIN, TEXT_MAX, 11);
-      rememberViewPatch({ textSize: value, preferredTextSize: value });
+      const value = densityClamp(event.target.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
+      previewViewPatch({ textSize: value, preferredTextSize: value });
       applyDensityToDom();
       syncDensityControls();
     }
   });
 
+  document.addEventListener('change', (event) => {
+    if (event.target.id === 'ux-row-height') {
+      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+      commitViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false });
+    } else if (event.target.id === 'ux-text-size') {
+      const value = densityClamp(event.target.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
+      commitViewPatch({ textSize: value, preferredTextSize: value });
+    }
+  });
+
   document.addEventListener('click', (event) => {
-    const action = event.target.closest('[data-action]')?.dataset.action;
+    const action = event.target.closest('[data-density-action]')?.dataset.densityAction;
     if (action !== 'apply-display-settings') return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -246,8 +263,8 @@
       if (error) { error.hidden = false; error.textContent = '一度に表示できる期間は730日までです。'; }
       return;
     }
-    const rowHeight = densityClamp(document.querySelector('#setting-row-height')?.value, ROW_MIN, ROW_MAX, 28);
-    const textSize = densityClamp(document.querySelector('#setting-text-size')?.value, TEXT_MIN, TEXT_MAX, 11);
+    const rowHeight = densityClamp(document.querySelector('#setting-row-height')?.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    const textSize = densityClamp(document.querySelector('#setting-text-size')?.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     const dayWidth = densityClamp(document.querySelector('#setting-day-width')?.value, 2, 32, 12);
     const listWidth = densityClamp(document.querySelector('#setting-list-width')?.value, LIST_MIN, LIST_MAX, 280);
     setView({
@@ -301,11 +318,12 @@
   function migrateDensityDefaults() {
     const view = currentView();
     if (!view || localStorage.getItem(MIGRATION_KEY)) return false;
-    if (Number(view.rowHeight) >= 36) view.rowHeight = 28;
-    if (Number(view.textSize) >= 12) view.textSize = 11;
+    if (Number(view.rowHeight) >= 28) view.rowHeight = DEFAULT_ROW;
+    if (!Number.isFinite(Number(view.preferredRowHeight)) || Number(view.preferredRowHeight) >= 28) view.preferredRowHeight = DEFAULT_ROW;
+    if (Number(view.textSize) >= 12) view.textSize = DEFAULT_TEXT;
     view.listWidth = densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280);
-    view.preferredRowHeight = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, 28);
-    view.preferredTextSize = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, 11);
+    view.preferredRowHeight = densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    view.preferredTextSize = densityClamp(view.preferredTextSize ?? view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     view.preferredListWidth = view.listWidth;
     view.autoHideCategory = false;
     view.overviewAutoFit = true;
