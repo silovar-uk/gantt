@@ -1,4 +1,4 @@
-/* Gantt Desk Time Compass V2 — 2026-09-14 */
+/* Gantt Desk Time Compass visual owner — 2026-09-14 */
 
 .project-ribbon { height: 36px; }
 .project-ribbon-track {
@@ -8,14 +8,19 @@
   row-gap: 2px;
   padding: 2px 5px;
   box-sizing: border-box;
-  cursor: default;
   overflow: visible;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
   background: #fafbfc;
+  cursor: default;
+}
+.project-ribbon-track:hover { border-color: #c4cad5; }
+.project-ribbon-track:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(54,71,215,.15);
 }
 .project-ribbon-track.is-navigator { cursor: ew-resize; }
 .project-ribbon-track.is-whole { cursor: default; }
-.project-ribbon-track > .project-ribbon-activity,
-.project-ribbon-track > .project-ribbon-milestones { display: none !important; }
 
 .time-compass-meta {
   grid-row: 1;
@@ -146,79 +151,16 @@
   box-shadow: 0 0 0 1px rgba(255,255,255,.9);
 }
 
-/* Row density is a direct view control, not a hidden settings-only control. */
-#ux-row-density-dock {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-height: 28px;
-  margin-right: 3px;
-}
-#ux-row-density-dock[hidden] { display: none !important; }
-#ux-row-density-dock .ux-row-density-control {
-  display: grid !important;
-  grid-template-columns: auto 78px 22px;
-  align-items: center;
-  gap: 4px;
-  min-height: 28px;
-  padding: 0 6px;
-  border: 1px solid #e0e4eb;
-  border-radius: 7px;
-  background: #fff;
-  color: #667085;
-  font-size: 10px;
-  font-weight: 750;
-}
-#ux-row-density-dock input[type="range"] {
-  width: 78px;
-  accent-color: var(--primary);
-  cursor: ew-resize;
-}
-#ux-row-density-dock output {
-  min-width: 22px;
-  color: #344054;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.ux-row-density-bubble {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-  z-index: 2200;
-  padding: 5px 7px;
-  border: 1px solid #d9dee7;
-  border-radius: 7px;
-  background: rgba(255,255,255,.98);
-  box-shadow: 0 6px 18px rgba(16,24,40,.12);
-  color: #344054;
-  font-size: 10px;
-  font-weight: 750;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.ux-row-density-bubble[hidden] { display: none !important; }
-
-body[data-surface-level="shape"] #ux-row-density-dock,
-body.is-present-mode #ux-row-density-dock { display: none !important; }
-
 .is-compass-nav .time-compass-rail { border-color: #cfd5df; }
 
 @media (max-width: 1080px) and (min-width: 768px) {
-  #ux-row-density-dock .ux-row-density-control { grid-template-columns: auto 58px 20px; padding-inline: 5px; }
-  #ux-row-density-dock input[type="range"] { width: 58px; }
   .time-compass-annotation { max-width: 140px; }
 }
 
 @media (max-width: 900px) and (min-width: 768px) {
-  #ux-row-density-dock .ux-row-density-control > span:first-child { display: none; }
-  #ux-row-density-dock .ux-row-density-control { grid-template-columns: 52px 18px; }
-  #ux-row-density-dock input[type="range"] { width: 52px; }
-  .time-compass-meta { font-size: 8px; grid-template-columns: 1fr minmax(55px, auto) 1fr; }
+  .time-compass-meta {
+    font-size: 8px;
+    grid-template-columns: 1fr minmax(55px, auto) 1fr;
+  }
   .time-compass-annotation { max-width: 96px; }
-}
-
-@media (max-width: 767px) {
-  #ux-row-density-dock { display: none !important; }
 }
