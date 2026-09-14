@@ -88,7 +88,15 @@ try {
     shape: state.project.viewSettings.overviewMacroMode === true,
   }));
   assert.deepEqual(overviewState, { auto: true, shape: false });
-  assert.equal(await page.locator('.time-compass-annotation').innerText(), '全体表示');
+
+  // Compass stays synchronized with the resolved Overview. Its exact annotation depends on whether
+  // the fitted viewport covers >=94% of the project range; that semantic is tested in the dedicated
+  // Project Surface suite rather than being duplicated here.
+  assert.equal(await page.locator('#project-ribbon').isVisible(), true);
+  const overviewAnnotation = (await page.locator('.time-compass-annotation').innerText()).trim();
+  assert.ok(overviewAnnotation.length > 0, 'Time Compass annotation should stay synchronized after Overview');
+  const compassClass = await page.locator('#project-ribbon-track').getAttribute('class');
+  assert.ok(compassClass?.includes('is-whole') || compassClass?.includes('is-navigator'), `Compass state missing after Overview: ${compassClass}`);
 
   // Row height is a manual task-axis override: it exits Auto and remains stable across resize.
   const rowSlider = page.locator('#ux-row-height');
