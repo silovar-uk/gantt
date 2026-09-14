@@ -1,5 +1,6 @@
 (() => {
   const DENSITY_VERSION = '20260914-density2';
+  const OVERVIEW_MODEL_VERSION = '20260914-overview1';
   const MIGRATION_KEY = `gantt-desk:${DENSITY_VERSION}:defaults`;
   const ROW_MIN = 20;
   const ROW_MAX = 56;
@@ -9,6 +10,7 @@
   const LIST_MAX = 520;
   const DEFAULT_ROW = 24;
   const DEFAULT_TEXT = 11;
+  const REPRESENTATION_HYSTERESIS = ROW_MIN * 2;
   let resizeFitTimer = null;
 
   function densityClamp(value, min, max, fallback = min) {
@@ -139,7 +141,19 @@
     return densityClamp(Math.min(preferred, ceiling), TEXT_MIN, TEXT_MAX, TEXT_MIN);
   }
 
-  function fitOverview() {
+  function overviewRepresentationEligible(tasks) {
+    return breakpoint() !== 'mobile' && effectiveMode() !== 'list' && tasks.length > 0;
+  }
+
+  function resolveOverviewRepresentation(tasks, availableHeight, { reason = 'explicit', currentShape = currentView()?.overviewMacroMode === true } = {}) {
+    if (!overviewRepresentationEligible(tasks)) return 'rows';
+    const requiredHeight = tasks.length * ROW_MIN;
+    if (reason !== 'resize') return requiredHeight > availableHeight ? 'shape' : 'rows';
+    if (currentShape) return requiredHeight > Math.max(ROW_MIN, availableHeight - REPRESENTATION_HYSTERESIS) ? 'shape' : 'rows';
+    return requiredHeight > availableHeight + REPRESENTATION_HYSTERESIS ? 'shape' : 'rows';
+  }
+
+  function fitOverview({ reason = 'explicit' } = {}) {
     const view = currentView();
     const tasks = filteredTasks();
     if (!view || !tasks.length) return;
@@ -157,14 +171,16 @@
     }
 
     const workspace = document.querySelector('#workspace');
-    const timeline = document.querySelector('#timeline-scroll');
+    const timeline = document.querySelector('#macro-timeline-scroll') || document.querySelector('#timeline-scroll');
     const availableHeight = Math.max(ROW_MIN, (workspace?.clientHeight || innerHeight * 0.7) - 31);
+    const requiredHeight = tasks.length * ROW_MIN;
     const rawRowHeight = Math.floor(availableHeight / Math.max(1, tasks.length));
     const preferredRow = preferredRowHeight(view);
     const rowHeight = densityClamp(Math.min(preferredRow, Math.max(ROW_MIN, rawRowHeight)), ROW_MIN, ROW_MAX, DEFAULT_ROW);
     const preferredText = preferredTextSize(view);
     const textSize = fitTextForRow(rowHeight, preferredText);
-    const cannotFitVertically = tasks.length * ROW_MIN > availableHeight;
+    const representation = resolveOverviewRepresentation(tasks, availableHeight, { reason, currentShape: view.overviewMacroMode === true });
+    const cannotFitVertically = requiredHeight > availableHeight;
 
     const listWidth = densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280);
     const availableWidth = Math.max(120, timeline?.clientWidth || (workspace?.clientWidth || innerWidth) - listWidth);
@@ -179,7 +195,8 @@
       textSize,
       dayWidth,
       scale: scaleForWidth(dayWidth),
-      autoHideCategory: cannotFitVertically,
+      overviewMacroMode: representation === 'shape',
+      autoHideCategory: representation === 'rows' && cannotFitVertically,
       overviewAutoFit: true,
     });
     state.storage.saveView(view);
@@ -216,7 +233,7 @@
     </div>
     <h3 class="section-title">表示期間</h3>
     <div class="form-grid two"><label class="field"><span>開始</span><input id="setting-view-start" type="date" value="${view.start}"></label><label class="field"><span>終了</span><input id="setting-view-end" type="date" value="${view.end}"></label></div>
-    <p class="form-help">行は20pxまで圧縮できます。「全体」は縦横を自動最適化し、手動で変えた密度は次回の全体表示でも上限として尊重します。</p><div id="display-error" class="form-error" hidden></div>`;
+    <p class="form-help">行は20pxまで圧縮できます。「全体」は縦横と表示粒度を一度に最適化し、手動で変えた密度は次回の全体表示でも上限として尊重します。</p><div id="display-error" class="form-error" hidden></div>`;
     const footer = `<button class="button button-quiet" type="button" data-action="close-modal">キャンセル</button><button class="button button-primary" type="button" data-density-action="apply-display-settings">適用</button>`;
     return modalFrame('表示設定', 'OVERVIEW DISPLAY', body, footer, true);
   };
@@ -226,24 +243,36 @@
     if (!view) return;
     if (event.target.id === 'ux-row-height') {
       const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
-      previewViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false });
-      applyDensityToDom();
-      syncDensityControls();
+      const wasShape = view.overviewMacroMode === true;
+      previewViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false, overviewMacroMode: false });
+      if (wasShape) {
+        renderWorkspace();
+        renderToolbarState();
+      } else {
+        applyDensityToDom();
+        syncDensityControls();
+      }
     } else if (event.target.id === 'ux-text-size') {
       const value = densityClamp(event.target.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
-      previewViewPatch({ textSize: value, preferredTextSize: value });
-      applyDensityToDom();
-      syncDensityControls();
+      const wasShape = view.overviewMacroMode === true;
+      previewViewPatch({ textSize: value, preferredTextSize: value, overviewMacroMode: false });
+      if (wasShape) {
+        renderWorkspace();
+        renderToolbarState();
+      } else {
+        applyDensityToDom();
+        syncDensityControls();
+      }
     }
   });
 
   document.addEventListener('change', (event) => {
     if (event.target.id === 'ux-row-height') {
       const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
-      commitViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false });
+      commitViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false, overviewMacroMode: false });
     } else if (event.target.id === 'ux-text-size') {
       const value = densityClamp(event.target.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
-      commitViewPatch({ textSize: value, preferredTextSize: value });
+      commitViewPatch({ textSize: value, preferredTextSize: value, overviewMacroMode: false });
     }
   });
 
@@ -281,6 +310,7 @@
       preferredListWidth: listWidth,
       autoHideCategory: false,
       overviewAutoFit: false,
+      overviewMacroMode: false,
     });
     closeModal({ force: true });
   }, true);
@@ -300,7 +330,7 @@
   });
 
   document.addEventListener('wheel', (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.target.closest('#timeline-scroll')) setTimeout(rememberHorizontalPreference, 0);
+    if ((event.ctrlKey || event.metaKey) && event.target.closest('#timeline-scroll, #macro-timeline-scroll')) setTimeout(rememberHorizontalPreference, 0);
   }, { passive: true });
 
   document.addEventListener('keydown', (event) => {
@@ -311,7 +341,7 @@
   addEventListener('resize', () => {
     clearTimeout(resizeFitTimer);
     resizeFitTimer = setTimeout(() => {
-      if (currentView()?.overviewAutoFit) fitOverview();
+      if (currentView()?.overviewAutoFit) fitOverview({ reason: 'resize' });
     }, 180);
   });
 
@@ -332,6 +362,13 @@
     return true;
   }
 
+  globalThis.ganttOverviewModel = {
+    fit: fitOverview,
+    resolveRepresentation(tasks, availableHeight, options) {
+      return resolveOverviewRepresentation(tasks, availableHeight, options);
+    },
+  };
+
   function bootDensity() {
     if (!state?.project || !state.storage) {
       setTimeout(bootDensity, 30);
@@ -342,7 +379,8 @@
     renderWorkspace();
     renderToolbarState();
     document.body.dataset.densityVersion = DENSITY_VERSION;
-    if (migrated && filteredTasks().length) requestAnimationFrame(fitOverview);
+    document.body.dataset.overviewModelVersion = OVERVIEW_MODEL_VERSION;
+    if (migrated && filteredTasks().length) requestAnimationFrame(() => fitOverview({ reason: 'boot' }));
   }
 
   ensureDensityControls();
