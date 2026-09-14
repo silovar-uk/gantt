@@ -1,0 +1,50 @@
+name: GPT Add Prompt
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check syntax and entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/v5/classic/20-gpt-add-bridge.js
+          node --check scripts/e2e-gpt-add.mjs
+          grep -q 'src/v5/classic/20-gpt-add-bridge.js?v=20260914-gptadd1' index.html
+          grep -q "GPT_ADD_VERSION = '20260914-gptadd1'" src/v5/classic/20-gpt-add-bridge.js
+          grep -q '出力前の自己監査' src/v5/classic/20-gpt-add-bridge.js
+          grep -q '原文にない準備工程' src/v5/classic/20-gpt-add-bridge.js
+          grep -q 'カテゴリー名を創作しない' src/v5/classic/20-gpt-add-bridge.js
+          if grep -q -E 'api\.openai\.com|openai\.com/v1|Authorization:[[:space:]]*Bearer' src/v5/classic/20-gpt-add-bridge.js; then
+            echo 'GPT Add must stay an external handoff, not an in-app AI client' >&2
+            exit 1
+          fi
+      - name: Run local browser E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright-core
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/gpt-add-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && break
+            sleep .25
+          done
+          BASE_URL=http://127.0.0.1:4173/ node scripts/e2e-gpt-add.mjs
