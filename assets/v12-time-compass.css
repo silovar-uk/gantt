@@ -1,170 +1,224 @@
-/* Gantt Desk Time Compass — 2026-09-14 */
+/* Gantt Desk Time Compass V2 — 2026-09-14 */
 
+.project-ribbon { height: 36px; }
 .project-ribbon-track {
-  height: 32px;
+  height: 36px;
+  display: grid;
+  grid-template-rows: 12px 18px;
+  row-gap: 2px;
+  padding: 2px 5px;
+  box-sizing: border-box;
   cursor: default;
   overflow: visible;
   background: #fafbfc;
 }
 .project-ribbon-track.is-navigator { cursor: ew-resize; }
 .project-ribbon-track.is-whole { cursor: default; }
-
 .project-ribbon-track > .project-ribbon-activity,
 .project-ribbon-track > .project-ribbon-milestones { display: none !important; }
-.project-ribbon-track.is-whole #project-ribbon-viewport { display: none !important; }
-.project-ribbon-track.is-navigator #project-ribbon-viewport { display: block; }
 
-.time-compass-busy {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 3px;
-  height: 5px;
-  border-radius: 999px;
-  opacity: .92;
-  pointer-events: none;
-}
-.time-compass-axis {
-  position: absolute;
-  inset: 2px 5px auto;
-  height: 12px;
+.time-compass-meta {
+  grid-row: 1;
+  min-width: 0;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr minmax(72px, auto) 1fr;
   align-items: center;
-  pointer-events: none;
   color: #667085;
   font-size: 9px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  pointer-events: none;
 }
-.time-compass-axis .time-compass-start { justify-self: start; }
-.time-compass-axis .time-compass-end { justify-self: end; }
-.time-compass-status {
+.time-compass-start { justify-self: start; }
+.time-compass-end { justify-self: end; }
+.time-compass-annotation {
   justify-self: center;
-  padding: 2px 5px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.82);
-  box-shadow: 0 0 0 1px rgba(152,162,179,.16);
-  color: #475467;
-  font-size: 9px;
-  font-weight: 700;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-.is-compass-whole .time-compass-status {
-  color: #344054;
-  background: rgba(255,255,255,.92);
+  color: #475467;
+  font-weight: 750;
 }
 
-.time-compass-milestones {
+.time-compass-rail {
+  position: relative;
+  grid-row: 2;
+  min-width: 0;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid #e3e7ee;
+  border-radius: 5px;
+  background: #fff;
+}
+.time-compass-busy {
   position: absolute;
-  inset: 13px 4px 8px;
+  inset: 2px;
+  z-index: 1;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.time-compass-markers {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   pointer-events: none;
 }
 .time-compass-milestone {
   position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  min-width: 9px;
-  height: 12px;
+  top: 50%;
+  width: 15px;
+  height: 15px;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
-  color: #5941a9;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  transform: translate(-50%, -50%);
   pointer-events: auto;
   cursor: pointer;
-  white-space: nowrap;
-  font: inherit;
-  font-size: 9px;
-  font-weight: 650;
 }
-.time-compass-milestone[data-edge="start"] { transform: none; }
-.time-compass-milestone[data-edge="end"] { transform: translateX(-100%); }
 .time-compass-milestone i {
-  width: 5px;
-  height: 5px;
-  flex: 0 0 5px;
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: auto;
   border-radius: 1px;
   transform: rotate(45deg);
-  background: #7b61c9;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.9);
+  background: #7357c1;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.92);
 }
-.time-compass-milestone span {
-  max-width: 72px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.time-compass-milestone:hover,
-.time-compass-milestone:focus-visible { color: #3f2b86; }
+.time-compass-milestone:hover i,
+.time-compass-milestone:focus-visible i { background: #4d348f; }
 .time-compass-milestone:focus-visible {
   outline: 2px solid rgba(54,71,215,.28);
-  outline-offset: 2px;
-  border-radius: 3px;
+  outline-offset: -1px;
+  border-radius: 4px;
 }
 
-.time-compass-hover {
+.time-compass-rail .project-ribbon-today {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  inset-block: 1px;
+  z-index: 3;
   width: 1px;
-  background: rgba(16,24,40,.42);
+  background: #e5484d;
+  opacity: .88;
   pointer-events: none;
-  z-index: 5;
 }
-.time-compass-hover::before {
+.time-compass-rail .project-ribbon-today[hidden] { display: none !important; }
+
+.time-compass-rail #project-ribbon-viewport {
+  position: absolute;
+  top: 2px;
+  bottom: 1px;
+  z-index: 2;
+  min-width: 12px;
+  border: 0;
+  border-left: 1.5px solid rgba(52,71,215,.72);
+  border-right: 1.5px solid rgba(52,71,215,.72);
+  border-bottom: 2px solid rgba(52,71,215,.72);
+  border-radius: 0 0 4px 4px;
+  background: rgba(54,71,215,.035);
+  box-shadow: none;
+  pointer-events: none;
+}
+.project-ribbon-track.is-whole #project-ribbon-viewport { display: none !important; }
+.project-ribbon-track.is-navigator #project-ribbon-viewport { display: block; }
+
+.time-compass-pointer {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  z-index: 4;
+  width: 1px;
+  background: rgba(16,24,40,.46);
+  pointer-events: none;
+}
+.time-compass-pointer[hidden] { display: none !important; }
+.time-compass-pointer::before {
   content: '';
   position: absolute;
-  top: -2px;
-  left: -3px;
-  width: 7px;
-  height: 7px;
+  top: -1px;
+  left: -2px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: #344054;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.9);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.9);
 }
 
-.time-compass-preview {
-  position: fixed;
-  z-index: 2000;
-  width: max-content;
-  max-width: 240px;
-  padding: 7px 9px;
-  border: 1px solid #d9dee7;
-  border-radius: 8px;
-  background: rgba(255,255,255,.98);
-  box-shadow: 0 8px 24px rgba(16,24,40,.14);
-  color: #344054;
-  pointer-events: none;
-  font-size: 10px;
-  line-height: 1.35;
+/* Row density is a direct view control, not a hidden settings-only control. */
+#ux-row-density-dock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  margin-right: 3px;
 }
-.time-compass-preview[hidden] { display: none !important; }
-.time-compass-preview strong,
-.time-compass-preview span,
-.time-compass-preview em { display: block; }
-.time-compass-preview strong { font-size: 11px; color: #101828; }
-.time-compass-preview span { margin-top: 2px; color: #667085; font-variant-numeric: tabular-nums; }
-.time-compass-preview em { margin-top: 4px; color: #5941a9; font-style: normal; font-weight: 650; }
-
-.is-compass-whole .project-ribbon-nav [data-action="fit"].is-horizontal-whole {
+#ux-row-density-dock[hidden] { display: none !important; }
+#ux-row-density-dock .ux-row-density-control {
+  display: grid !important;
+  grid-template-columns: auto 78px 22px;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 6px;
+  border: 1px solid #e0e4eb;
+  border-radius: 7px;
+  background: #fff;
   color: #667085;
+  font-size: 10px;
+  font-weight: 750;
 }
-.is-compass-nav .project-ribbon-track {
-  border-color: #cfd5df;
+#ux-row-density-dock input[type="range"] {
+  width: 78px;
+  accent-color: var(--primary);
+  cursor: ew-resize;
 }
-.is-compass-nav .project-ribbon-viewport {
-  background: rgba(54,71,215,.075);
-  border-width: 1.5px;
+#ux-row-density-dock output {
+  min-width: 22px;
+  color: #344054;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ux-row-density-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 2200;
+  padding: 5px 7px;
+  border: 1px solid #d9dee7;
+  border-radius: 7px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 6px 18px rgba(16,24,40,.12);
+  color: #344054;
+  font-size: 10px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ux-row-density-bubble[hidden] { display: none !important; }
+
+body[data-surface-level="shape"] #ux-row-density-dock,
+body.is-present-mode #ux-row-density-dock { display: none !important; }
+
+.is-compass-nav .time-compass-rail { border-color: #cfd5df; }
+
+@media (max-width: 1080px) and (min-width: 768px) {
+  #ux-row-density-dock .ux-row-density-control { grid-template-columns: auto 58px 20px; padding-inline: 5px; }
+  #ux-row-density-dock input[type="range"] { width: 58px; }
+  .time-compass-annotation { max-width: 140px; }
 }
 
-@media (max-width: 1040px) and (min-width: 768px) {
-  .time-compass-milestone span { display: none; }
-  .time-compass-axis { font-size: 8px; }
-  .time-compass-status { font-size: 8px; }
+@media (max-width: 900px) and (min-width: 768px) {
+  #ux-row-density-dock .ux-row-density-control > span:first-child { display: none; }
+  #ux-row-density-dock .ux-row-density-control { grid-template-columns: 52px 18px; }
+  #ux-row-density-dock input[type="range"] { width: 52px; }
+  .time-compass-meta { font-size: 8px; grid-template-columns: 1fr minmax(55px, auto) 1fr; }
+  .time-compass-annotation { max-width: 96px; }
 }
 
 @media (max-width: 767px) {
-  .time-compass-preview { display: none !important; }
+  #ux-row-density-dock { display: none !important; }
 }
