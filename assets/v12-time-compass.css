@@ -63,6 +63,45 @@
   border-radius: 3px;
   pointer-events: none;
 }
+
+.time-compass-rhythm {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.time-compass-rhythm-window {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  min-width: 4px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(62,106,90,.34);
+  border-radius: 3px;
+  background: rgba(62,106,90,.08);
+  box-shadow: inset 0 -1px 0 rgba(62,106,90,.12);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.time-compass-rhythm-window::before {
+  content: '';
+  position: absolute;
+  inset: -3px -4px;
+}
+.time-compass-rhythm-window.is-primary {
+  border-color: rgba(62,106,90,.52);
+  background: rgba(62,106,90,.13);
+}
+.time-compass-rhythm-window:hover {
+  border-color: rgba(62,106,90,.72);
+  background: rgba(62,106,90,.18);
+}
+.time-compass-rhythm-window:focus-visible {
+  outline: 2px solid rgba(62,106,90,.34);
+  outline-offset: 1px;
+}
+
 .time-compass-markers {
   position: absolute;
   inset: 0;
@@ -92,8 +131,15 @@
   background: #7357c1;
   box-shadow: 0 0 0 1px rgba(255,255,255,.92);
 }
+.time-compass-milestone.is-deadline i {
+  border-radius: 50%;
+  transform: none;
+  background: var(--danger, #b42318);
+}
 .time-compass-milestone:hover i,
 .time-compass-milestone:focus-visible i { background: #4d348f; }
+.time-compass-milestone.is-deadline:hover i,
+.time-compass-milestone.is-deadline:focus-visible i { background: var(--danger, #b42318); }
 .time-compass-milestone:focus-visible {
   outline: 2px solid rgba(54,71,215,.28);
   outline-offset: -1px;
