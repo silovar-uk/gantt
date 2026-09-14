@@ -1,5 +1,5 @@
 (() => {
-  const POLISH_VERSION = '20260914-sage2';
+  const POLISH_VERSION = '20260914-sage3';
   let frame = 0;
   let quietTimer = 0;
 
@@ -78,17 +78,8 @@
     bar.dataset.presentHud = POLISH_VERSION;
   }
 
-  function recolorCompass() {
-    const busy = document.querySelector('.time-compass-busy');
-    if (!busy) return;
-    const current = busy.style.backgroundImage || '';
-    const next = current.replace(/91\s*,\s*103\s*,\s*216/g, '62, 106, 90');
-    if (next && next !== current) busy.style.backgroundImage = next;
-  }
-
   function applyPolish() {
     iconify();
-    recolorCompass();
     polishPresentBar();
     document.body.dataset.uiPolish = POLISH_VERSION;
   }
@@ -129,7 +120,7 @@
 
   const appObserver = new MutationObserver(() => {
     cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(applyPolish);
+    frame = requestAnimationFrame(iconify);
   });
   appObserver.observe(document.querySelector('#app') || document.body, { childList: true, subtree: true });
 
