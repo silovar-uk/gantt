@@ -1,5 +1,5 @@
 (() => {
-  const MACRO_VERSION = '20260914-macro1';
+  const MACRO_VERSION = '20260914-macro2';
   const ROW_FLOOR = 20;
   const MACRO_MIN_LANE = 26;
   const MACRO_MAX_LANE = 68;
@@ -61,28 +61,6 @@
     return { assignments, slotCount: Math.max(1, laneEnds.length) };
   }
 
-  function densityCounts(tasks, start, days) {
-    const delta = new Array(days + 1).fill(0);
-    tasks.forEach((task) => {
-      if (task.end < start) return;
-      const last = addDays(start, days - 1);
-      if (task.start > last) return;
-      const clippedStart = task.start < start ? start : task.start;
-      const clippedEnd = task.end > last ? last : task.end;
-      const a = Math.max(0, diffDays(start, clippedStart));
-      const b = Math.min(days - 1, diffDays(start, clippedEnd));
-      delta[a] += 1;
-      if (b + 1 < delta.length) delta[b + 1] -= 1;
-    });
-    const counts = [];
-    let current = 0;
-    for (let i = 0; i < days; i += 1) {
-      current += delta[i];
-      counts.push(current);
-    }
-    return counts;
-  }
-
   function macroTaskBar(task, start, end, dayWidth, laneHeight, slot, maxSlots) {
     if (task.end < start || task.start > end) return '';
     const clippedStart = task.start < start ? start : task.start;
@@ -107,12 +85,6 @@
       return macroTaskBar(task, start, end, dayWidth, laneHeight, Math.min(originalSlot, maxSlots - 1), maxSlots);
     }).join('');
     return `<div class="macro-timeline-row" data-macro-category="${group.category.id}" style="width:${totalWidth}px;height:${laneHeight}px">${bars}</div>`;
-  }
-
-  function macroDensityStrip(tasks, start, days, dayWidth, totalWidth) {
-    const counts = densityCounts(tasks, start, days);
-    const max = Math.max(1, ...counts);
-    return `<div class="macro-density-strip" style="width:${totalWidth}px">${counts.map((count) => `<i style="width:${dayWidth}px;--macro-density:${(count / max).toFixed(3)}" title="${count}件"></i>`).join('')}</div>`;
   }
 
   function macroLabelRows(groups, laneHeight) {
@@ -155,7 +127,6 @@
         <div id="macro-timeline-scroll" class="macro-timeline-scroll">
           <div class="macro-timeline-inner" style="width:${totalWidth}px">
             <div class="macro-time-head" style="width:${totalWidth}px">${timelineHeaderHTML(start, days, dayWidth, view.scale)}</div>
-            ${macroDensityStrip(tasks, start, days, dayWidth, totalWidth)}
             <div class="macro-timeline-body" style="width:${totalWidth}px">
               ${todayLeft != null ? `<div class="macro-today-line" style="left:${todayLeft}px"><span>今日</span></div>` : ''}
               ${groups.map((group) => macroGroupRow(group, start, end, dayWidth, totalWidth, laneHeight)).join('')}
@@ -165,7 +136,6 @@
       </section>`;
 
     bindMacroScroll();
-    updateMacroIndicator(tasks.length, groups.length);
     return true;
   }
 
@@ -182,28 +152,6 @@
     };
     labels.addEventListener('scroll', () => sync(labels, timeline), { passive: true });
     timeline.addEventListener('scroll', () => sync(timeline, labels), { passive: true });
-  }
-
-  function ensureMacroIndicator() {
-    const toolbar = document.querySelector('.toolbar');
-    if (!toolbar || document.querySelector('#ux-macro-indicator')) return;
-    const indicator = document.createElement('button');
-    indicator.id = 'ux-macro-indicator';
-    indicator.type = 'button';
-    indicator.className = 'button button-secondary ux-macro-indicator';
-    indicator.dataset.macroAction = 'exit';
-    indicator.hidden = true;
-    toolbar.append(indicator);
-  }
-
-  function updateMacroIndicator(taskCount = 0, groupCount = 0) {
-    ensureMacroIndicator();
-    const indicator = document.querySelector('#ux-macro-indicator');
-    const active = currentView()?.overviewMacroMode === true && macroEligible();
-    if (!indicator) return;
-    indicator.hidden = !active;
-    indicator.textContent = active ? `俯瞰 ${taskCount}→${groupCount}` : '';
-    indicator.title = active ? 'タスク行表示へ戻る' : '';
   }
 
   function exitMacro({ taskId = '', categoryId = '' } = {}) {
@@ -257,26 +205,9 @@
       if (renderMacroWorkspace()) return;
     }
     previousRenderWorkspace();
-    updateMacroIndicator(0, 0);
-  };
-
-  const previousRenderToolbarState = renderToolbarState;
-  renderToolbarState = function semanticMacroRenderToolbarState() {
-    previousRenderToolbarState();
-    ensureMacroIndicator();
-    if (currentView()?.overviewMacroMode) {
-      const tasks = filteredTasks();
-      updateMacroIndicator(tasks.length, taskGroups(tasks).length);
-    } else updateMacroIndicator(0, 0);
   };
 
   document.addEventListener('click', (event) => {
-    const action = event.target.closest('[data-macro-action]')?.dataset.macroAction;
-    if (action === 'exit') {
-      event.preventDefault();
-      exitMacro();
-      return;
-    }
     const task = event.target.closest('[data-macro-task]')?.dataset.macroTask;
     if (task) {
       event.preventDefault();
@@ -319,12 +250,6 @@
   }, true);
 
   function bootMacro() {
-    if (!state?.project || !state.storage) {
-      setTimeout(bootMacro, 30);
-      return;
-    }
-    ensureMacroIndicator();
-    renderToolbarState();
     document.body.dataset.macroOverviewVersion = MACRO_VERSION;
   }
 
