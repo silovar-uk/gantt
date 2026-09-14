@@ -56,15 +56,19 @@ async function importDenseProject(page) {
 try {
   const desktop = await openFresh({ width: 1440, height: 900 });
   const { page } = desktop;
-  assert.equal(await page.locator('body').getAttribute('data-macro-overview-version'), '20260914-macro2');
+  assert.equal(await page.locator('body').getAttribute('data-macro-overview-version'), '20260914-macro3');
   assert.equal(await page.locator('body').getAttribute('data-macro-detail-lens-version'), '20260914-lens1');
+  assert.equal(await page.locator('body').getAttribute('data-overview-model-version'), '20260914-overview1');
 
   await importDenseProject(page);
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
 
-  assert.equal(await page.locator('#workspace').getAttribute('data-macro-overview'), '20260914-macro2');
+  assert.equal(await page.locator('#workspace').getAttribute('data-macro-overview'), '20260914-macro3');
+  assert.equal(await page.locator('.macro-label-head strong').innerText(), '全体');
+  assert.ok((await page.locator('.macro-label-head').innerText()).includes('分類'));
+  assert.equal((await page.locator('.macro-label-head').innerText()).includes('PROJECT SHAPE'), false);
   assert.equal(await page.locator('.macro-category-row').count(), 3);
   assert.equal(await page.locator('[data-macro-task]').count(), 60);
   assert.equal(await page.locator('.macro-density-strip').count(), 0, 'dead macro density DOM should be removed');
@@ -98,9 +102,11 @@ try {
   assert.equal(await page.locator(`[data-task-row="${firstId}"]`).count(), 1);
   assert.equal(await page.locator('#ux-macro-indicator').count(), 0);
 
-  // Fit returns to semantic overview automatically when task-level rows no longer fit.
+  // One Overview returns to the semantic overview and preserves the selected task as the focus anchor.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => state.selectedTaskId), firstId);
+  assert.equal(await page.locator(`[data-macro-task="${firstId}"]`).evaluate((el) => el.classList.contains('is-selected')), true);
 
   // Category focus follows the same rule: inspect first, change scope only on explicit action.
   const categoryButton = page.locator('[data-macro-category-focus]').first();

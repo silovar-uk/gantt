@@ -126,6 +126,14 @@
   box-shadow: 0 0 0 1px rgba(16,24,40,.13), 0 2px 7px rgba(16,24,40,.15);
 }
 .macro-task-bar.is-completed { opacity: .34; }
+.macro-task-bar.is-selected,
+.macro-milestone.is-selected {
+  z-index: 11;
+  opacity: 1;
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px var(--surface), 0 2px 7px rgba(16,24,40,.16);
+}
 .macro-milestone {
   width: 7px;
   height: 7px;
