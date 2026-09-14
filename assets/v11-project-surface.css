@@ -1,15 +1,13 @@
-/* Gantt Desk project surface — 2026-09-14 */
+/* Gantt Desk project surface layout — 2026-09-14 */
 
-/* One navigation surface replaces always-visible display tuning. */
+/* Advanced density controls remain hidden; the row-height control is surfaced in the Ribbon. */
 #ux-density-controls { display: none !important; }
-.ux-macro-indicator { display: none !important; }
 .toolbar > .toolbar-spacer { display: none !important; }
 
 .project-ribbon {
   flex: 1 1 320px;
   min-width: 190px;
   max-width: min(620px, 48vw);
-  height: 32px;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -20,64 +18,8 @@
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
-  height: 28px;
-  overflow: hidden;
-  border: 1px solid #dde2ea;
-  border-radius: 8px;
-  background: linear-gradient(to bottom, #fbfcfd, #f7f8fa);
-  cursor: ew-resize;
   touch-action: none;
   outline: none;
-}
-.project-ribbon-track:hover { border-color: #c4cad5; }
-.project-ribbon-track:focus-visible {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(54,71,215,.15);
-}
-.project-ribbon-activity {
-  position: absolute;
-  inset: 4px 3px 3px;
-  display: flex;
-  align-items: end;
-  gap: 1px;
-  pointer-events: none;
-}
-.project-ribbon-activity i {
-  flex: 1 1 0;
-  min-width: 1px;
-  height: calc(3px + (var(--ribbon-activity) * 14px));
-  border-radius: 1px 1px 0 0;
-  background: rgba(91,103,216, calc(.10 + var(--ribbon-activity) * .38));
-}
-.project-ribbon-milestones,
-.project-ribbon-today,
-.project-ribbon-viewport { position: absolute; inset-block: 0; pointer-events: none; }
-.project-ribbon-milestones { inset-inline: 0; }
-.project-ribbon-milestones i {
-  position: absolute;
-  top: 4px;
-  width: 5px;
-  height: 5px;
-  margin-left: -2px;
-  transform: rotate(45deg);
-  border-radius: 1px;
-  background: #7b61c9;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.85);
-}
-.project-ribbon-today {
-  width: 1px;
-  background: #e5484d;
-  opacity: .9;
-}
-.project-ribbon-today[hidden] { display: none !important; }
-.project-ribbon-viewport {
-  top: 2px;
-  bottom: 2px;
-  min-width: 13px;
-  border: 1.5px solid #3447d7;
-  border-radius: 6px;
-  background: rgba(54,71,215,.055);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 1px 3px rgba(16,24,40,.08);
 }
 .project-ribbon-nav {
   flex: 0 0 auto;
@@ -104,13 +46,6 @@
   font-size: 16px;
 }
 .project-ribbon-nav .ux-selection-badge { height: 26px; }
-
-/* The old macro density strip is replaced by the project-wide map. */
-.workspace.mode-macro .macro-density-strip { display: none !important; }
-.workspace.mode-macro .macro-label-panel { grid-template-rows: 28px 1fr; }
-.workspace.mode-macro .macro-label-head { height: 28px; }
-.workspace.mode-macro .macro-time-head { top: 0; }
-.workspace.mode-macro .macro-today-line span { top: 30px; }
 
 /* Semantic levels are internal: the surface changes meaning without adding mode chrome. */
 body[data-surface-level="plan"] .workspace.mode-split .task-bar > span { opacity: .2; }
