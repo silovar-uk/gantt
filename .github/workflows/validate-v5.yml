@@ -38,7 +38,7 @@ jobs:
           grep -q 'src/v5/classic/10.js' index.html
           grep -q 'src/v5/classic/13-overview-density.js?v=20260914-overview1' index.html
           grep -q 'src/v5/classic/15-macro-overview.js?v=20260914-macro3' index.html
-          grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass4' index.html
+          grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass5' index.html
           grep -q 'assets/v12-time-compass.css?v=20260914-compass5' index.html
           if grep -q 'assets/v8-tighter-rows.css' index.html; then
             echo 'Obsolete tighter-row CSS is still loaded' >&2
@@ -68,8 +68,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "RHYTHM_VERSION = '20260914-rhythm1'" src/v5/classic/18-time-compass.js
+          grep -q "RHYTHM_VERSION = '20260914-rhythm2'" src/v5/classic/18-time-compass.js
+          grep -q "COMPASS_VERSION = '20260914-compass5'" src/v5/classic/18-time-compass.js
           grep -q 'deriveRhythmLandmarks' src/v5/classic/18-time-compass.js
+          grep -q 'exactPeakForRange' src/v5/classic/18-time-compass.js
           grep -q 'focusRhythmRange' src/v5/classic/18-time-compass.js
           grep -q 'time-compass-rhythm-window' assets/v12-time-compass.css
           if grep -R -n 'time-compass-rhythm-window' src/v5/classic --exclude='18-time-compass.js'; then
