@@ -5,17 +5,6 @@
 .ux-macro-indicator { display: none !important; }
 .toolbar > .toolbar-spacer { display: none !important; }
 
-.toolbar {
-  min-height: 38px;
-  padding-block: 3px;
-  gap: 6px;
-}
-.toolbar .search-box {
-  flex: 0 1 240px;
-  min-width: 150px;
-  max-width: 280px;
-}
-
 .project-ribbon {
   flex: 1 1 320px;
   min-width: 190px;
@@ -128,13 +117,25 @@ body[data-surface-level="plan"] .workspace.mode-split .task-bar > span { opacity
 body[data-surface-level="plan"] .workspace.mode-split .category-cell { opacity: .78; }
 body[data-surface-level="edit"] .workspace.mode-split .task-bar > span { opacity: 1; }
 
-/* Chrome reduction: project manipulation remains primary; display tuning moves to overflow. */
-body:not(.is-present-mode) .topbar { min-height: 42px; }
-body:not(.is-present-mode) .toolbar > .add-button,
-body:not(.is-present-mode) .toolbar > [data-action="filter"] { min-height: 32px; }
-body:not(.is-present-mode) .toolbar > .ux-more-wrap > .icon-button { min-height: 32px; height: 32px; }
-
 body.is-present-mode .project-ribbon { display: none !important; }
+
+/* Chrome reduction is desktop/tablet-only. Mobile keeps 44px-class touch targets. */
+@media (min-width: 768px) {
+  .toolbar {
+    min-height: 38px;
+    padding-block: 3px;
+    gap: 6px;
+  }
+  .toolbar .search-box {
+    flex: 0 1 240px;
+    min-width: 150px;
+    max-width: 280px;
+  }
+  body:not(.is-present-mode) .topbar { min-height: 42px; }
+  body:not(.is-present-mode) .toolbar > .add-button,
+  body:not(.is-present-mode) .toolbar > [data-action="filter"] { min-height: 32px; }
+  body:not(.is-present-mode) .toolbar > .ux-more-wrap > .icon-button { min-height: 32px; height: 32px; }
+}
 
 @media (max-width: 1199px) and (min-width: 768px) {
   .toolbar .search-box { flex-basis: 180px; max-width: 210px; }
@@ -154,4 +155,6 @@ body.is-present-mode .project-ribbon { display: none !important; }
   #ux-density-controls { display: none !important; }
   .toolbar > .toolbar-spacer { display: inline-block !important; flex: 1 1 auto; }
   .ux-view-controls { order: 2; }
+  .toolbar > .add-button,
+  .toolbar > [data-action="filter"] { min-height: 44px; }
 }
