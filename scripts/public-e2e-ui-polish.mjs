@@ -11,7 +11,7 @@ async function openFresh({ width, height, touch = false }) {
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(BASE, { waitUntil: 'networkidle', timeout: 30000 });
   await page.locator('[data-action="add"]').first().waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.body.dataset.uiPolish === '20260914-sage1');
+  await page.waitForFunction(() => document.body.dataset.uiPolish === '20260914-sage2');
   return { context, page, errors };
 }
 
