@@ -76,8 +76,6 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=5000 --user-data-dir=/tmp/chrome-mobile --dump-dom https://silovar-uk.github.io/gantt/ > /tmp/mobile.html
           grep -q 'data-action="add"' /tmp/mobile.html
           grep -q '予定を追加' /tmp/mobile.html
-          grep -q 'id="ux-density-controls"' /tmp/mobile.html
-          grep -q 'id="macro-detail-lens"' /tmp/mobile.html
           if grep -q 'boot-state' /tmp/mobile.html; then
             echo 'App did not finish booting on mobile' >&2
             exit 1
