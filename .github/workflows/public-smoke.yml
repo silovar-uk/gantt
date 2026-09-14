@@ -24,9 +24,11 @@ jobs:
           node --check src/v5/classic/14-tighter-rows.js
           node --check src/v5/classic/15-macro-overview.js
           node --check src/v5/classic/16-macro-detail-lens.js
+          node --check src/v5/classic/17-project-surface.js
           node --check scripts/public-e2e-ux-run.mjs
           node --check scripts/public-e2e-tight-rows.mjs
           node --check scripts/public-e2e-macro-overview.mjs
+          node --check scripts/public-e2e-project-surface.mjs
       - name: Wait for matching public deployment
         shell: bash
         run: |
@@ -34,25 +36,25 @@ jobs:
           matched=0
           for i in $(seq 1 50); do
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
-            if grep -q 'assets/v8-tighter-rows.css?v=20260913-tight1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v9-macro-overview.css?v=20260914-macro2' /tmp/live-index.html 2>/dev/null \
+            if grep -q 'assets/v9-macro-overview.css?v=20260914-macro2' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v10-macro-detail-lens.css?v=20260914-lens1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/15-macro-overview.js?v=20260914-macro1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/16-macro-detail-lens.js?v=20260914-lens1' /tmp/live-index.html 2>/dev/null; then
+              && grep -q 'assets/v11-project-surface.css?v=20260914-surface1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/16-macro-detail-lens.js?v=20260914-lens1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/17-project-surface.js?v=20260914-surface1' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi
             sleep 3
           done
           if [ "$matched" -ne 1 ]; then
-            echo 'Matching macro detail-lens deployment did not become public in time' >&2
+            echo 'Matching project-surface deployment did not become public in time' >&2
             exit 1
           fi
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v10-macro-detail-lens.css?v=20260914-lens1' -o /tmp/v10-macro-detail-lens.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/16-macro-detail-lens.js?v=20260914-lens1' -o /tmp/v5-16.js
-          grep -q 'macro detail lens' /tmp/v10-macro-detail-lens.css
-          grep -q 'LENS_VERSION' /tmp/v5-16.js
-          grep -q 'FOCUS · TASK' /tmp/v5-16.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260914-surface1' -o /tmp/v11-project-surface.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/17-project-surface.js?v=20260914-surface1' -o /tmp/v5-17.js
+          grep -q 'project surface' /tmp/v11-project-surface.css
+          grep -q 'SURFACE_VERSION' /tmp/v5-17.js
+          grep -q 'project-ribbon-track' /tmp/v5-17.js
       - name: Render desktop public app
         shell: bash
         run: |
@@ -63,6 +65,7 @@ jobs:
           grep -q 'Present' /tmp/desktop.html
           grep -q 'id="ux-density-controls"' /tmp/desktop.html
           grep -q 'id="macro-detail-lens"' /tmp/desktop.html
+          grep -q 'id="project-ribbon"' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
             echo 'App did not finish booting on desktop' >&2
             exit 1
@@ -76,6 +79,7 @@ jobs:
           grep -q '予定を追加' /tmp/mobile.html
           grep -q 'id="ux-density-controls"' /tmp/mobile.html
           grep -q 'id="macro-detail-lens"' /tmp/mobile.html
+          grep -q 'id="project-ribbon"' /tmp/mobile.html
           if grep -q 'boot-state' /tmp/mobile.html; then
             echo 'App did not finish booting on mobile' >&2
             exit 1
@@ -88,3 +92,4 @@ jobs:
           node scripts/public-e2e-ux-run.mjs
           node scripts/public-e2e-tight-rows.mjs
           node scripts/public-e2e-macro-overview.mjs
+          node scripts/public-e2e-project-surface.mjs
