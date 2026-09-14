@@ -38,9 +38,9 @@ jobs:
           for i in $(seq 1 50); do
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
             if grep -q 'assets/v11-project-surface.css?v=20260914-surface2' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v12-time-compass.css?v=20260914-compass2b' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v12-time-compass.css?v=20260914-compass2c' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/17-project-surface.js?v=20260914-surface1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass2b' /tmp/live-index.html 2>/dev/null; then
+              && grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass2c' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi
@@ -50,8 +50,8 @@ jobs:
             echo 'Matching polished time-compass deployment did not become public in time' >&2
             exit 1
           fi
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260914-compass2b' -o /tmp/v12-time-compass.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/18-time-compass.js?v=20260914-compass2b' -o /tmp/v5-18.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260914-compass2c' -o /tmp/v12-time-compass.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/18-time-compass.js?v=20260914-compass2c' -o /tmp/v5-18.js
           grep -q 'Time Compass V2' /tmp/v12-time-compass.css
           grep -q 'COMPASS_VERSION' /tmp/v5-18.js
           grep -q 'ux-row-density-dock' /tmp/v5-18.js
