@@ -34,11 +34,13 @@ jobs:
           set -euo pipefail
           grep -q 'assets/v5-base.css' index.html
           grep -q 'assets/v5-responsive.css' index.html
+          grep -q 'assets/v6-workspace-ux.css?v=20260914-ux5' index.html
+          grep -q 'assets/v9-macro-overview.css?v=20260914-macro5' index.html
           grep -q 'src/v5/classic/01.js' index.html
           grep -q 'src/v5/classic/10.js' index.html
           grep -q 'src/v5/classic/13-overview-density.js?v=20260914-overview1' index.html
           grep -q 'src/v5/classic/15-macro-overview.js?v=20260914-macro3' index.html
-          grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass5' index.html
+          grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass6' index.html
           grep -q 'assets/v12-time-compass.css?v=20260914-compass5' index.html
           if grep -q 'assets/v8-tighter-rows.css' index.html; then
             echo 'Obsolete tighter-row CSS is still loaded' >&2
@@ -64,18 +66,33 @@ jobs:
             exit 1
           fi
           grep -q '<strong>全体</strong>' src/v5/classic/15-macro-overview.js
-      - name: Verify Project Rhythm ownership
+      - name: Verify Project Rhythm and Context Echo ownership
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "RHYTHM_VERSION = '20260914-rhythm2'" src/v5/classic/18-time-compass.js
-          grep -q "COMPASS_VERSION = '20260914-compass5'" src/v5/classic/18-time-compass.js
+          grep -q "RHYTHM_VERSION = '20260914-rhythm3'" src/v5/classic/18-time-compass.js
+          grep -q "COMPASS_VERSION = '20260914-compass6'" src/v5/classic/18-time-compass.js
+          grep -q "ECHO_VERSION = '20260914-echo1'" src/v5/classic/18-time-compass.js
           grep -q 'deriveRhythmLandmarks' src/v5/classic/18-time-compass.js
           grep -q 'exactPeakForRange' src/v5/classic/18-time-compass.js
+          grep -q 'deriveRhythmContext' src/v5/classic/18-time-compass.js
+          grep -q 'applyRhythmContext' src/v5/classic/18-time-compass.js
+          grep -q 'clearRhythmContext' src/v5/classic/18-time-compass.js
           grep -q 'focusRhythmRange' src/v5/classic/18-time-compass.js
           grep -q 'time-compass-rhythm-window' assets/v12-time-compass.css
+          grep -q 'workspace.is-rhythm-echo' assets/v6-workspace-ux.css
+          grep -q 'mode-macro.is-rhythm-echo' assets/v9-macro-overview.css
           if grep -R -n 'time-compass-rhythm-window' src/v5/classic --exclude='18-time-compass.js'; then
             echo 'Project Rhythm DOM escaped the Time Compass owner' >&2
+            exit 1
+          fi
+          if grep -R -n 'is-rhythm-echo' src/v5/classic --exclude='18-time-compass.js'; then
+            echo 'Context Echo runtime escaped the Time Compass owner' >&2
+            exit 1
+          fi
+          unexpected_echo_css=$(grep -R -l 'is-rhythm-echo' assets --include='*.css' | grep -v -E 'assets/v6-workspace-ux.css|assets/v9-macro-overview.css' || true)
+          if [ -n "$unexpected_echo_css" ]; then
+            echo "Context Echo CSS escaped Workspace/Macro owners: $unexpected_echo_css" >&2
             exit 1
           fi
       - name: Verify CSS architecture
