@@ -164,9 +164,40 @@
   white-space: nowrap;
 }
 
+/* Rhythm Context Echo: preserve the macro overview while cueing the tasks that form the hovered time window. */
+.workspace.mode-macro.is-rhythm-echo .macro-task-bar,
+.workspace.mode-macro.is-rhythm-echo .macro-milestone,
+.workspace.mode-macro.is-rhythm-echo .macro-category-row {
+  transition: opacity .12s ease, filter .12s ease, background-color .12s ease;
+}
+.workspace.mode-macro.is-rhythm-echo .macro-task-bar.is-rhythm-muted,
+.workspace.mode-macro.is-rhythm-echo .macro-milestone.is-rhythm-muted {
+  opacity: .16;
+  filter: saturate(.45);
+}
+.workspace.mode-macro.is-rhythm-echo .macro-task-bar.is-rhythm-match,
+.workspace.mode-macro.is-rhythm-echo .macro-milestone.is-rhythm-match {
+  opacity: 1;
+  filter: none;
+}
+.workspace.mode-macro.is-rhythm-echo .macro-task-bar.is-completed.is-rhythm-match:not(.is-selected) { opacity: .52; }
+.workspace.mode-macro.is-rhythm-echo .macro-task-bar.is-selected,
+.workspace.mode-macro.is-rhythm-echo .macro-milestone.is-selected { opacity: 1; filter: none; }
+.workspace.mode-macro.is-rhythm-echo .macro-category-row.is-rhythm-muted { opacity: .38; }
+.workspace.mode-macro.is-rhythm-echo .macro-category-row.is-rhythm-match {
+  opacity: 1;
+  background: var(--primary-soft, #e4ede8);
+}
+
 body.is-present-mode .workspace.mode-macro .macro-label-panel {
   flex-basis: clamp(160px, 16vw, 220px);
   width: clamp(160px, 16vw, 220px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace.mode-macro.is-rhythm-echo .macro-task-bar,
+  .workspace.mode-macro.is-rhythm-echo .macro-milestone,
+  .workspace.mode-macro.is-rhythm-echo .macro-category-row { transition: none; }
 }
 
 @media (max-width: 1199px) {
