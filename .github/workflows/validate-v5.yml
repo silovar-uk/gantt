@@ -26,6 +26,7 @@ jobs:
             node --check "$file"
           done
           node --check scripts/validate-css-architecture.mjs
+          node --check scripts/public-e2e-one-overview.mjs
       - name: Verify production entrypoint
         shell: bash
         run: |
@@ -34,6 +35,8 @@ jobs:
           grep -q 'assets/v5-responsive.css' index.html
           grep -q 'src/v5/classic/01.js' index.html
           grep -q 'src/v5/classic/10.js' index.html
+          grep -q 'src/v5/classic/13-overview-density.js?v=20260914-overview1' index.html
+          grep -q 'src/v5/classic/15-macro-overview.js?v=20260914-macro3' index.html
           if grep -q 'assets/v8-tighter-rows.css' index.html; then
             echo 'Obsolete tighter-row CSS is still loaded' >&2
             exit 1
@@ -46,6 +49,18 @@ jobs:
             echo 'Legacy share layer is still loaded' >&2
             exit 1
           fi
+      - name: Verify One Overview ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "OVERVIEW_MODEL_VERSION = '20260914-overview1'" src/v5/classic/13-overview-density.js
+          grep -q "overviewMacroMode: representation === 'shape'" src/v5/classic/13-overview-density.js
+          grep -q 'resolveOverviewRepresentation' src/v5/classic/13-overview-density.js
+          if grep -q -E 'previousFitAll|semanticFitAll|needsMacroOverview' src/v5/classic/15-macro-overview.js; then
+            echo 'Macro renderer is deciding Overview representation again' >&2
+            exit 1
+          fi
+          grep -q '<strong>全体</strong>' src/v5/classic/15-macro-overview.js
       - name: Verify CSS architecture
         run: node scripts/validate-css-architecture.mjs
       - name: Verify no in-app AI API
