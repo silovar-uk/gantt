@@ -50,29 +50,36 @@ try {
   const desktop = await openFresh();
   const { page } = desktop;
 
-  // Core chrome reflects the timeline-first, overview-first product shape.
+  // Primary chrome stays task-first. Display tuning exists, but no longer occupies the toolbar.
   await page.locator('#ux-ai-json').waitFor({ state: 'visible' });
   await page.locator('#ux-present').waitFor({ state: 'visible' });
-  await page.locator('#ux-view-controls').waitFor({ state: 'visible' });
-  await page.locator('#ux-density-controls').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
+  assert.equal(await page.locator('#ux-view-controls').isHidden(), true, 'empty projects should not show irrelevant timeline navigation');
   assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '20');
   assert.equal(await page.locator('#ux-text-size').getAttribute('min'), '10');
   assert.equal(await page.locator('#io-menu [data-action="chat-input"]').isHidden(), true);
   assert.equal(await page.locator('#io-menu [data-action="chat-output"]').isHidden(), true);
 
-  // Create a task using the normal editor.
+  // Create a task using the normal editor. The Project Ribbon becomes the primary timeline navigation once there is data.
   await page.locator('[data-action="add"]').first().click();
   await page.locator('#task-form [name="name"]').fill('UX E2E タスク');
   await page.locator('#task-form [name="start"]').fill('2026-09-10');
   await page.locator('#task-form [name="end"]').fill('2026-09-12');
   await page.locator('[data-action="save-task"]').click();
   await waitSaved(page);
+  await page.locator('#project-ribbon').waitFor({ state: 'visible' });
+  await page.locator('#ux-view-controls').waitFor({ state: 'visible' });
   let task = await taskRow(page, 'UX E2E タスク');
   assert.ok(await task.row.isVisible());
+  assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
 
-  // Density controls must change the actual rendered geometry, not just saved settings.
-  await page.locator('#ux-row-height').fill('24');
-  await page.locator('#ux-text-size').fill('10');
+  // Compact density still works, but is now an advanced display setting rather than primary chrome.
+  await openMore(page, 'display-settings');
+  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
+  assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
+  await page.locator('#setting-row-height').fill('24');
+  await page.locator('#setting-text-size').fill('10');
+  await page.locator('[data-tight-action="apply-display-settings"]').click();
   const rowGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
   assert.ok(rowGeometry.height <= 25 && rowGeometry.height >= 23, `row height is not compact: ${JSON.stringify(rowGeometry)}`);
   assert.equal(rowGeometry.fontSize, '10px');
@@ -118,7 +125,7 @@ try {
   assert.equal(await task.row.locator('[data-inline-start]').inputValue(), '2026-09-12');
   assert.equal(await task.row.locator('[data-inline-end]').inputValue(), '2026-09-14');
 
-  // Fit remains a one-click way back to the whole project and keeps density controls valid.
+  // Fit remains one click from the unified Ribbon, while advanced density values remain valid internally.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator(`[data-timeline-task="${task.id}"]`).waitFor({ state: 'visible' });
   const fittedRow = Number(await page.locator('#ux-row-height').inputValue());
@@ -126,7 +133,7 @@ try {
   assert.ok(fittedRow >= 20 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
   assert.ok(fittedText >= 10 && fittedText <= 16, `invalid fitted text size: ${fittedText}`);
 
-  // Display settings expose the same compact limits as the persistent header controls.
+  // Display settings remain the escape hatch for deliberate manual tuning.
   await openMore(page, 'display-settings');
   assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
   assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
@@ -165,9 +172,10 @@ try {
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
 
-  // Mobile must remain usable and free from document-level horizontal overflow.
+  // Mobile keeps the existing compact navigation model; advanced density chrome remains out of the way.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
-  await mobile.page.locator('#ux-density-controls').waitFor({ state: 'visible' });
+  assert.equal(await mobile.page.locator('#ux-density-controls').isHidden(), true);
+  assert.equal(await mobile.page.locator('#ux-row-height').getAttribute('min'), '20');
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.equal(await mobile.page.locator('#ux-ai-json').isHidden(), true);
