@@ -129,10 +129,10 @@ try {
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
 
-  // Mobile keeps the touch-first chrome; desktop slider/compass do not create overflow.
+  // Mobile keeps the touch-first chrome; desktop slider/compass exist in DOM but stay hidden and do not create overflow.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
-  assert.equal(await mobile.page.locator('#ux-row-density-dock').count(), 0);
+  assert.equal(await mobile.page.locator('#ux-row-density-dock').isHidden(), true);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   const addBox = await mobile.page.locator('[data-action="add"]').first().boundingBox();
