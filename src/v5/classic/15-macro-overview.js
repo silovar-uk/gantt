@@ -1,6 +1,5 @@
 (() => {
-  const MACRO_VERSION = '20260914-macro2';
-  const ROW_FLOOR = 20;
+  const MACRO_VERSION = '20260914-macro3';
   const MACRO_MIN_LANE = 26;
   const MACRO_MAX_LANE = 68;
   const HEADER_HEIGHT = 36;
@@ -17,13 +16,6 @@
 
   function macroEligible() {
     return breakpoint() !== 'mobile' && effectiveMode() !== 'list';
-  }
-
-  function needsMacroOverview(tasks = filteredTasks()) {
-    if (!macroEligible() || !tasks.length) return false;
-    const workspace = document.querySelector('#workspace');
-    const availableHeight = Math.max(ROW_FLOOR, (workspace?.clientHeight || innerHeight * 0.7) - 31);
-    return tasks.length * ROW_FLOOR > availableHeight;
   }
 
   function visiblePeriod(tasks) {
@@ -71,10 +63,11 @@
     const barHeight = clampMacro(Math.floor((usableHeight - Math.max(0, maxSlots - 1)) / Math.max(1, maxSlots)), 4, 9, 6);
     const top = 4 + slot * (barHeight + 1);
     const label = `${task.name} · ${task.start}${task.milestone ? '' : `〜${task.end}`}`;
+    const selectedClass = task.id === state.selectedTaskId ? 'is-selected' : '';
     if (task.milestone) {
-      return `<button class="macro-milestone color-${taskColor(task, state.project.categories)}" style="left:${left + Math.max(2, dayWidth / 2)}px;top:${Math.min(laneHeight - 10, top)}px" data-macro-task="${task.id}" title="${escapeHTML(label)}" aria-label="${escapeHTML(label)}"></button>`;
+      return `<button class="macro-milestone color-${taskColor(task, state.project.categories)} ${selectedClass}" style="left:${left + Math.max(2, dayWidth / 2)}px;top:${Math.min(laneHeight - 10, top)}px" data-macro-task="${task.id}" title="${escapeHTML(label)}" aria-label="${escapeHTML(label)}"></button>`;
     }
-    return `<button class="macro-task-bar color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}" style="left:${left}px;width:${width}px;height:${barHeight}px;top:${Math.min(laneHeight - barHeight - 3, top)}px" data-macro-task="${task.id}" title="${escapeHTML(label)}" aria-label="${escapeHTML(label)}"></button>`;
+    return `<button class="macro-task-bar color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''} ${selectedClass}" style="left:${left}px;width:${width}px;height:${barHeight}px;top:${Math.min(laneHeight - barHeight - 3, top)}px" data-macro-task="${task.id}" title="${escapeHTML(label)}" aria-label="${escapeHTML(label)}"></button>`;
   }
 
   function macroGroupRow(group, start, end, dayWidth, totalWidth, laneHeight) {
@@ -120,7 +113,7 @@
     root.dataset.macroOverview = MACRO_VERSION;
     root.innerHTML = `
       <section class="macro-label-panel">
-        <div class="macro-label-head"><strong>PROJECT SHAPE</strong><span>${tasks.length}件 → ${groups.length}レーン</span></div>
+        <div class="macro-label-head"><strong>全体</strong><span>${tasks.length}件 · ${groups.length}分類</span></div>
         <div id="macro-label-scroll" class="macro-label-scroll">${macroLabelRows(groups, laneHeight)}</div>
       </section>
       <section class="macro-timeline-panel">
@@ -183,20 +176,6 @@
     });
   }
 
-  const previousFitAll = fitAll;
-  fitAll = function semanticFitAll() {
-    const view = currentView();
-    if (view) view.overviewMacroMode = needsMacroOverview();
-    previousFitAll();
-    const next = currentView();
-    if (next) {
-      next.overviewMacroMode = needsMacroOverview();
-      state.storage.saveView(next);
-      renderWorkspace();
-      renderToolbarState();
-    }
-  };
-
   const previousRenderWorkspace = renderWorkspace;
   renderWorkspace = function semanticMacroRenderWorkspace() {
     const view = currentView();
@@ -230,15 +209,6 @@
       const task = state.project.tasks.find((item) => item.id === id);
       if (task) openModal('details', { task });
     });
-  }, true);
-
-  document.addEventListener('input', (event) => {
-    if (!currentView()?.overviewMacroMode) return;
-    if (event.target.id === 'ux-row-height' || event.target.id === 'ux-text-size') {
-      currentView().overviewMacroMode = false;
-      state.storage.saveView(currentView());
-      requestAnimationFrame(() => { renderWorkspace(); renderToolbarState(); });
-    }
   }, true);
 
   document.addEventListener('keydown', (event) => {
