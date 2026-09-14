@@ -182,7 +182,6 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .ux-row-density-bubble { background: var(--ink); color: var(--on-primary); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
 
 /* Macro / lens use the same hierarchy rather than a separate purple visual language. */
-.macro-density-strip { background: var(--surface-subtle); border-color: var(--line); }
 .macro-detail-lens { background: var(--surface); border-color: var(--line-strong); box-shadow: var(--shadow-md); border-radius: var(--radius-lg); }
 .macro-detail-lens .lens-kicker, .macro-detail-lens .lens-meta { color: var(--muted); }
 
