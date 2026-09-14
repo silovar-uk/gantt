@@ -70,16 +70,10 @@
 .row-menu-button { opacity: .45; }
 .task-row:hover .row-menu-button, .task-row.is-selected .row-menu-button { opacity: 1; }
 
-.ux-present-bar { min-height: 58px; display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 18px; padding: 8px 16px; background: #fff; }
-.ux-present-title { min-width: 0; display: flex; align-items: baseline; gap: 12px; }
-.ux-present-title strong { max-width: 55vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 17px; }
-.ux-present-title span, .ux-present-meta { color: #667085; font-size: 12px; }
-.ux-present-meta { display: flex; gap: 12px; }
-.ux-present-actions { display: flex; gap: 6px; }
+/* Present mode changes workspace behavior; the HUD itself is owned by v13-sage-polish.css. */
 body.is-present-mode .topbar,
 body.is-present-mode .toolbar,
 body.is-present-mode .condition-bar { display: none !important; }
-body.is-present-mode .ux-present-bar { display: grid; }
 body.is-present-mode .task-panel { max-width: 290px; overflow: hidden; }
 body.is-present-mode .task-head,
 body.is-present-mode .task-row { grid-template-columns: 0 minmax(150px,1fr) 90px 0 0 0; }
@@ -99,8 +93,8 @@ body.is-present-mode .ux-resize-handle { display: none; }
 @media (max-width: 1199px) {
   .ux-ai-json { display: none; }
   .workspace.mode-split .task-panel { max-width: 300px; }
-  .workspace.mode-split .task-head, .workspace.mode-split .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
-  .ux-present-title span { display: none; }
+  .workspace.mode-split .task-head,
+  .workspace.mode-split .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
 }
 
 @media (max-width: 767px) {
@@ -121,12 +115,6 @@ body.is-present-mode .ux-resize-handle { display: none; }
   .ux-zoom button { width: 44px; }
   .ux-more-wrap { order: 3; }
   .ux-more-wrap > .icon-button { min-height: 44px; width: 44px; }
-  .ux-present-bar { min-height: 64px; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 8px 10px; }
-  .ux-present-title { display: grid; gap: 2px; }
-  .ux-present-title strong { max-width: 58vw; font-size: 15px; }
-  .ux-present-title span { display: block; font-size: 10px; }
-  .ux-present-meta { display: none; }
-  .ux-present-actions .button-secondary { display: none; }
   body.is-present-mode .mobile-timeline-labels { flex-basis: 112px; width: 112px; }
   .ux-resize-handle { width: 12px; opacity: .5; }
 }
