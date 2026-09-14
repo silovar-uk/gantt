@@ -35,6 +35,7 @@ jobs:
           node --check scripts/public-e2e-project-surface.mjs
           node --check scripts/public-e2e-ui-polish.mjs
           node --check scripts/public-e2e-one-overview.mjs
+          node --check scripts/public-e2e-project-rhythm.mjs
           node scripts/validate-css-architecture.mjs
       - name: Wait for matching public deployment
         shell: bash
@@ -47,13 +48,13 @@ jobs:
               && grep -q 'assets/v7-overview-density.css?v=20260914-density3' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v9-macro-overview.css?v=20260914-macro4' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v11-project-surface.css?v=20260914-surface3' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v12-time-compass.css?v=20260914-compass4' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v12-time-compass.css?v=20260914-compass5' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v13-sage-polish.css?v=20260914-sage4' /tmp/live-index.html 2>/dev/null \
               && ! grep -q 'assets/v8-tighter-rows.css' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/13-overview-density.js?v=20260914-overview1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/15-macro-overview.js?v=20260914-macro3' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/17-project-surface.js?v=20260914-surface2' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass3' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass4' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/19-ui-polish.js?v=20260914-sage3' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
@@ -61,24 +62,28 @@ jobs:
             sleep 3
           done
           if [ "$matched" -ne 1 ]; then
-            echo 'Matching One Overview deployment did not become public in time' >&2
+            echo 'Matching Project Rhythm deployment did not become public in time' >&2
             exit 1
           fi
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v7-overview-density.css?v=20260914-density3' -o /tmp/v7-density.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v9-macro-overview.css?v=20260914-macro4' -o /tmp/v9-macro.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260914-surface3' -o /tmp/v11-surface.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260914-compass4' -o /tmp/v12-compass.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260914-compass5' -o /tmp/v12-compass.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260914-sage4' -o /tmp/v13-sage.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/13-overview-density.js?v=20260914-overview1' -o /tmp/v13-overview.js
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/15-macro-overview.js?v=20260914-macro3' -o /tmp/v15-macro.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/18-time-compass.js?v=20260914-compass4' -o /tmp/v18-compass.js
           grep -q 'overview-density owner' /tmp/v7-density.css
           grep -q 'semantic macro overview' /tmp/v9-macro.css
           grep -q 'project surface layout' /tmp/v11-surface.css
           grep -q 'Time Compass visual owner' /tmp/v12-compass.css
+          grep -q 'time-compass-rhythm-window' /tmp/v12-compass.css
           grep -q 'Present is a HUD' /tmp/v13-sage.css
           grep -q "OVERVIEW_MODEL_VERSION = '20260914-overview1'" /tmp/v13-overview.js
           grep -q "MACRO_VERSION = '20260914-macro3'" /tmp/v15-macro.js
           grep -q '<strong>全体</strong>' /tmp/v15-macro.js
+          grep -q "RHYTHM_VERSION = '20260914-rhythm1'" /tmp/v18-compass.js
+          grep -q 'deriveRhythmLandmarks' /tmp/v18-compass.js
           if grep -q -E 'previousFitAll|semanticFitAll|needsMacroOverview' /tmp/v15-macro.js; then
             echo 'Macro renderer regained Overview decision logic' >&2
             exit 1
@@ -123,3 +128,4 @@ jobs:
           node scripts/public-e2e-project-surface.mjs
           node scripts/public-e2e-ui-polish.mjs
           node scripts/public-e2e-one-overview.mjs
+          node scripts/public-e2e-project-rhythm.mjs
