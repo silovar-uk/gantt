@@ -51,45 +51,12 @@
 
   const isWhole = (visible) => visible.widthRatio >= FULL_COVERAGE && visible.leftRatio <= .035 && visible.rightRatio >= .965;
 
-  function ensureRowDock(ribbon) {
-    const nav = ribbon.querySelector('.project-ribbon-nav');
-    if (!nav) return;
-    let dock = nav.querySelector('#ux-row-density-dock');
-    if (!dock) {
-      dock = document.createElement('div');
-      dock.id = 'ux-row-density-dock';
-      dock.innerHTML = '<div id="ux-row-density-bubble" class="ux-row-density-bubble" hidden></div>';
-      nav.prepend(dock);
-    }
-    const input = document.querySelector('#ux-row-height');
-    const control = input?.closest('.ux-density-control');
-    if (control && control.parentElement !== dock) {
-      control.classList.add('ux-row-density-control');
-      dock.append(control);
-    }
-    syncRowDock();
-  }
-
   function visibleRowCapacity(rowHeight) {
     const workspace = document.querySelector('#workspace');
     if (!workspace) return 0;
     const head = workspace.querySelector('.task-head, .macro-label-head');
     const available = Math.max(0, workspace.clientHeight - (head?.offsetHeight || 30));
     return Math.max(1, Math.floor(available / Math.max(1, rowHeight)));
-  }
-
-  function syncRowDock() {
-    const dock = document.querySelector('#ux-row-density-dock');
-    const input = document.querySelector('#ux-row-height');
-    const output = document.querySelector('#ux-row-height-value');
-    if (!dock || !input) return;
-    const rowHeight = clamp(view()?.rowHeight, ROW_MIN, ROW_MAX);
-    input.min = String(ROW_MIN);
-    input.max = String(ROW_MAX);
-    if (document.activeElement !== input) input.value = String(rowHeight || 24);
-    if (output) output.textContent = String(rowHeight || 24);
-    const hide = breakpoint() === 'mobile' || document.body.dataset.surfaceLevel === 'shape' || document.body.classList.contains('is-present-mode');
-    dock.hidden = hide;
   }
 
   function showRowBubble() {
@@ -108,6 +75,51 @@
       const bubble = document.querySelector('#ux-row-density-bubble');
       if (bubble) bubble.hidden = true;
     }, 700);
+  }
+
+  function bindRowInput(input) {
+    if (!input || input.dataset.rowDensityBound === COMPASS_VERSION) return;
+    input.dataset.rowDensityBound = COMPASS_VERSION;
+    input.addEventListener('pointerdown', showRowBubble);
+    input.addEventListener('pointermove', (event) => { if (event.buttons) showRowBubble(); });
+    input.addEventListener('pointerup', () => { showRowBubble(); hideRowBubbleSoon(); });
+    input.addEventListener('focus', showRowBubble);
+    input.addEventListener('blur', hideRowBubbleSoon);
+    input.addEventListener('keydown', () => requestAnimationFrame(showRowBubble));
+  }
+
+  function ensureRowDock(ribbon) {
+    const nav = ribbon.querySelector('.project-ribbon-nav');
+    if (!nav) return;
+    let dock = nav.querySelector('#ux-row-density-dock');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'ux-row-density-dock';
+      dock.innerHTML = '<div id="ux-row-density-bubble" class="ux-row-density-bubble" hidden></div>';
+      nav.prepend(dock);
+    }
+    const input = document.querySelector('#ux-row-height');
+    const control = input?.closest('.ux-density-control');
+    if (control && control.parentElement !== dock) {
+      control.classList.add('ux-row-density-control');
+      dock.append(control);
+    }
+    bindRowInput(input);
+    syncRowDock();
+  }
+
+  function syncRowDock() {
+    const dock = document.querySelector('#ux-row-density-dock');
+    const input = document.querySelector('#ux-row-height');
+    const output = document.querySelector('#ux-row-height-value');
+    if (!dock || !input) return;
+    const rowHeight = clamp(view()?.rowHeight, ROW_MIN, ROW_MAX) || 24;
+    input.min = String(ROW_MIN);
+    input.max = String(ROW_MAX);
+    if (document.activeElement !== input) input.value = String(rowHeight);
+    if (output) output.textContent = String(rowHeight);
+    const hide = breakpoint() === 'mobile' || document.body.dataset.surfaceLevel === 'shape' || document.body.classList.contains('is-present-mode');
+    dock.hidden = hide;
   }
 
   function ensureCompassDOM() {
@@ -143,6 +155,7 @@
     if (oldMilestones) oldMilestones.hidden = true;
 
     ensureRowDock(ribbon);
+    bindRail(rail);
     bindTrack(track);
     bindScroller();
     return { ribbon, track, rail };
@@ -237,11 +250,9 @@
       track.dataset.staticSignature = signature;
       renderStatic(track, range);
     }
-
     ribbon.classList.toggle('is-compass-whole', whole);
     ribbon.classList.toggle('is-compass-nav', !whole);
     defaultAnnotation(track, range);
-
     const viewport = document.querySelector('#project-ribbon-viewport');
     if (viewport) {
       viewport.hidden = whole;
@@ -250,7 +261,6 @@
         viewport.style.width = `${(Math.min(1 - visible.leftRatio, visible.widthRatio) * 100).toFixed(3)}%`;
       }
     }
-
     syncSemantics(track, active, whole, visible);
     syncRowDock();
   }
@@ -269,8 +279,7 @@
     const active = list.filter((task) => task.start && task.end && task.start <= date && task.end >= date);
     const starts = list.filter((task) => task.start === date);
     const ends = list.filter((task) => task.end === date);
-    const milestones = list.filter((task) => task.milestone && task.start === date);
-    return { active, starts, ends, milestones };
+    return { active, starts, ends };
   }
 
   function nearestMilestone(rail, clientX) {
@@ -355,21 +364,19 @@
     centerDate(date);
   }
 
+  function bindRail(rail) {
+    if (!rail || rail.dataset.timeCompassRailBound === COMPASS_VERSION) return;
+    rail.dataset.timeCompassRailBound = COMPASS_VERSION;
+    rail.addEventListener('pointermove', (event) => {
+      if (event.pointerType === 'touch') return;
+      updateHover(rail, event.clientX);
+    });
+    rail.addEventListener('pointerleave', () => clearHover(rail));
+  }
+
   function bindTrack(track) {
     if (track.dataset.timeCompassBound === COMPASS_VERSION) return;
     track.dataset.timeCompassBound = COMPASS_VERSION;
-
-    track.addEventListener('pointermove', (event) => {
-      const rail = event.target.closest('.time-compass-rail');
-      if (!rail || event.pointerType === 'touch') return;
-      updateHover(rail, event.clientX);
-    }, true);
-
-    track.addEventListener('pointerleave', () => {
-      const rail = track.querySelector('.time-compass-rail');
-      if (rail) clearHover(rail);
-    }, true);
-
     track.addEventListener('pointerdown', (event) => {
       if (event.target.closest('.time-compass-meta')) {
         event.stopImmediatePropagation();
@@ -388,7 +395,6 @@
         event.preventDefault();
       }
     }, true);
-
     track.addEventListener('wheel', (event) => {
       if (!event.ctrlKey && !event.metaKey) return;
       const rail = event.target.closest('.time-compass-rail') || track.querySelector('.time-compass-rail');
@@ -409,23 +415,6 @@
       compassFrame = requestAnimationFrame(syncCompass);
     }, { passive: true });
   }
-
-  document.addEventListener('input', (event) => {
-    if (event.target.id !== 'ux-row-height') return;
-    showRowBubble();
-    requestAnimationFrame(syncRowDock);
-  });
-  document.addEventListener('change', (event) => {
-    if (event.target.id !== 'ux-row-height') return;
-    showRowBubble();
-    hideRowBubbleSoon();
-  });
-  document.addEventListener('focusin', (event) => {
-    if (event.target.id === 'ux-row-height') showRowBubble();
-  });
-  document.addEventListener('focusout', (event) => {
-    if (event.target.id === 'ux-row-height') hideRowBubbleSoon();
-  });
 
   const observer = new MutationObserver(() => {
     cancelAnimationFrame(compassFrame);
