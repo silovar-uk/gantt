@@ -1,6 +1,5 @@
 (() => {
-  const SURFACE_VERSION = '20260914-surface1';
-  const MAX_BUCKETS = 96;
+  const SURFACE_VERSION = '20260914-surface2';
   let ribbonFrame = 0;
   let dragState = null;
 
@@ -25,6 +24,15 @@
     return document.querySelector('#macro-timeline-scroll') || document.querySelector('#timeline-scroll');
   }
 
+  function syncCompass() {
+    globalThis.ganttTimeCompassSync?.();
+  }
+
+  function scheduleCompassSync() {
+    cancelAnimationFrame(ribbonFrame);
+    ribbonFrame = requestAnimationFrame(syncCompass);
+  }
+
   function surfaceLevel() {
     if (document.querySelector('.workspace.mode-macro')) return 'shape';
     const dayWidth = Number(currentView()?.dayWidth || 0);
@@ -45,9 +53,7 @@
       ribbon.className = 'project-ribbon';
       ribbon.setAttribute('aria-label', 'プロジェクト全体ナビゲーション');
       ribbon.innerHTML = `
-        <div id="project-ribbon-track" class="project-ribbon-track" role="slider" tabindex="0" aria-label="プロジェクト全体の中で表示位置を移動" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div class="project-ribbon-activity" aria-hidden="true"></div>
-          <div class="project-ribbon-milestones" aria-hidden="true"></div>
+        <div id="project-ribbon-track" class="project-ribbon-track" tabindex="-1" aria-label="プロジェクト全体">
           <div class="project-ribbon-today" aria-hidden="true" hidden></div>
           <div id="project-ribbon-viewport" class="project-ribbon-viewport" aria-hidden="true"></div>
         </div>
@@ -76,53 +82,6 @@
     if (controls.parentElement !== nav) nav.append(controls);
   }
 
-  function bucketActivity(tasks, range) {
-    const bucketCount = Math.max(1, Math.min(MAX_BUCKETS, range.days));
-    const values = new Array(bucketCount).fill(0);
-    tasks.forEach((task) => {
-      if (!task.start || !task.end) return;
-      const a = clampSurface(Math.floor((diffDays(range.start, task.start) / Math.max(1, range.days)) * bucketCount), 0, bucketCount - 1);
-      const b = clampSurface(Math.floor((diffDays(range.start, task.end) / Math.max(1, range.days)) * bucketCount), 0, bucketCount - 1);
-      for (let index = Math.min(a, b); index <= Math.max(a, b); index += 1) values[index] += 1;
-    });
-    return values;
-  }
-
-  function renderActivity(ribbon, range) {
-    const tasks = state.project.tasks || [];
-    const activity = ribbon.querySelector('.project-ribbon-activity');
-    const milestones = ribbon.querySelector('.project-ribbon-milestones');
-    if (!activity || !milestones) return;
-    const signature = `${state.project.revision || 0}:${tasks.length}:${range.start}:${range.end}`;
-    if (ribbon.dataset.signature === signature) return;
-    ribbon.dataset.signature = signature;
-
-    const values = bucketActivity(tasks, range);
-    const max = Math.max(1, ...values);
-    activity.innerHTML = values.map((value) => {
-      const ratio = value / max;
-      return `<i style="--ribbon-activity:${ratio.toFixed(3)}" title="同時進行 ${value}件"></i>`;
-    }).join('');
-
-    milestones.innerHTML = tasks.filter((task) => task.milestone).map((task) => {
-      const offset = diffDays(range.start, task.start);
-      const ratio = range.days <= 1 ? 0.5 : clampSurface(offset / (range.days - 1), 0, 1);
-      return `<i style="left:${(ratio * 100).toFixed(3)}%" title="${escapeHTML(task.name)} · ${task.start}"></i>`;
-    }).join('');
-
-    const today = todayISO();
-    const todayMarker = ribbon.querySelector('.project-ribbon-today');
-    if (todayMarker) {
-      const inside = today >= range.start && today <= range.end;
-      todayMarker.hidden = !inside;
-      if (inside) {
-        const ratio = range.days <= 1 ? 0.5 : clampSurface(diffDays(range.start, today) / (range.days - 1), 0, 1);
-        todayMarker.style.left = `${(ratio * 100).toFixed(3)}%`;
-        todayMarker.title = `今日 ${today}`;
-      }
-    }
-  }
-
   function visibleRange(range) {
     const view = currentView();
     const scroller = activeScroller();
@@ -143,49 +102,28 @@
     };
   }
 
-  function updateRibbonViewport() {
-    const ribbon = document.querySelector('#project-ribbon');
-    const viewport = document.querySelector('#project-ribbon-viewport');
-    const track = document.querySelector('#project-ribbon-track');
-    const range = projectRange();
-    if (!ribbon || !viewport || !track || !range || ribbon.hidden) return;
-    const visible = visibleRange(range);
-    viewport.style.left = `${(visible.leftRatio * 100).toFixed(3)}%`;
-    viewport.style.width = `${(Math.min(1 - visible.leftRatio, visible.widthRatio) * 100).toFixed(3)}%`;
-    track.setAttribute('aria-valuenow', String(Math.round(visible.centerRatio * 100)));
-    track.setAttribute('aria-valuetext', `${visible.start} から ${visible.end}`);
-    track.title = `${range.start}〜${range.end} · 表示中 ${visible.start}〜${visible.end}\nクリック/ドラッグで移動 · Enterで全体表示`;
-  }
-
   function renderRibbon() {
     const ribbon = ensureRibbon();
     const range = projectRange();
     if (!ribbon) return;
-    if (!range || !(state.project.tasks || []).length) {
+    if (!range || !(state.project.tasks || []).length || breakpoint() === 'mobile') {
       ribbon.hidden = true;
-      return;
-    }
-    if (breakpoint() === 'mobile') {
-      ribbon.hidden = true;
+      syncSurfaceLevel();
       return;
     }
     ribbon.hidden = false;
-    renderActivity(ribbon, range);
     syncSurfaceLevel();
     requestAnimationFrame(() => {
       bindScroller();
-      updateRibbonViewport();
+      syncCompass();
     });
   }
 
   function bindScroller() {
     const scroller = activeScroller();
-    if (!scroller || scroller.dataset.projectRibbonBound) return;
-    scroller.dataset.projectRibbonBound = '1';
-    scroller.addEventListener('scroll', () => {
-      cancelAnimationFrame(ribbonFrame);
-      ribbonFrame = requestAnimationFrame(updateRibbonViewport);
-    }, { passive: true });
+    if (!scroller || scroller.dataset.projectRibbonBound === SURFACE_VERSION) return;
+    scroller.dataset.projectRibbonBound = SURFACE_VERSION;
+    scroller.addEventListener('scroll', scheduleCompassSync, { passive: true });
   }
 
   function navigateToRatio(ratio, { allowShift = true } = {}) {
@@ -201,7 +139,7 @@
     if (target >= view.start && target <= view.end && scroller) {
       const desired = diffDays(view.start, target) * dayWidth - scroller.clientWidth / 2;
       scroller.scrollLeft = clampSurface(desired, 0, Math.max(0, scroller.scrollWidth - scroller.clientWidth));
-      updateRibbonViewport();
+      scheduleCompassSync();
       return;
     }
 
@@ -220,7 +158,7 @@
       if (!nextScroller) return;
       const desired = diffDays(view.start, target) * dayWidth - nextScroller.clientWidth / 2;
       nextScroller.scrollLeft = clampSurface(desired, 0, Math.max(0, nextScroller.scrollWidth - nextScroller.clientWidth));
-      updateRibbonViewport();
+      syncCompass();
     });
   }
 
@@ -242,7 +180,7 @@
       if (event.button !== 0) return;
       const viewport = document.querySelector('#project-ribbon-viewport');
       const viewportRect = viewport?.getBoundingClientRect();
-      const insideViewport = !!viewportRect && event.clientX >= viewportRect.left && event.clientX <= viewportRect.right;
+      const insideViewport = !!viewportRect && !viewport.hidden && event.clientX >= viewportRect.left && event.clientX <= viewportRect.right;
       dragState = {
         pointerId: event.pointerId,
         startX: event.clientX,
@@ -321,7 +259,7 @@
     requestAnimationFrame(() => {
       const next = document.querySelector('#macro-timeline-scroll');
       if (next) next.scrollLeft = Math.max(0, anchorDay * nextWidth - next.clientWidth / 2);
-      updateRibbonViewport();
+      syncCompass();
     });
     return true;
   }
