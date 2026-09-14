@@ -28,7 +28,7 @@ try {
 
   assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
   assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '20');
-  assert.equal(await page.locator('body').getAttribute('data-tight-rows'), '20260913-tight1');
+  assert.equal(await page.locator('body').getAttribute('data-density-version'), '20260914-density2');
 
   await page.locator('[data-action="add"]').first().click();
   await page.locator('#task-form [name="name"]').fill('Tight Row E2E');
@@ -47,7 +47,7 @@ try {
   await page.locator('.modal-layer').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
   await page.locator('#setting-row-height').fill('20');
-  await page.locator('[data-tight-action="apply-display-settings"]').click();
+  await page.locator('[data-density-action="apply-display-settings"]').click();
   assert.equal(await page.locator('.modal-layer').count(), 0);
 
   const listGeometry = await page.locator(`[data-task-row="${id}"]`).evaluate((el) => ({
