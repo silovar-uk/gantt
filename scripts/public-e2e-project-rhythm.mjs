@@ -22,13 +22,15 @@ async function waitSaved(page) {
   await page.waitForFunction(() => (document.querySelector('#save-status')?.textContent || '').includes('保存済み'), null, { timeout: 10000 });
 }
 
-async function importProject(page, data) {
+async function importProject(page, data, { mode = 'replace' } = {}) {
   await page.locator('[data-toggle-menu="io-menu"]').click();
   await page.locator('#io-menu [data-action="import"]').click();
   await page.locator('.modal-layer').waitFor({ state: 'visible' });
   await page.locator('#import-input').fill(JSON.stringify(data));
   await page.locator('[data-action="validate-import"]').click();
   await page.locator('.validation-ok').waitFor({ state: 'visible' });
+  const modeOption = page.locator(`input[name="import-mode"][value="${mode}"]`);
+  if (await modeOption.count()) await modeOption.check();
   await page.locator('[data-action="apply-import"]').click();
   await waitSaved(page);
 }
@@ -122,6 +124,7 @@ try {
   assert.equal(await page.evaluate(() => state.project.viewSettings.overviewAutoFit), false);
 
   // A flat project must not invent a meaningful peak, even if multiple dates fall into the same coarse bucket.
+  // Import mode is explicitly replace so no concentration tasks from the prior fixture survive.
   await importProject(page, flatHandoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.waitForTimeout(100);
