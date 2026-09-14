@@ -79,7 +79,7 @@ try {
   assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
   await page.locator('#setting-row-height').fill('24');
   await page.locator('#setting-text-size').fill('10');
-  await page.locator('[data-tight-action="apply-display-settings"]').click();
+  await page.locator('[data-density-action="apply-display-settings"]').click();
   const rowGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
   assert.ok(rowGeometry.height <= 25 && rowGeometry.height >= 23, `row height is not compact: ${JSON.stringify(rowGeometry)}`);
   assert.equal(rowGeometry.fontSize, '10px');
@@ -140,7 +140,7 @@ try {
   await page.locator('#setting-list-width').fill('420');
   await page.locator('#setting-row-height').fill('24');
   await page.locator('#setting-text-size').fill('10');
-  await page.locator('[data-tight-action="apply-display-settings"]').click();
+  await page.locator('[data-density-action="apply-display-settings"]').click();
   assert.equal(await page.locator('.modal-layer').count(), 0);
   task = await taskRow(page, 'UX E2E タスク');
   const settingsGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
