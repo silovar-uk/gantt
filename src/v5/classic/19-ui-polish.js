@@ -86,23 +86,6 @@
     if (next && next !== current) busy.style.backgroundImage = next;
   }
 
-  function syncPresentQuietState() {
-    const active = document.body.classList.contains('is-present-mode');
-    if (!active) {
-      clearTimeout(quietTimer);
-      document.body.classList.remove('is-present-hud-quiet');
-      return;
-    }
-    polishPresentBar();
-    document.body.classList.remove('is-present-hud-quiet');
-    clearTimeout(quietTimer);
-    quietTimer = setTimeout(() => {
-      if (document.body.classList.contains('is-present-mode') && !document.querySelector('#ux-present-bar:hover, #ux-present-bar:focus-within')) {
-        document.body.classList.add('is-present-hud-quiet');
-      }
-    }, 1600);
-  }
-
   function applyPolish() {
     iconify();
     recolorCompass();
@@ -110,30 +93,39 @@
     document.body.dataset.uiPolish = POLISH_VERSION;
   }
 
+  function clearQuiet() {
+    clearTimeout(quietTimer);
+    document.body.classList.remove('is-present-hud-quiet');
+  }
+
   document.addEventListener('pointermove', (event) => {
     if (!document.body.classList.contains('is-present-mode')) return;
     if (event.target.closest('#ux-present-bar')) {
-      clearTimeout(quietTimer);
-      document.body.classList.remove('is-present-hud-quiet');
+      clearQuiet();
       return;
     }
     if (event.target.closest('#workspace')) {
       clearTimeout(quietTimer);
-      quietTimer = setTimeout(() => document.body.classList.add('is-present-hud-quiet'), 650);
+      quietTimer = setTimeout(() => {
+        if (document.body.classList.contains('is-present-mode')) document.body.classList.add('is-present-hud-quiet');
+      }, 650);
     }
   }, { passive: true });
 
   document.addEventListener('focusin', (event) => {
-    if (event.target.closest('#ux-present-bar')) {
-      clearTimeout(quietTimer);
-      document.body.classList.remove('is-present-hud-quiet');
-    }
+    if (event.target.closest('#ux-present-bar')) clearQuiet();
   });
 
-  const bodyObserver = new MutationObserver((records) => {
-    if (records.some((record) => record.type === 'attributes' && record.attributeName === 'class')) syncPresentQuietState();
+  document.addEventListener('click', (event) => {
+    const action = event.target.closest('[data-ux-action]')?.dataset.uxAction;
+    if (action === 'present') {
+      clearQuiet();
+      setTimeout(applyPolish, 0);
+      setTimeout(applyPolish, 60);
+    } else if (action === 'exit-present') {
+      clearQuiet();
+    }
   });
-  bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   const appObserver = new MutationObserver(() => {
     cancelAnimationFrame(frame);
