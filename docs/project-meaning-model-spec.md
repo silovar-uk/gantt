@@ -187,19 +187,27 @@ After focusing a rhythm window:
 
 Source: existing project tasks only.
 
-1. Reuse the Time Compass 48-bucket activity model.
-2. Each task increments every bucket intersected by its `[start, end]` span.
-3. Do not derive rhythm landmarks when:
+The algorithm deliberately separates **candidate discovery** from **truth validation** so bucket compression can never fabricate concurrency.
+
+1. Reuse the Time Compass 48-bucket activity model only to discover candidate concentration regions.
+2. Each task increments every coarse bucket intersected by its `[start, end]` span.
+3. Do not derive candidates when:
    - fewer than 8 tasks, or
    - maximum bucket activity < 3, or
-   - activity is effectively flat.
+   - coarse activity is effectively flat.
 4. Compute median bucket activity.
-5. Threshold = max(`3`, `ceil(max * 0.68)`, `floor(median) + 1`).
-6. Find contiguous runs whose bucket value >= threshold.
-7. Convert each run back to real start/end dates.
-8. Score each run by peak concurrency first, average density second.
-9. Keep at most three windows.
-10. First window is `primary`.
+5. Candidate threshold = max(`3`, `ceil(bucketMax * 0.68)`, `floor(bucketMedian) + 1`).
+6. Find contiguous bucket runs whose value >= threshold.
+7. Convert each candidate run back to real start/end dates.
+8. For each candidate, run an exact inclusive interval sweep over the real task dates:
+   - add `+1` at each clipped task start;
+   - add `-1` on the day after each clipped task end;
+   - sweep sorted dates to obtain the true maximum concurrent task count and exact peak date.
+9. Drop any candidate whose **exact** concurrency peak is < 3. This prevents non-overlapping tasks that merely share a coarse bucket from becoming a false landmark.
+10. Score surviving windows by exact peak concurrency first and coarse average density second.
+11. Keep at most three windows.
+12. First window is `primary`.
+13. All UI labels (`最大N件`) and focus anchors use the exact peak count/date, never the bucket approximation.
 
 This is derived state only; it is never persisted.
 
@@ -209,6 +217,7 @@ This is derived state only; it is never persisted.
 
 `src/v5/classic/18-time-compass.js`
 - owner of derived rhythm windows
+- coarse candidate discovery + exact-overlap validation
 - render/interact/announce rhythm landmarks
 - distinguish explicit deadlines in existing milestone rendering if present
 
@@ -230,6 +239,7 @@ This is derived state only; it is never persisted.
 
 `scripts/public-e2e-project-rhythm.mjs`
 - objective derivation and interaction checks
+- explicit regression guard that flat, non-overlapping schedules produce zero rhythm windows even when coarse buckets collide
 
 `docs/project-meaning-model-spec.md`
 - this specification
@@ -284,7 +294,10 @@ Existing `overviewAutoFit` is set to false only after rhythm-window activation b
 ## 13. Function specification
 
 ### `deriveRhythmLandmarks(range) -> Landmark[]`
-Pure derivation from current tasks and the existing bucket model.
+Uses coarse buckets for candidate discovery, validates each candidate with exact task-overlap counts, and returns only truthful concentration windows.
+
+### `exactPeakForRange(start, end) -> { peak, peakDate }`
+Sweeps exact inclusive task intervals in a candidate date range. This function is authoritative for the `最大N件` value and the date used as the focus anchor.
 
 ### `renderRhythmLandmarks(track, range) -> void`
 Writes up to three buttons into `.time-compass-rhythm` and stores primary summary data on the track for default annotation.
@@ -296,7 +309,7 @@ Returns `集中 M/D–M/D · 最大N件`.
 Returns a rhythm window under/near the pointer.
 
 ### `focusRhythmRange(start, end, peakDate) -> void`
-Chooses a dayWidth sufficient to make the window legible, disables auto-fit, renders, then centers on the peak date.
+Chooses a dayWidth sufficient to make the window legible, disables auto-fit, renders, then centers on the exact peak date.
 
 ## 14. Event specification
 
@@ -330,7 +343,7 @@ Chooses a dayWidth sufficient to make the window legible, disables auto-fit, ren
 ## 17. Accessibility
 
 - rhythm windows are native buttons
-- each has an explicit Japanese accessible name containing dates + peak count
+- each has an explicit Japanese accessible name containing dates + exact peak count
 - keyboard Enter/Space activates
 - focus-visible does not rely only on color
 - no animation required
@@ -346,8 +359,9 @@ Task schema: **NO CHANGE**
 
 ## 19. Performance
 
-- reuse maximum 48 buckets
-- complexity is O(tasks × buckets), capped by 1000 × 48
+- candidate discovery reuses maximum 48 buckets: O(tasks × 48), capped by 1000 × 48
+- exact validation runs only for coarse candidate windows and scans task interval events; practical cost remains bounded by candidate count and task count
+- keep at most three final landmarks
 - derive only when static Time Compass signature changes
 - no MutationObserver
 - no scroll-time recomputation of rhythm windows
@@ -357,8 +371,9 @@ Task schema: **NO CHANGE**
 - 0 tasks: no Compass / no rhythm
 - <8 tasks: no rhythm landmarks
 - flat activity: no rhythm landmarks
+- multiple non-overlapping tasks compressed into one coarse bucket: exact sweep rejects the false peak
 - one giant task: no false “peak”
-- 1000 tasks: still bucket bounded
+- 1000 tasks: coarse discovery remains bucket bounded; exact validation is candidate-limited
 - >730-day project: Compass can derive across full project range; clicking focuses via dayWidth rather than changing task data
 - selected task: unchanged
 - Lens open: unchanged
@@ -369,16 +384,17 @@ Task schema: **NO CHANGE**
 
 1. No new primary control or panel.
 2. Time Compass height stays 36px ±1px.
-3. A flat/even project renders zero rhythm windows.
+3. A flat/even project renders zero rhythm windows, including schedules that collide only because of bucket compression.
 4. A clearly clustered project renders 1–3 rhythm windows.
-5. Whole-state default annotation names the primary concentration window when one exists.
-6. Clicking the primary window sets `overviewAutoFit = false` and moves the visible time context toward the peak.
-7. Row height does not change on rhythm activation.
-8. Milestones remain clickable.
-9. Existing five UX suites + One Overview suite remain green.
-10. New Project Rhythm suite is green on public GitHub Pages.
-11. 390px mobile has no horizontal overflow.
-12. Storage and AI JSON contracts remain byte/schema compatible.
+5. `最大N件` equals true same-date concurrency, not bucket occupancy.
+6. Whole-state default annotation names the primary concentration window when one exists.
+7. Clicking the primary window sets `overviewAutoFit = false` and moves the visible time context toward the exact peak date.
+8. Row height does not change on rhythm activation.
+9. Milestones remain clickable.
+10. Existing five UX suites + One Overview suite remain green.
+11. New Project Rhythm suite is green on public GitHub Pages.
+12. 390px mobile has no horizontal overflow.
+13. Storage and AI JSON contracts remain byte/schema compatible.
 
 ## 22. Rollback
 

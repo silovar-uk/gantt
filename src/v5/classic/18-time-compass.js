@@ -1,6 +1,6 @@
 (() => {
-  const COMPASS_VERSION = '20260914-compass4';
-  const RHYTHM_VERSION = '20260914-rhythm1';
+  const COMPASS_VERSION = '20260914-compass5';
+  const RHYTHM_VERSION = '20260914-rhythm2';
   const FULL_COVERAGE = 0.94;
   const BUSY_BUCKETS = 48;
   const RHYTHM_MAX_WINDOWS = 3;
@@ -196,6 +196,30 @@
     return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
   }
 
+  function exactPeakForRange(start, end) {
+    const deltas = new Map();
+    tasks().forEach((task) => {
+      if (!task.start || !task.end || task.end < start || task.start > end) return;
+      const clippedStart = task.start < start ? start : task.start;
+      const clippedEnd = task.end > end ? end : task.end;
+      deltas.set(clippedStart, (deltas.get(clippedStart) || 0) + 1);
+      const afterEnd = addDays(clippedEnd, 1);
+      if (afterEnd) deltas.set(afterEnd, (deltas.get(afterEnd) || 0) - 1);
+    });
+
+    let active = 0;
+    let peak = 0;
+    let peakDate = start;
+    [...deltas.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([date, delta]) => {
+      active += delta;
+      if (date <= end && active > peak) {
+        peak = active;
+        peakDate = date;
+      }
+    });
+    return { peak, peakDate };
+  }
+
   function deriveRhythmLandmarks(range) {
     const list = tasks();
     if (!range || list.length < RHYTHM_MIN_TASKS) return [];
@@ -213,20 +237,22 @@
       if ((!active || index === values.length) && startIndex >= 0) {
         const endIndex = index - 1;
         const slice = values.slice(startIndex, endIndex + 1);
-        const peak = Math.max(...slice);
-        const localPeak = slice.indexOf(peak) + startIndex;
         const average = slice.reduce((sum, value) => sum + value, 0) / slice.length;
         const startOffset = Math.floor((startIndex / values.length) * range.days);
         const endOffset = Math.min(range.days - 1, Math.max(startOffset, Math.ceil(((endIndex + 1) / values.length) * range.days) - 1));
-        const peakOffset = Math.min(range.days - 1, Math.max(0, Math.round(((localPeak + .5) / values.length) * Math.max(0, range.days - 1))));
-        segments.push({
-          start: addDays(range.start, startOffset),
-          end: addDays(range.start, endOffset),
-          peakDate: addDays(range.start, peakOffset),
-          peak,
-          average,
-          score: peak * 100 + average,
-        });
+        const candidateStart = addDays(range.start, startOffset);
+        const candidateEnd = addDays(range.start, endOffset);
+        const exact = exactPeakForRange(candidateStart, candidateEnd);
+        if (exact.peak >= 3) {
+          segments.push({
+            start: candidateStart,
+            end: candidateEnd,
+            peakDate: exact.peakDate,
+            peak: exact.peak,
+            average,
+            score: exact.peak * 100 + average,
+          });
+        }
         startIndex = -1;
       }
     }

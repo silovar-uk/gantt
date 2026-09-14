@@ -76,7 +76,7 @@ try {
   const { page } = desktop;
 
   assert.equal(await page.evaluate(() => typeof globalThis.ganttProjectRhythm?.derive), 'function');
-  assert.equal(await page.locator('body').getAttribute('data-project-rhythm-version'), '20260914-rhythm1');
+  assert.equal(await page.locator('body').getAttribute('data-project-rhythm-version'), '20260914-rhythm2');
 
   await importProject(page, clusteredHandoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
@@ -121,7 +121,7 @@ try {
   await page.waitForTimeout(100);
   assert.equal(await page.evaluate(() => state.project.viewSettings.overviewAutoFit), false);
 
-  // A flat project must not invent a meaningful peak.
+  // A flat project must not invent a meaningful peak, even if multiple dates fall into the same coarse bucket.
   await importProject(page, flatHandoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.waitForTimeout(100);
