@@ -59,7 +59,7 @@ try {
   await importProject(page, handoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass3');
+  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass4');
 
   // Architecture contract: the old Ribbon drawing layer is gone; Time Compass owns visualization.
   assert.equal(await page.locator('.project-ribbon-activity').count(), 0);
@@ -136,7 +136,7 @@ try {
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
   assert.equal(await page.locator('body').getAttribute('data-surface-level'), 'shape');
   assert.equal(await page.locator('#ux-row-density-dock').isHidden(), true);
-  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass3');
+  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass4');
   assert.equal(await page.locator('.macro-density-strip').count(), 0);
   assert.equal(await page.locator('#ux-macro-indicator').count(), 0);
 
