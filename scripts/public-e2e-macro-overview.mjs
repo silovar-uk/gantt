@@ -60,14 +60,15 @@ try {
   assert.equal(await page.locator('body').getAttribute('data-macro-detail-lens-version'), '20260914-lens1');
 
   await importDenseProject(page);
+  await page.locator('#project-ribbon').waitFor({ state: 'visible' });
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
 
   assert.equal(await page.locator('#workspace').getAttribute('data-macro-overview'), '20260914-macro1');
   assert.equal(await page.locator('.macro-category-row').count(), 3);
   assert.equal(await page.locator('[data-macro-task]').count(), 60);
-  assert.ok(await page.locator('.macro-density-strip i').count() > 30);
-  assert.ok((await page.locator('#ux-macro-indicator').innerText()).includes('60→3'));
+  assert.equal(await page.locator('.macro-density-strip').isHidden(), true, 'the project Ribbon replaces the old macro density strip');
+  assert.equal(await page.locator('#ux-macro-indicator').isHidden(), true, 'semantic levels should not require an exposed Macro mode badge');
 
   const macroRows = await page.locator('.macro-timeline-row').count();
   assert.equal(macroRows, 3);
@@ -84,7 +85,7 @@ try {
   const lensBox = await page.locator('#macro-detail-lens').boundingBox();
   assert.ok(lensBox && lensBox.x >= 0 && lensBox.y >= 0 && lensBox.x + lensBox.width <= 1440 && lensBox.y + lensBox.height <= 900);
 
-  // Escape dismisses only the focus lens and leaves Macro intact.
+  // Escape dismisses only the focus lens and leaves semantic overview intact.
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#macro-detail-lens').isHidden(), true);
   assert.equal(await page.locator('.workspace.mode-macro').isVisible(), true);
@@ -97,7 +98,7 @@ try {
   assert.equal(await page.locator(`[data-task-row="${firstId}"]`).count(), 1);
   assert.equal(await page.locator('#ux-macro-indicator').isHidden(), true);
 
-  // Fit returns to Macro automatically when the task-level rows no longer fit.
+  // Fit returns to semantic overview automatically when task-level rows no longer fit.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
 
@@ -115,10 +116,11 @@ try {
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
 
-  // Mobile keeps the normal list/gantt model; Macro and Lens must not replace the mobile workspace.
+  // Mobile keeps the normal list/gantt model; semantic overview and Lens must not replace the mobile workspace.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#ux-macro-indicator').isHidden(), true);
   assert.equal(await mobile.page.locator('#macro-detail-lens').isHidden(), true);
+  assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
