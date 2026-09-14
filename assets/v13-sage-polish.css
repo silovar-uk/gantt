@@ -189,18 +189,20 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .ux-present-bar {
   min-height: 38px;
   height: 38px;
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 10px;
   padding: 3px 10px;
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface) 95%, transparent);
   box-shadow: var(--shadow-sm);
 }
-.ux-present-title { min-width: 0; gap: 8px; align-items: center; }
+.ux-present-title { min-width: 0; display: flex; gap: 8px; align-items: center; }
 .ux-present-title strong { max-width: min(52vw, 720px); font-size: 14px; font-weight: 700; }
 .ux-present-title span { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .ux-present-meta { display: none; }
-.ux-present-actions { gap: 4px; align-items: center; }
+.ux-present-actions { display: flex; gap: 4px; align-items: center; }
 .ux-present-actions .button { min-height: 30px; height: 30px; padding-inline: 9px; border-radius: var(--radius-md); font-size: 12px; }
 body.is-present-mode .ux-present-bar { display: grid; }
 body.is-present-hud-quiet .ux-present-title span,
