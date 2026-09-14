@@ -416,7 +416,12 @@
     }, { passive: true });
   }
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((mutations) => {
+    const meaningful = mutations.some(({ target }) => {
+      const element = target?.nodeType === Node.ELEMENT_NODE ? target : target?.parentElement;
+      return !element?.closest?.('#project-ribbon');
+    });
+    if (!meaningful) return;
     cancelAnimationFrame(compassFrame);
     compassFrame = requestAnimationFrame(syncCompass);
   });
