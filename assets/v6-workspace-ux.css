@@ -70,6 +70,24 @@
 .row-menu-button { opacity: .45; }
 .task-row:hover .row-menu-button, .task-row.is-selected .row-menu-button { opacity: 1; }
 
+/* Rhythm Context Echo: cue the existing workspace instead of adding explanatory chrome. */
+.workspace.is-rhythm-echo .task-row,
+.workspace.is-rhythm-echo .timeline-row {
+  transition: opacity .12s ease, background-color .12s ease;
+}
+.workspace.is-rhythm-echo .task-row.is-rhythm-muted,
+.workspace.is-rhythm-echo .timeline-row.is-rhythm-muted { opacity: .26; }
+.workspace.is-rhythm-echo .task-row.is-rhythm-match:not(.is-selected):not(.is-multi-selected) {
+  background: var(--primary-soft, #e4ede8);
+}
+.workspace.is-rhythm-echo .timeline-row.is-rhythm-match:not(.is-selected):not(.is-multi-selected) {
+  background: rgba(62,106,90,.045);
+}
+.workspace.is-rhythm-echo .task-row.is-selected,
+.workspace.is-rhythm-echo .task-row.is-multi-selected,
+.workspace.is-rhythm-echo .timeline-row.is-selected,
+.workspace.is-rhythm-echo .timeline-row.is-multi-selected { opacity: 1; }
+
 /* Present mode changes workspace behavior; the HUD itself is owned by v13-sage-polish.css. */
 body.is-present-mode .topbar,
 body.is-present-mode .toolbar,
@@ -89,6 +107,11 @@ body.is-present-mode .pane-resizer { pointer-events: none; width: 1px; flex-basi
 body.is-present-mode .task-bar,
 body.is-present-mode .milestone { pointer-events: none; }
 body.is-present-mode .ux-resize-handle { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace.is-rhythm-echo .task-row,
+  .workspace.is-rhythm-echo .timeline-row { transition: none; }
+}
 
 @media (max-width: 1199px) {
   .ux-ai-json { display: none; }

@@ -37,29 +37,43 @@ async function importProject(page, data, { mode = 'replace' } = {}) {
 
 const iso = (date) => date.toISOString().slice(0, 10);
 
-function clusteredHandoff() {
-  const categories = ['企画', '制作', '配信'];
+function planClusterHandoff() {
   const tasks = [];
-
-  // Sparse bookends keep the project range wide while the middle forms one clear concentration window.
-  for (let index = 0; index < 6; index += 1) {
-    const start = new Date(Date.UTC(2026, 7, 1 + index * 4));
-    const end = new Date(start.getTime() + 3 * 86400000);
-    tasks.push({ name: `Early ${index + 1}`, start: iso(start), end: iso(end), categoryName: categories[index % 3], note: '', milestone: index === 2 });
+  for (let index = 0; index < 3; index += 1) {
+    const start = new Date(Date.UTC(2026, 7, 1 + index * 9));
+    const end = new Date(start.getTime() + 2 * 86400000);
+    tasks.push({ name: `Early ${index + 1}`, start: iso(start), end: iso(end), categoryName: '配信', note: '', milestone: index === 1 });
   }
-
-  for (let index = 0; index < 22; index += 1) {
-    const start = new Date(Date.UTC(2026, 9, 10 + (index % 5)));
-    const end = new Date(Date.UTC(2026, 9, 22 + (index % 4)));
-    tasks.push({ name: `Peak ${String(index + 1).padStart(2, '0')}`, start: iso(start), end: iso(end), categoryName: categories[index % 3], note: '', milestone: index === 5 });
+  for (let index = 0; index < 12; index += 1) {
+    const start = new Date(Date.UTC(2026, 9, 10 + (index % 3)));
+    const end = new Date(Date.UTC(2026, 9, 20 + (index % 3)));
+    tasks.push({ name: `Peak ${String(index + 1).padStart(2, '0')}`, start: iso(start), end: iso(end), categoryName: index % 2 ? '制作' : '企画', note: '', milestone: index === 5 });
   }
-
-  for (let index = 0; index < 6; index += 1) {
-    const start = new Date(Date.UTC(2026, 11, 1 + index * 4));
-    const end = new Date(start.getTime() + 3 * 86400000);
-    tasks.push({ name: `Late ${index + 1}`, start: iso(start), end: iso(end), categoryName: categories[index % 3], note: '', milestone: index === 3 });
+  for (let index = 0; index < 3; index += 1) {
+    const start = new Date(Date.UTC(2026, 11, 1 + index * 9));
+    const end = new Date(start.getTime() + 2 * 86400000);
+    tasks.push({ name: `Late ${index + 1}`, start: iso(start), end: iso(end), categoryName: '配信', note: '', milestone: index === 1 });
   }
+  return { handoffVersion: 1, tasks, needsReview: [] };
+}
 
+function denseClusterHandoff() {
+  const tasks = [];
+  for (let index = 0; index < 10; index += 1) {
+    const start = new Date(Date.UTC(2026, 7, 1 + index * 3));
+    const end = new Date(start.getTime() + 2 * 86400000);
+    tasks.push({ name: `Sparse Early ${index + 1}`, start: iso(start), end: iso(end), categoryName: index % 2 ? '広報' : '配信', note: '', milestone: index === 4 });
+  }
+  for (let index = 0; index < 40; index += 1) {
+    const start = new Date(Date.UTC(2026, 9, 8 + (index % 5)));
+    const end = new Date(Date.UTC(2026, 9, 23 + (index % 4)));
+    tasks.push({ name: `Dense Peak ${String(index + 1).padStart(2, '0')}`, start: iso(start), end: iso(end), categoryName: index % 2 ? '制作' : '企画', note: '', milestone: index === 9 });
+  }
+  for (let index = 0; index < 10; index += 1) {
+    const start = new Date(Date.UTC(2026, 11, 1 + index * 3));
+    const end = new Date(start.getTime() + 2 * 86400000);
+    tasks.push({ name: `Sparse Late ${index + 1}`, start: iso(start), end: iso(end), categoryName: index % 2 ? '広報' : '配信', note: '', milestone: index === 4 });
+  }
   return { handoffVersion: 1, tasks, needsReview: [] };
 }
 
@@ -73,55 +87,111 @@ function flatHandoff() {
   return { handoffVersion: 1, tasks, needsReview: [] };
 }
 
+async function clearPointer(page) {
+  await page.mouse.move(8, 8);
+  await page.waitForFunction(() => !document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
+}
+
 try {
   const desktop = await openFresh();
   const { page } = desktop;
 
   assert.equal(await page.evaluate(() => typeof globalThis.ganttProjectRhythm?.derive), 'function');
-  assert.equal(await page.locator('body').getAttribute('data-project-rhythm-version'), '20260914-rhythm2');
+  assert.equal(await page.evaluate(() => typeof globalThis.ganttProjectRhythm?.context), 'function');
+  assert.equal(await page.locator('body').getAttribute('data-project-rhythm-version'), '20260914-rhythm3');
+  assert.equal(await page.locator('body').getAttribute('data-rhythm-context-echo-version'), '20260914-echo1');
 
-  await importProject(page, clusteredHandoff());
+  // PLAN representation: rhythm hover returns meaning through the existing surface.
+  await importProject(page, planClusterHandoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.workspace.mode-macro').count(), 0, 'plan fixture should stay in task rows');
   await page.locator('.time-compass-rhythm-window').first().waitFor({ state: 'visible' });
 
   const rhythmCount = await page.locator('.time-compass-rhythm-window').count();
   assert.ok(rhythmCount >= 1 && rhythmCount <= 3, `unexpected rhythm window count: ${rhythmCount}`);
   assert.equal(await page.locator('.time-compass-rhythm-window.is-primary').count(), 1);
-  const primary = page.locator('.time-compass-rhythm-window.is-primary');
-  assert.ok((await primary.getAttribute('aria-label')).includes('最大'));
+  let primary = page.locator('.time-compass-rhythm-window.is-primary');
+  const baseAria = await primary.getAttribute('aria-label');
+  assert.ok(baseAria?.includes('最大'));
 
   const trackBox = await page.locator('#project-ribbon-track').boundingBox();
   assert.ok(trackBox && trackBox.height >= 35 && trackBox.height <= 37, `Time Compass height changed: ${JSON.stringify(trackBox)}`);
   assert.equal(await page.locator('.time-compass-rail').getAttribute('aria-hidden'), null, 'interactive rail must not be aria-hidden');
 
   await primary.hover();
-  await page.waitForFunction(() => (document.querySelector('.time-compass-annotation')?.textContent || '').includes('集中'));
+  await page.waitForFunction(() => document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
+  const planEcho = await page.evaluate(() => ({
+    taskMatch: document.querySelectorAll('.task-row.is-rhythm-match').length,
+    taskMuted: document.querySelectorAll('.task-row.is-rhythm-muted').length,
+    timelineMatch: document.querySelectorAll('.timeline-row.is-rhythm-match').length,
+    timelineMuted: document.querySelectorAll('.timeline-row.is-rhythm-muted').length,
+    count: Number(document.querySelector('#workspace')?.dataset.rhythmEchoCount || 0),
+    annotation: document.querySelector('.time-compass-annotation')?.textContent || '',
+  }));
+  assert.ok(planEcho.taskMatch > 0 && planEcho.taskMuted > 0, `task echo missing: ${JSON.stringify(planEcho)}`);
+  assert.ok(planEcho.timelineMatch > 0 && planEcho.timelineMuted > 0, `timeline echo missing: ${JSON.stringify(planEcho)}`);
+  assert.equal(planEcho.taskMatch, planEcho.timelineMatch);
+  assert.equal(planEcho.count, planEcho.taskMatch);
+  assert.match(planEcho.annotation, /(企画|制作|配信)/, `annotation has no category meaning: ${planEcho.annotation}`);
+  const contextualAria = await primary.getAttribute('aria-label');
+  assert.notEqual(contextualAria, baseAria);
+  assert.match(contextualAria || '', /(企画|制作|配信)/);
+
+  await clearPointer(page);
+  assert.equal(await primary.getAttribute('aria-label'), baseAria, 'rhythm accessible label did not reset after echo');
+  assert.equal(await page.locator('.is-rhythm-match, .is-rhythm-muted').count(), 0, 'echo classes leaked after pointer leave');
 
   const before = await page.evaluate(() => ({
     auto: state.project.viewSettings.overviewAutoFit,
     rowHeight: state.project.viewSettings.rowHeight,
     dayWidth: state.project.viewSettings.dayWidth,
   }));
+  await primary.hover();
   await primary.click();
   await page.waitForTimeout(120);
   const after = await page.evaluate(() => ({
     auto: state.project.viewSettings.overviewAutoFit,
     rowHeight: state.project.viewSettings.rowHeight,
     dayWidth: state.project.viewSettings.dayWidth,
+    echo: document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'),
   }));
   assert.equal(after.auto, false, 'rhythm focus should become a manual time-axis view');
   assert.equal(after.rowHeight, before.rowHeight, 'rhythm focus must not alter task-axis density');
   assert.ok(after.dayWidth >= before.dayWidth, `rhythm focus unexpectedly zoomed out: ${before.dayWidth} -> ${after.dayWidth}`);
+  assert.equal(after.echo, false, 'echo must clear when rhythm focus becomes an explicit zoom');
 
-  // Keyboard activation uses the same interaction contract.
+  // Keyboard focus gets the same contextual echo and Enter gets the same action.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
-  const primaryKeyboard = page.locator('.time-compass-rhythm-window.is-primary');
-  await primaryKeyboard.focus();
-  assert.ok((await page.locator('.time-compass-annotation').innerText()).includes('集中'));
+  primary = page.locator('.time-compass-rhythm-window.is-primary');
+  await primary.focus();
+  await page.waitForFunction(() => document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
+  assert.match(await page.locator('.time-compass-annotation').innerText(), /(企画|制作|配信)/);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(100);
   assert.equal(await page.evaluate(() => state.project.viewSettings.overviewAutoFit), false);
+  assert.equal(await page.locator('#workspace').evaluate((el) => el.classList.contains('is-rhythm-echo')), false);
+
+  // SHAPE representation: the same cue works without leaving Macro Overview.
+  await importProject(page, denseClusterHandoff());
+  await page.locator('#ux-view-controls [data-action="fit"]').click();
+  await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
+  primary = page.locator('.time-compass-rhythm-window.is-primary');
+  await primary.waitFor({ state: 'visible' });
+  await primary.hover();
+  await page.waitForFunction(() => document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
+  const macroEcho = await page.evaluate(() => ({
+    taskMatch: document.querySelectorAll('[data-macro-task].is-rhythm-match').length,
+    taskMuted: document.querySelectorAll('[data-macro-task].is-rhythm-muted').length,
+    categoryMatch: document.querySelectorAll('[data-macro-category-focus].is-rhythm-match').length,
+    categoryMuted: document.querySelectorAll('[data-macro-category-focus].is-rhythm-muted').length,
+    annotation: document.querySelector('.time-compass-annotation')?.textContent || '',
+  }));
+  assert.ok(macroEcho.taskMatch > 0 && macroEcho.taskMuted > 0, `macro task echo missing: ${JSON.stringify(macroEcho)}`);
+  assert.ok(macroEcho.categoryMatch > 0 && macroEcho.categoryMuted > 0, `macro category echo missing: ${JSON.stringify(macroEcho)}`);
+  assert.match(macroEcho.annotation, /(企画|制作)/);
+  await clearPointer(page);
+  assert.equal(await page.locator('.is-rhythm-match, .is-rhythm-muted').count(), 0, 'macro echo classes leaked after pointer leave');
 
   // A flat project must not invent a meaningful peak, even if multiple dates fall into the same coarse bucket.
   // Import mode is explicitly replace so no concentration tasks from the prior fixture survive.
@@ -135,12 +205,13 @@ try {
 
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
+  assert.equal(await mobile.page.locator('#workspace').evaluate((el) => el.classList.contains('is-rhythm-echo')), false);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
   await mobile.context.close();
 
-  console.log('public Project Rhythm landmark suite passed');
+  console.log('public Project Rhythm + Context Echo suite passed');
 } finally {
   await browser.close();
 }
