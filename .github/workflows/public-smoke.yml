@@ -26,10 +26,12 @@ jobs:
           node --check src/v5/classic/16-macro-detail-lens.js
           node --check src/v5/classic/17-project-surface.js
           node --check src/v5/classic/18-time-compass.js
+          node --check src/v5/classic/19-ui-polish.js
           node --check scripts/public-e2e-ux-run.mjs
           node --check scripts/public-e2e-tight-rows.mjs
           node --check scripts/public-e2e-macro-overview.mjs
           node --check scripts/public-e2e-project-surface.mjs
+          node --check scripts/public-e2e-ui-polish.mjs
       - name: Wait for matching public deployment
         shell: bash
         run: |
@@ -39,23 +41,30 @@ jobs:
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
             if grep -q 'assets/v11-project-surface.css?v=20260914-surface2' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v12-time-compass.css?v=20260914-compass2c' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v13-sage-polish.css?v=20260914-sage1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/17-project-surface.js?v=20260914-surface1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass2c' /tmp/live-index.html 2>/dev/null; then
+              && grep -q 'src/v5/classic/18-time-compass.js?v=20260914-compass2c' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/19-ui-polish.js?v=20260914-sage1' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi
             sleep 3
           done
           if [ "$matched" -ne 1 ]; then
-            echo 'Matching polished time-compass deployment did not become public in time' >&2
+            echo 'Matching sage polish deployment did not become public in time' >&2
             exit 1
           fi
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260914-compass2c' -o /tmp/v12-time-compass.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260914-sage1' -o /tmp/v13-sage-polish.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/18-time-compass.js?v=20260914-compass2c' -o /tmp/v5-18.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/19-ui-polish.js?v=20260914-sage1' -o /tmp/v5-19.js
           grep -q 'Time Compass V2' /tmp/v12-time-compass.css
+          grep -q 'Gantt Desk polish layer' /tmp/v13-sage-polish.css
           grep -q 'COMPASS_VERSION' /tmp/v5-18.js
           grep -q 'ux-row-density-dock' /tmp/v5-18.js
           grep -q 'time-compass-rail' /tmp/v5-18.js
+          grep -q 'POLISH_VERSION' /tmp/v5-19.js
+          grep -q 'ganttIcon' /tmp/v5-19.js
       - name: Render desktop public app
         shell: bash
         run: |
@@ -90,3 +99,4 @@ jobs:
           node scripts/public-e2e-tight-rows.mjs
           node scripts/public-e2e-macro-overview.mjs
           node scripts/public-e2e-project-surface.mjs
+          node scripts/public-e2e-ui-polish.mjs
