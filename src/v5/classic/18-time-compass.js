@@ -1,11 +1,9 @@
 (() => {
-  const COMPASS_VERSION = '20260914-compass2';
+  const COMPASS_VERSION = '20260914-compass3';
   const FULL_COVERAGE = 0.94;
   const BUSY_BUCKETS = 48;
   const ROW_MIN = 20;
   const ROW_MAX = 56;
-  let compassFrame = 0;
-  let boundScroller = null;
   let rowBubbleTimer = 0;
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
@@ -149,15 +147,9 @@
     if (rail && viewport && viewport.parentElement !== rail) rail.append(viewport);
     if (rail && today && today.parentElement !== rail) rail.append(today);
 
-    const oldActivity = track.querySelector('.project-ribbon-activity');
-    const oldMilestones = track.querySelector('.project-ribbon-milestones');
-    if (oldActivity) oldActivity.hidden = true;
-    if (oldMilestones) oldMilestones.hidden = true;
-
     ensureRowDock(ribbon);
     bindRail(rail);
     bindTrack(track);
-    bindScroller();
     return { ribbon, track, rail };
   }
 
@@ -182,7 +174,7 @@
       const end = (index + 1) / values.length * 100;
       const ratio = value / max;
       const alpha = .025 + ratio * .22;
-      const color = `rgba(91,103,216,${alpha.toFixed(3)})`;
+      const color = `rgba(62,106,90,${alpha.toFixed(3)})`;
       stops.push(`${color} ${start.toFixed(2)}%`, `${color} ${end.toFixed(2)}%`);
     });
     return `linear-gradient(90deg, ${stops.join(',')})`;
@@ -205,6 +197,18 @@
     renderMilestones(track, range);
   }
 
+  function syncToday(track, range) {
+    const marker = track.querySelector('.project-ribbon-today');
+    if (!marker) return;
+    const today = todayISO();
+    const inside = today >= range.start && today <= range.end;
+    marker.hidden = !inside;
+    if (!inside) return;
+    const ratio = range.days <= 1 ? .5 : clamp(diffDays(range.start, today) / (range.days - 1), 0, 1);
+    marker.style.left = `${(ratio * 100).toFixed(3)}%`;
+    marker.title = `今日 ${today}`;
+  }
+
   function setAnnotation(track, text) {
     const annotation = track.querySelector('.time-compass-annotation');
     if (annotation) annotation.textContent = text;
@@ -215,13 +219,14 @@
     setAnnotation(track, isWhole(visible) ? '全体表示' : `${shortDate(visible.start)}–${shortDate(visible.end)}`);
   }
 
-  function syncSemantics(track, active, whole, visible) {
+  function syncSemantics(track, active, whole, visible, range) {
     if (whole) {
       track.classList.add('is-whole');
       track.classList.remove('is-navigator');
       ['role','aria-valuemin','aria-valuemax','aria-valuenow','aria-valuetext','aria-orientation','aria-controls'].forEach((name) => track.removeAttribute(name));
       track.tabIndex = -1;
       track.setAttribute('aria-label', `プロジェクト全体 ${visible.start}から${visible.end}。全体表示中`);
+      track.title = `${range.start}〜${range.end} · 全体表示中`;
     } else {
       track.classList.remove('is-whole');
       track.classList.add('is-navigator');
@@ -234,6 +239,7 @@
       track.setAttribute('aria-valuetext', `${visible.start}から${visible.end}を表示中`);
       track.tabIndex = 0;
       track.setAttribute('aria-label', 'プロジェクト全体の中で表示位置を移動');
+      track.title = `${range.start}〜${range.end} · 表示中 ${visible.start}〜${visible.end}\nクリック/ドラッグで移動 · Enterで全体表示`;
     }
   }
 
@@ -250,6 +256,7 @@
       track.dataset.staticSignature = signature;
       renderStatic(track, range);
     }
+    syncToday(track, range);
     ribbon.classList.toggle('is-compass-whole', whole);
     ribbon.classList.toggle('is-compass-nav', !whole);
     defaultAnnotation(track, range);
@@ -261,7 +268,7 @@
         viewport.style.width = `${(Math.min(1 - visible.leftRatio, visible.widthRatio) * 100).toFixed(3)}%`;
       }
     }
-    syncSemantics(track, active, whole, visible);
+    syncSemantics(track, active, whole, visible, range);
     syncRowDock();
   }
 
@@ -406,31 +413,7 @@
     }, { capture: true, passive: false });
   }
 
-  function bindScroller() {
-    const active = scroller();
-    if (!active || active === boundScroller) return;
-    boundScroller = active;
-    active.addEventListener('scroll', () => {
-      cancelAnimationFrame(compassFrame);
-      compassFrame = requestAnimationFrame(syncCompass);
-    }, { passive: true });
-  }
-
-  const observer = new MutationObserver((mutations) => {
-    const meaningful = mutations.some(({ target }) => {
-      const element = target?.nodeType === Node.ELEMENT_NODE ? target : target?.parentElement;
-      return !element?.closest?.('#project-ribbon');
-    });
-    if (!meaningful) return;
-    cancelAnimationFrame(compassFrame);
-    compassFrame = requestAnimationFrame(syncCompass);
-  });
-  observer.observe(document.querySelector('#app') || document.body, { childList: true, subtree: true });
-
-  window.addEventListener('resize', () => {
-    cancelAnimationFrame(compassFrame);
-    compassFrame = requestAnimationFrame(syncCompass);
-  }, { passive: true });
+  globalThis.ganttTimeCompassSync = syncCompass;
 
   setTimeout(syncCompass, 0);
   setTimeout(syncCompass, 180);
