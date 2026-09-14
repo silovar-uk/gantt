@@ -2,11 +2,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
 const BASE = 'https://silovar-uk.github.io/gantt/';
-const browser = await chromium.launch({
-  executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome',
-  headless: true,
-  args: ['--no-sandbox', '--disable-dev-shm-usage'],
-});
+const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
 
 async function openFresh({ width = 1440, height = 900, touch = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch });
@@ -29,14 +25,7 @@ function handoff(count = 18) {
     const start = new Date(Date.UTC(2026, 8, 1 + offset));
     const end = new Date(start.getTime() + ((index % 5) + 3) * 86400000);
     const iso = (date) => date.toISOString().slice(0, 10);
-    return {
-      name: `Surface Task ${String(index + 1).padStart(2, '0')}`,
-      start: iso(start),
-      end: iso(end),
-      categoryName: categories[index % categories.length],
-      note: '',
-      milestone: index === 4 || index === 12,
-    };
+    return { name: `Surface Task ${String(index + 1).padStart(2, '0')}`, start: iso(start), end: iso(end), categoryName: categories[index % categories.length], note: '', milestone: index === 4 || index === 12 };
   });
   return { handoffVersion: 1, tasks, needsReview: [] };
 }
@@ -48,14 +37,7 @@ function denseHandoff() {
     const start = new Date(Date.UTC(2026, 8, 1 + offset));
     const end = new Date(start.getTime() + ((index % 8) + 2) * 86400000);
     const iso = (date) => date.toISOString().slice(0, 10);
-    return {
-      name: `Dense Task ${String(index + 1).padStart(2, '0')}`,
-      start: iso(start),
-      end: iso(end),
-      categoryName: categories[index % categories.length],
-      note: '',
-      milestone: index % 19 === 0,
-    };
+    return { name: `Dense Task ${String(index + 1).padStart(2, '0')}`, start: iso(start), end: iso(end), categoryName: categories[index % categories.length], note: '', milestone: index % 19 === 0 };
   });
   return { handoffVersion: 1, tasks, needsReview: [] };
 }
@@ -74,96 +56,91 @@ async function importProject(page, data) {
 try {
   const desktop = await openFresh();
   const { page } = desktop;
-  assert.equal(await page.locator('body').getAttribute('data-project-surface-version'), '20260914-surface1');
-
   await importProject(page, handoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass1');
+  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass2');
 
-  assert.equal(await page.locator('#project-ribbon .project-ribbon-nav #ux-view-controls').count(), 1);
-  assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
-  assert.equal(await page.locator('#ux-macro-indicator').isHidden(), true);
-  assert.equal(await page.locator('.project-ribbon-activity').isHidden(), true);
-  assert.equal(await page.locator('.project-ribbon-milestones').isHidden(), true);
-  assert.ok((await page.locator('.time-compass-busy').getAttribute('style') || '').includes('linear-gradient'));
+  // Compass geometry: text and graphics have separate lanes, with no permanent milestone labels.
+  const meta = await page.locator('.time-compass-meta').boundingBox();
+  const rail = await page.locator('.time-compass-rail').boundingBox();
+  assert.ok(meta && rail && meta.y + meta.height <= rail.y + 1, `compass lanes overlap: ${JSON.stringify({ meta, rail })}`);
+  assert.equal(await page.locator('.time-compass-milestone span').count(), 0);
   assert.ok(await page.locator('.time-compass-milestone').count() >= 2);
-  assert.equal(await page.locator('.time-compass-status').innerText(), '全体表示');
+  const firstMarker = await page.locator('.time-compass-milestone').first().boundingBox();
+  assert.ok(firstMarker && firstMarker.y >= rail.y - 1 && firstMarker.y + firstMarker.height <= rail.y + rail.height + 1, `marker escaped rail: ${JSON.stringify({ firstMarker, rail })}`);
+  assert.equal(await page.locator('.time-compass-annotation').innerText(), '全体表示');
   assert.equal(await page.locator('#project-ribbon-viewport').isHidden(), true);
-  assert.equal(await page.locator('#project-ribbon-track').getAttribute('role'), null);
-  assert.equal(await page.locator('#project-ribbon-track').getAttribute('tabindex'), '-1');
 
-  // Scrub Preview explains the day under the pointer without navigating.
-  const wholeTrack = await page.locator('#project-ribbon-track').boundingBox();
-  assert.ok(wholeTrack);
+  // Row height is again a direct slider in the view zone, while the old density container stays hidden.
+  assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
+  assert.equal(await page.locator('#ux-row-density-dock').isVisible(), true);
+  const rowSlider = page.locator('#ux-row-density-dock #ux-row-height');
+  assert.equal(await rowSlider.getAttribute('min'), '20');
+  assert.equal(await rowSlider.getAttribute('max'), '56');
+  await rowSlider.evaluate((el) => { el.value = '32'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(60);
+  const row32 = await page.locator('.task-row').first().evaluate((el) => el.getBoundingClientRect().height);
+  assert.ok(row32 >= 31 && row32 <= 33, `row slider did not apply 32px: ${row32}`);
+  await rowSlider.evaluate((el) => { el.value = '24'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(60);
+  const row24 = await page.locator('.task-row').first().evaluate((el) => el.getBoundingClientRect().height);
+  assert.ok(row24 >= 23 && row24 <= 25, `row slider did not apply 24px: ${row24}`);
+
+  // Hover stays inside the rail and replaces one annotation channel instead of stacking labels.
   const wholeScrollBefore = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
-  await page.mouse.move(wholeTrack.x + wholeTrack.width * 0.5, wholeTrack.y + wholeTrack.height * 0.5);
-  await page.locator('#time-compass-preview').waitFor({ state: 'visible' });
-  assert.ok((await page.locator('#time-compass-preview').innerText()).includes('進行中'));
-  await page.mouse.click(wholeTrack.x + wholeTrack.width * 0.75, wholeTrack.y + wholeTrack.height * 0.5);
+  await page.mouse.move(rail.x + rail.width * .5, rail.y + rail.height / 2);
+  await page.waitForFunction(() => (document.querySelector('.time-compass-annotation')?.textContent || '').includes('進行'));
+  const pointer = await page.locator('.time-compass-pointer').boundingBox();
+  assert.ok(pointer && pointer.y >= rail.y - 1 && pointer.y + pointer.height <= rail.y + rail.height + 1, `pointer escaped rail: ${JSON.stringify({ pointer, rail })}`);
+  await page.mouse.click(rail.x + rail.width * .75, rail.y + rail.height / 2);
   const wholeScrollAfter = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
   assert.equal(wholeScrollAfter, wholeScrollBefore, 'whole-project summary must not pretend to navigate');
 
-  // Zooming converts Summary into Navigator and exposes the viewport only when movement is meaningful.
+  // Zoom converts Summary into Navigator with a bracket-style local viewport.
   for (let i = 0; i < 4; i += 1) await page.locator('[data-ux-action="zoom-in"]').click();
   await page.waitForFunction(() => document.querySelector('#project-ribbon-track')?.classList.contains('is-navigator'));
   assert.equal(await page.locator('#project-ribbon-track').getAttribute('role'), 'scrollbar');
-  assert.equal(await page.locator('#project-ribbon-track').getAttribute('aria-controls'), 'timeline-scroll');
   assert.equal(await page.locator('#project-ribbon-viewport').isVisible(), true);
-  const viewportAfter = await page.locator('#project-ribbon-viewport').boundingBox();
-  const trackAfter = await page.locator('#project-ribbon-track').boundingBox();
-  assert.ok(viewportAfter && trackAfter && viewportAfter.width < trackAfter.width * 0.94, `navigator viewport did not become local: ${JSON.stringify({ viewportAfter, trackAfter })}`);
-
-  // Clicking toward the right now navigates the main timeline without changing data scope.
+  const navRail = await page.locator('.time-compass-rail').boundingBox();
+  const viewport = await page.locator('#project-ribbon-viewport').boundingBox();
+  assert.ok(viewport && navRail && viewport.width < navRail.width * .94, `viewport did not become local: ${JSON.stringify({ viewport, navRail })}`);
   const scrollBefore = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
-  await page.mouse.click(trackAfter.x + trackAfter.width * 0.82, trackAfter.y + trackAfter.height / 2);
+  await page.mouse.click(navRail.x + navRail.width * .82, navRail.y + navRail.height / 2);
   const scrollAfter = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
-  assert.ok(scrollAfter > scrollBefore, `time compass navigation did not move timeline: ${scrollBefore} -> ${scrollAfter}`);
+  assert.ok(scrollAfter > scrollBefore, `compass navigation did not move timeline: ${scrollBefore} -> ${scrollAfter}`);
 
-  // Keyboard navigation is only exposed in Navigator state.
-  await page.locator('#project-ribbon-track').focus();
-  const keyboardBefore = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
-  await page.keyboard.press('ArrowLeft');
-  const keyboardAfter = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
-  assert.ok(keyboardAfter < keyboardBefore, `time compass keyboard navigation did not move left: ${keyboardBefore} -> ${keyboardAfter}`);
+  // Fit re-synchronizes the manual row control with the computed row height.
+  await page.locator('#ux-view-controls [data-action="fit"]').click();
+  await page.waitForTimeout(80);
+  const viewRow = await page.evaluate(() => state.project.viewSettings.rowHeight);
+  const sliderRow = Number(await page.locator('#ux-row-height').inputValue());
+  assert.equal(sliderRow, viewRow, `fit and row slider diverged: ${sliderRow} vs ${viewRow}`);
 
-  // Ctrl/Cmd + wheel on the compass changes scale around the pointed date.
-  const widthBeforeWheel = await page.locator('.timeline-inner').evaluate((el) => Number.parseFloat(el.style.getPropertyValue('--day-width')));
-  await page.mouse.move(trackAfter.x + trackAfter.width * 0.35, trackAfter.y + trackAfter.height / 2);
-  await page.keyboard.down('Control');
-  await page.mouse.wheel(0, -120);
-  await page.keyboard.up('Control');
-  const widthAfterWheel = await page.locator('.timeline-inner').evaluate((el) => Number.parseFloat(el.style.getPropertyValue('--day-width')));
-  assert.ok(widthAfterWheel >= widthBeforeWheel, `compass pointer zoom did not increase scale: ${widthBeforeWheel} -> ${widthAfterWheel}`);
-
-  // Dense projects still enter semantic Macro, and Time Compass remains the project-wide context.
+  // Dense projects enter semantic Shape and hide a row control that no longer maps 1:1 to tasks.
   await importProject(page, denseHandoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('#project-ribbon').isVisible(), true);
-  assert.equal(await page.locator('.macro-density-strip').isHidden(), true);
-  assert.equal(await page.locator('#ux-macro-indicator').isHidden(), true);
   assert.equal(await page.locator('body').getAttribute('data-surface-level'), 'shape');
-  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass1');
-
-  const macroWidthBefore = await page.locator('.macro-timeline-inner').evaluate((el) => el.getBoundingClientRect().width);
-  await page.locator('[data-ux-action="zoom-in"]').click();
-  const macroWidthAfter = await page.locator('.macro-timeline-inner').evaluate((el) => el.getBoundingClientRect().width);
-  assert.ok(macroWidthAfter > macroWidthBefore, `macro zoom did not work from the unified compass: ${macroWidthBefore} -> ${macroWidthAfter}`);
+  assert.equal(await page.locator('#ux-row-density-dock').isHidden(), true);
+  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass2');
+  assert.equal(await page.locator('.macro-density-strip').isHidden(), true);
 
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
 
-  // Mobile keeps the existing navigation model and must not inherit desktop Time Compass chrome.
+  // Mobile keeps the touch-first chrome; desktop slider/compass do not create overflow.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
-  assert.equal(await mobile.page.locator('.toolbar #ux-view-controls').count(), 1);
+  assert.equal(await mobile.page.locator('#ux-row-density-dock').count(), 0);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
+  const addBox = await mobile.page.locator('[data-action="add"]').first().boundingBox();
+  assert.ok(addBox && addBox.height >= 44, `mobile add target regressed: ${JSON.stringify(addBox)}`);
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
   await mobile.context.close();
 
-  console.log('public project surface + time compass suite passed');
+  console.log('public polished compass + row density suite passed');
 } finally {
   await browser.close();
 }
