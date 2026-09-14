@@ -1,8 +1,4 @@
-/* Gantt Desk overview-density layer — 2026-09-13 */
-:root {
-  --overview-header-normal: 86px;
-  --overview-header-collapsed: 66px;
-}
+/* Gantt Desk overview-density owner — 2026-09-14 */
 
 /* The project should read as a whole before it reads as a list of cards. */
 .topbar {
@@ -29,41 +25,61 @@
 .ux-zoom { height: 32px; }
 .ux-zoom button { width: 32px; }
 
-.ux-density-controls {
-  display: inline-flex;
+/* Row density is a direct view control. Its behavior lives in 13-overview-density.js. */
+#ux-row-density-dock {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 2px 7px;
-  min-height: 32px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fafbfc;
-  white-space: nowrap;
+  min-height: 28px;
+  margin-right: 3px;
 }
-.ux-density-controls.is-auto-fit {
-  border-color: #cfd5ff;
-  background: #f8f8ff;
-}
-.ux-density-control {
-  display: inline-grid;
-  grid-template-columns: auto 72px 22px;
+#ux-row-density-dock[hidden] { display: none !important; }
+#ux-row-density-dock .ux-row-density-control {
+  display: grid !important;
+  grid-template-columns: auto 78px 22px;
   align-items: center;
   gap: 4px;
+  min-height: 28px;
+  padding: 0 6px;
+  border: 1px solid #e0e4eb;
+  border-radius: 7px;
+  background: #fff;
   color: #667085;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 750;
 }
-.ux-density-control input[type="range"] {
-  width: 72px;
+#ux-row-density-dock input[type="range"] {
+  width: 78px;
   accent-color: var(--primary);
   cursor: ew-resize;
 }
-.ux-density-control output {
+#ux-row-density-dock output {
   min-width: 22px;
   color: #344054;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.ux-row-density-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 2200;
+  padding: 5px 7px;
+  border: 1px solid #d9dee7;
+  border-radius: 7px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 6px 18px rgba(16,24,40,.12);
+  color: #344054;
+  font-size: 10px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ux-row-density-bubble[hidden] { display: none !important; }
+body[data-surface-level="shape"] #ux-row-density-dock,
+body.is-present-mode #ux-row-density-dock { display: none !important; }
 
 /* Dense list: content fields are task + category; dates stay on the timeline. */
 .workspace.mode-split .task-panel {
@@ -72,8 +88,8 @@
 }
 .workspace.mode-split .task-head,
 .workspace.mode-split .task-row {
-  grid-template-columns: 28px minmax(100px, 1fr) minmax(62px, 82px) 0 0 30px;
-  padding-inline: 5px;
+  grid-template-columns: 24px minmax(96px, 1fr) minmax(58px, 78px) 0 0 24px;
+  padding-inline: 4px;
   column-gap: 1px;
 }
 .task-head,
@@ -84,46 +100,57 @@
 .timeline-head-cell { font-size: 9px; }
 .timeline-body { min-height: calc(100% - 30px); }
 
-.task-row {
-  height: var(--row-height) !important;
-  min-height: var(--row-height) !important;
-  font-size: var(--text-size) !important;
-}
+.task-row,
 .timeline-row {
   height: var(--row-height) !important;
   min-height: var(--row-height) !important;
 }
+.task-row { font-size: var(--text-size) !important; }
 .inline-name {
-  padding: 2px 4px;
-  line-height: 1.1;
+  padding: 1px 3px;
+  line-height: 1;
 }
 .category-cell {
-  padding-inline: 3px;
-  gap: 4px;
+  padding-inline: 2px;
+  gap: 3px;
   font-size: max(9px, calc(var(--text-size) - 1px));
+  line-height: 1;
 }
 .category-dot {
-  width: 7px;
-  height: 7px;
-  flex-basis: 7px;
+  width: 6px;
+  height: 6px;
+  flex-basis: 6px;
 }
-.complete-cell input { width: 14px; height: 14px; }
-.row-menu-button { width: 28px; height: 28px; font-size: 11px; }
+.complete-cell input { width: 12px; height: 12px; }
+.row-menu-button {
+  width: 22px;
+  height: 18px;
+  min-height: 18px;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1;
+}
 
-/* Bars stay visually strong even when rows are compressed. */
+/* Bars stay visually strong even when rows are compressed to the 20px floor. */
 .task-bar {
   height: max(16px, calc(var(--row-height) - 4px)) !important;
-  padding-inline: 5px;
-  border-radius: 5px;
+  padding-inline: 4px;
+  border-radius: 4px;
   font-size: max(9px, calc(var(--text-size) - 1px));
   line-height: 1;
 }
 .milestone {
-  width: max(11px, min(16px, calc(var(--row-height) - 8px)));
-  height: max(11px, min(16px, calc(var(--row-height) - 8px)));
+  width: max(10px, min(15px, calc(var(--row-height) - 8px)));
+  height: max(10px, min(15px, calc(var(--row-height) - 8px)));
 }
 .ux-resize-handle { top: 0; bottom: 0; }
 .ux-create-ghost { height: max(14px, calc(var(--row-height) - 6px)); }
+
+.workspace[style*="--row-height: 20px"] .category-cell,
+.workspace[style*="--row-height: 21px"] .category-cell,
+.workspace[style*="--row-height: 22px"] .category-cell {
+  font-size: 9px;
+}
 
 /* When the minimum row size still cannot show every task, reduce secondary reading noise first. */
 .workspace.ux-auto-hide-category.mode-split .task-head,
@@ -163,7 +190,6 @@ body.ux-header-collapsed .toolbar > .search-box,
 body.ux-header-collapsed .toolbar > [data-action="filter"],
 body.ux-header-collapsed .toolbar > .toolbar-spacer,
 body.ux-header-collapsed .toolbar > .ux-more-wrap { display: none !important; }
-body.ux-header-collapsed .ux-density-controls { min-height: 29px; padding-block: 0; }
 body.ux-header-collapsed .ux-zoom { height: 29px; }
 
 body.is-present-mode .task-head,
@@ -172,24 +198,31 @@ body.is-present-mode .timeline-head-cell { height: 30px; }
 body.is-present-mode .task-panel { grid-template-rows: 30px 1fr; }
 
 @media (max-width: 1199px) {
-  .ux-density-control { grid-template-columns: auto 58px 20px; }
-  .ux-density-control input[type="range"] { width: 58px; }
   .workspace.mode-split .task-head,
-  .workspace.mode-split .task-row { grid-template-columns: 27px minmax(96px, 1fr) 66px 0 0 29px; }
+  .workspace.mode-split .task-row {
+    grid-template-columns: 24px minmax(92px, 1fr) 62px 0 0 24px;
+  }
+}
+
+@media (max-width: 1080px) and (min-width: 768px) {
+  #ux-row-density-dock .ux-row-density-control {
+    grid-template-columns: auto 58px 20px;
+    padding-inline: 5px;
+  }
+  #ux-row-density-dock input[type="range"] { width: 58px; }
+}
+
+@media (max-width: 900px) and (min-width: 768px) {
+  #ux-row-density-dock .ux-row-density-control > span:first-child { display: none; }
+  #ux-row-density-dock .ux-row-density-control { grid-template-columns: 52px 18px; }
+  #ux-row-density-dock input[type="range"] { width: 52px; }
 }
 
 @media (max-width: 767px) {
   .topbar { min-height: 48px; }
   .toolbar { min-height: 46px; padding-block: 2px; }
-  .ux-density-controls {
-    order: 3;
-    flex: 0 0 auto;
-    min-height: 42px;
-  }
-  .ux-density-control { grid-template-columns: auto 54px 20px; }
-  .ux-density-control input[type="range"] { width: 54px; }
   .ux-more-wrap { order: 4; }
   body.ux-header-collapsed .topbar { min-height: 40px; }
   body.ux-header-collapsed .toolbar { min-height: 42px; }
-  body.ux-header-collapsed .ux-density-controls { min-height: 40px; }
+  #ux-row-density-dock { display: none !important; }
 }
