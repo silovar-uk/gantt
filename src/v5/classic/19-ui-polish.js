@@ -1,5 +1,5 @@
 (() => {
-  const POLISH_VERSION = '20260914-sage1';
+  const POLISH_VERSION = '20260914-sage2';
   let frame = 0;
   let quietTimer = 0;
 
