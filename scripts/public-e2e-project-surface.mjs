@@ -59,7 +59,13 @@ try {
   await importProject(page, handoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass2');
+  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass3');
+
+  // Architecture contract: the old Ribbon drawing layer is gone; Time Compass owns visualization.
+  assert.equal(await page.locator('.project-ribbon-activity').count(), 0);
+  assert.equal(await page.locator('.project-ribbon-milestones').count(), 0);
+  assert.equal(await page.locator('#ux-macro-indicator').count(), 0);
+  assert.equal(await page.evaluate(() => typeof globalThis.ganttTimeCompassSync), 'function');
 
   // Compass geometry: text and graphics have separate lanes, with no permanent milestone labels.
   const meta = await page.locator('.time-compass-meta').boundingBox();
@@ -72,7 +78,7 @@ try {
   assert.equal(await page.locator('.time-compass-annotation').innerText(), '全体表示');
   assert.equal(await page.locator('#project-ribbon-viewport').isHidden(), true);
 
-  // Row height is again a direct slider in the view zone, while the old density container stays hidden.
+  // Row height is a direct slider in the view zone, while the old density container stays hidden.
   assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
   assert.equal(await page.locator('#ux-row-density-dock').isVisible(), true);
   const rowSlider = page.locator('#ux-row-density-dock #ux-row-height');
@@ -82,7 +88,7 @@ try {
   await page.waitForTimeout(60);
   const row32 = await page.locator('.task-row').first().evaluate((el) => el.getBoundingClientRect().height);
   assert.ok(row32 >= 31 && row32 <= 33, `row slider did not apply 32px: ${row32}`);
-  await rowSlider.evaluate((el) => { el.value = '24'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await rowSlider.evaluate((el) => { el.value = '24'; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.waitForTimeout(60);
   const row24 = await page.locator('.task-row').first().evaluate((el) => el.getBoundingClientRect().height);
   assert.ok(row24 >= 23 && row24 <= 25, `row slider did not apply 24px: ${row24}`);
@@ -110,6 +116,13 @@ try {
   const scrollAfter = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
   assert.ok(scrollAfter > scrollBefore, `compass navigation did not move timeline: ${scrollBefore} -> ${scrollAfter}`);
 
+  // Explicit scroll updates the Compass without a DOM MutationObserver dependency.
+  const leftBefore = Number.parseFloat(await page.locator('#project-ribbon-viewport').evaluate((el) => el.style.left || '0'));
+  await page.locator('#timeline-scroll').evaluate((el) => { el.scrollLeft = Math.min(el.scrollWidth - el.clientWidth, el.scrollLeft + el.clientWidth * .35); el.dispatchEvent(new Event('scroll')); });
+  await page.waitForTimeout(80);
+  const leftAfter = Number.parseFloat(await page.locator('#project-ribbon-viewport').evaluate((el) => el.style.left || '0'));
+  assert.ok(leftAfter >= leftBefore, `explicit scroll did not synchronize Compass: ${leftBefore} -> ${leftAfter}`);
+
   // Fit re-synchronizes the manual row control with the computed row height.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.waitForTimeout(80);
@@ -117,14 +130,15 @@ try {
   const sliderRow = Number(await page.locator('#ux-row-height').inputValue());
   assert.equal(sliderRow, viewRow, `fit and row slider diverged: ${sliderRow} vs ${viewRow}`);
 
-  // Dense projects enter semantic Shape and hide a row control that no longer maps 1:1 to tasks.
+  // Dense projects enter semantic Shape; dead macro density/indicator DOM must not come back.
   await importProject(page, denseHandoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
   assert.equal(await page.locator('body').getAttribute('data-surface-level'), 'shape');
   assert.equal(await page.locator('#ux-row-density-dock').isHidden(), true);
-  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass2');
-  assert.equal(await page.locator('.macro-density-strip').isHidden(), true);
+  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass3');
+  assert.equal(await page.locator('.macro-density-strip').count(), 0);
+  assert.equal(await page.locator('#ux-macro-indicator').count(), 0);
 
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
@@ -132,7 +146,8 @@ try {
   // Mobile keeps the touch-first chrome; desktop slider/compass exist in DOM but stay hidden and do not create overflow.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
-  assert.equal(await mobile.page.locator('#ux-row-density-dock').isHidden(), true);
+  const mobileDock = mobile.page.locator('#ux-row-density-dock');
+  if (await mobileDock.count()) assert.equal(await mobileDock.isHidden(), true);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   const addBox = await mobile.page.locator('[data-action="add"]').first().boundingBox();
@@ -140,7 +155,7 @@ try {
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
   await mobile.context.close();
 
-  console.log('public polished compass + row density suite passed');
+  console.log('public consolidated project surface suite passed');
 } finally {
   await browser.close();
 }
