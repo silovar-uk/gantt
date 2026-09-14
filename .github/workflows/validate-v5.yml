@@ -25,6 +25,7 @@ jobs:
           for file in src/v5/classic/*.js; do
             node --check "$file"
           done
+          node --check scripts/validate-css-architecture.mjs
       - name: Verify production entrypoint
         shell: bash
         run: |
@@ -33,6 +34,10 @@ jobs:
           grep -q 'assets/v5-responsive.css' index.html
           grep -q 'src/v5/classic/01.js' index.html
           grep -q 'src/v5/classic/10.js' index.html
+          if grep -q 'assets/v8-tighter-rows.css' index.html; then
+            echo 'Obsolete tighter-row CSS is still loaded' >&2
+            exit 1
+          fi
           if grep -q 'src/main.js' index.html; then
             echo 'Legacy main runtime is still loaded' >&2
             exit 1
@@ -41,6 +46,8 @@ jobs:
             echo 'Legacy share layer is still loaded' >&2
             exit 1
           fi
+      - name: Verify CSS architecture
+        run: node scripts/validate-css-architecture.mjs
       - name: Verify no in-app AI API
         shell: bash
         run: |
