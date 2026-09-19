@@ -20,6 +20,12 @@ async function openFresh({ width = 1440, height = 900, touch = false } = {}) {
   return { context, page, errors };
 }
 
+// Dates are relative to today so the fixture stays inside the default view as time passes.
+function offsetDay(days) {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + days)).toISOString().slice(0, 10);
+}
+
 async function waitSaved(page) {
   await page.waitForFunction(() => (document.querySelector('#save-status')?.textContent || '').includes('保存済み'), null, { timeout: 10000 });
 }
@@ -63,8 +69,8 @@ try {
   // Create a task using the normal editor. The Project Ribbon becomes the primary timeline navigation once there is data.
   await page.locator('[data-action="add"]').first().click();
   await page.locator('#task-form [name="name"]').fill('UX E2E タスク');
-  await page.locator('#task-form [name="start"]').fill('2026-09-10');
-  await page.locator('#task-form [name="end"]').fill('2026-09-12');
+  await page.locator('#task-form [name="start"]').fill(offsetDay(3));
+  await page.locator('#task-form [name="end"]').fill(offsetDay(5));
   await page.locator('[data-action="save-task"]').click();
   await waitSaved(page);
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
@@ -122,8 +128,8 @@ try {
   await page.mouse.up();
   await waitSaved(page);
   task = await taskRow(page, 'UX E2E タスク');
-  assert.equal(await task.row.locator('[data-inline-start]').inputValue(), '2026-09-12');
-  assert.equal(await task.row.locator('[data-inline-end]').inputValue(), '2026-09-14');
+  assert.equal(await task.row.locator('[data-inline-start]').inputValue(), offsetDay(5));
+  assert.equal(await task.row.locator('[data-inline-end]').inputValue(), offsetDay(7));
 
   // Fit remains one click from the unified Ribbon, while advanced density values remain valid internally.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
