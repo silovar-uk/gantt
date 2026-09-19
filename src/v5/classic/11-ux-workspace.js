@@ -165,10 +165,10 @@
     const left = diffDays(viewStart, clippedStart) * dayWidth;
     const selectedClass = multiSelected.has(task.id) ? ' is-multi-selected' : '';
     if (task.milestone) {
-      return `<button class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start} 詳細を開く"></button>`;
+      return `<button tabindex="-1" class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start} 詳細を開く"></button>`;
     }
     const width = Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
-    return `<button class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
+    return `<button tabindex="-1" class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
       <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
       <span>${escapeHTML(task.name)}</span>
       <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>

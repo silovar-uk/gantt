@@ -241,6 +241,31 @@
     step(event.key === 'ArrowRight' ? 1 : -1);
   });
 
+  // ガントの操作盤: ↑↓/Home/End で予定を選び、Enter でカード、Delete で削除
+  document.addEventListener('keydown', (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !event.target.closest?.('#timeline-scroll')) return;
+    const tasks = filteredTasks();
+    if (!tasks.length) return;
+    const current = tasks.findIndex((task) => task.id === state.selectedTaskId);
+    const last = tasks.length - 1;
+    const target = { ArrowDown: Math.min(current + 1, last), ArrowUp: Math.max(current - 1, 0), Home: 0, End: last }[event.key];
+    if (target !== undefined) {
+      event.preventDefault();
+      const id = tasks[target].id;
+      taskSelection.selectOnly(id);
+      renderWorkspace();
+      (document.querySelector(`[data-timeline-task="${CSS.escape(id)}"]`) || document.querySelector('#timeline-scroll')).focus({ preventScroll: true });
+      revealTask(id);
+    } else if (current >= 0 && event.key === 'Enter') {
+      event.preventDefault();
+      openTaskCard(state.selectedTaskId, event.target.closest('[data-timeline-task]') || document.querySelector(`[data-timeline-task="${CSS.escape(state.selectedTaskId)}"]`));
+    } else if (current >= 0 && event.key === 'Delete') {
+      event.preventDefault();
+      deleteTask(state.selectedTaskId);
+      document.querySelector('#timeline-scroll')?.focus({ preventScroll: true });
+    }
+  });
+
   document.addEventListener('scroll', (event) => {
     if (['timeline-scroll', 'task-scroll', 'mobile-label-scroll'].includes(event.target.id)) schedulePlace();
   }, true);

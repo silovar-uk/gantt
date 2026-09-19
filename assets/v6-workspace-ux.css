@@ -57,11 +57,11 @@
 .timeline-row.is-multi-selected { background: rgba(54,71,215,.085); }
 .task-row.is-multi-selected { background: #e8ebff; box-shadow: inset 3px 0 0 var(--primary); }
 
-.task-bar.ux-draggable { cursor: grab; overflow: visible; touch-action: none; }
+.task-bar.ux-draggable { cursor: grab; overflow: visible; touch-action: pan-y; }
 .task-bar.ux-draggable > span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
 .task-bar.ux-draggable:hover { filter: saturate(1.04); box-shadow: 0 2px 7px rgba(16,24,40,.18); }
 .task-bar.ux-draggable.is-dragging { cursor: grabbing; z-index: 20; opacity: .92; box-shadow: 0 6px 16px rgba(16,24,40,.22); }
-.milestone.ux-draggable { cursor: grab; touch-action: none; }
+.milestone.ux-draggable { cursor: grab; touch-action: pan-y; }
 .task-bar.is-multi-selected, .milestone.is-multi-selected { outline: 2px solid var(--ux-accent); outline-offset: 2px; z-index: 6; }
 .ux-resize-handle { position: absolute; top: -1px; bottom: -1px; width: 8px; opacity: 0; z-index: 3; cursor: ew-resize; background: rgba(255,255,255,.68); border-radius: 5px; transition: opacity .1s ease; }
 .ux-resize-start { left: -2px; }

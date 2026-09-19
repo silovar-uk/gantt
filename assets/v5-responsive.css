@@ -11,7 +11,9 @@
 .mobile-label-head { height: 38px; display: flex; align-items: center; padding: 0 10px; background: #fafbfc; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; }
 .mobile-label-scroll { overflow-y: auto; scrollbar-width: none; }
 .mobile-label-scroll::-webkit-scrollbar { display: none; }
-.mobile-timeline-label { width: 100%; height: var(--row-height); display: block; border: 0; border-bottom: 1px solid var(--line); background: #fff; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 12px; }
+.mobile-timeline-label { width: 100%; height: var(--row-height); display: flex; align-items: center; border: 0; border-bottom: 1px solid var(--line); background: #fff; padding: 0 0 0 8px; overflow: hidden; font-size: 12px; }
+.mobile-label-name { flex: 1 1 auto; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font: inherit; color: inherit; }
+.mobile-timeline-label .row-menu-button { flex: 0 0 36px; width: 36px; height: 100%; }
 .mobile-timeline-label.is-selected { background: #eef0ff; color: var(--primary); }
 
 .modal-layer { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px; }

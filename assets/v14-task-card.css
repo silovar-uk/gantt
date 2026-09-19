@@ -78,3 +78,6 @@ body.is-present-mode .ux-bar-more { display: none; }
   .task-card-nav button { width: 44px; height: 44px; }
   .task-card-foot .link-button { min-height: 44px; }
 }
+
+.task-bar:focus-visible, .milestone:focus-visible, #timeline-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.task-bar:focus-visible, .milestone:focus-visible { z-index: 8; }

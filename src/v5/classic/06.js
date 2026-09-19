@@ -130,11 +130,11 @@ function renderWorkspace() {
     <div id="task-scroll" class="task-scroll" role="rowgroup">${tasks.length ? tasks.map(listRowHTML).join('') : `<div class="zero-result"><strong>条件に合う予定がありません。</strong><button class="link-button" type="button" data-action="clear-filters">条件を解除</button></div>`}</div>
   </section>`;
 
-  const mobileLabels = `<div id="mobile-timeline-labels" class="mobile-timeline-labels"><div class="mobile-label-head">予定</div><div id="mobile-label-scroll" class="mobile-label-scroll">${tasks.map((task) => `<button type="button" data-task-row="${task.id}" class="mobile-timeline-label ${task.id === state.selectedTaskId ? 'is-selected' : ''}">${escapeHTML(task.name)}</button>`).join('')}</div></div>`;
+  const mobileLabels = `<div id="mobile-timeline-labels" class="mobile-timeline-labels"><div class="mobile-label-head">予定</div><div id="mobile-label-scroll" class="mobile-label-scroll">${tasks.map((task) => `<div data-task-row="${task.id}" class="mobile-timeline-label ${task.id === state.selectedTaskId ? 'is-selected' : ''}"><button type="button" class="mobile-label-name">${escapeHTML(task.name)}</button><button type="button" class="row-menu-button" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button></div>`).join('')}</div></div>`;
 
   const timelinePanel = `<section class="timeline-panel">
     ${mode === 'gantt' && breakpoint() === 'mobile' ? mobileLabels : ''}
-    <div id="timeline-scroll" class="timeline-scroll">
+    <div id="timeline-scroll" class="timeline-scroll" tabindex="0" role="grid" aria-label="ガント。上下キーで予定を選び、Enterで開きます">
       <div class="timeline-inner" style="width:${totalWidth}px;--day-width:${dayWidth}px;--row-height:${clamp(view.rowHeight, 36, 64)}px">
         <div class="timeline-head" style="width:${totalWidth}px">${timelineHeaderHTML(start, days, dayWidth, view.scale)}</div>
         <div id="timeline-body" class="timeline-body" style="width:${totalWidth}px">
