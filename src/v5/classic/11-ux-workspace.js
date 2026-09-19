@@ -132,10 +132,10 @@
     else multiSelected.add(id);
     state.selectedTaskId = multiSelected.has(id) ? id : ([...multiSelected].at(-1) || null);
     applyMultiSelectionStyles();
-    updateSelectionBadge();
+    syncSelectionCard(true);
   }
 
-  window.taskSelection = { selectOnly, toggle: toggleMulti, ids: () => [...multiSelected] };
+  window.taskSelection = { selectOnly, toggle: toggleMulti, ids: () => [...multiSelected], shift: (ids, days) => shiftTasks(ids, days) };
 
   function applyMultiSelectionStyles() {
     document.querySelectorAll('[data-task-row], [data-timeline-row]').forEach((element) => {
@@ -147,16 +147,9 @@
     });
   }
 
-  function updateSelectionBadge() {
-    const badge = document.querySelector('#ux-selection-badge');
-    if (!badge) return;
-    if (multiSelected.size > 1) {
-      badge.hidden = false;
-      badge.textContent = `${multiSelected.size}件選択`;
-    } else {
-      badge.hidden = true;
-      badge.textContent = '';
-    }
+  // 2件以上の選択は、まとめてカード(21-task-card.js)が受け持つ
+  function syncSelectionCard(open = false) {
+    window.syncMultiCard?.(open);
   }
 
   function taskBarHTML(task, viewStart, viewEnd, dayWidth) {
@@ -170,17 +163,24 @@
     const width = Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
     return `<button tabindex="-1" class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
       <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
-      <span>${escapeHTML(task.name)}</span>
+      ${nameOutside(task, width) ? `<b class="ux-bar-name-out">${escapeHTML(task.name)}</b>` : `<span>${escapeHTML(task.name)}</span>`}
       <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>
     </button>`;
   }
+
+  // ponytail: 全角1.0em/半角0.6emの概算。40件×2回のreflowを避けるため実測しない。実測が要るなら canvas.measureText
+  const NAME_FONT = 12;
+  const nameWidth = (name) => [...name].reduce((sum, ch) => sum + (ch.charCodeAt(0) > 255 ? 1 : 0.6), 0) * NAME_FONT;
+  const nameOutside = (task, width) => task.displayNamePosition === 'right' || (task.displayNamePosition === 'auto' && nameWidth(task.name) > width - 14);
 
   function barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
     const clippedStart = task.start < viewStart ? viewStart : task.start;
     const clippedEnd = task.end > viewEnd ? viewEnd : task.end;
     const left = diffDays(viewStart, clippedStart) * dayWidth;
     const right = task.milestone ? left + Math.max(3, dayWidth / 2) + 10 : left + Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
-    const x = right + 20 <= totalWidth ? right + 4 : right - 20;
+    const outside = !task.milestone && nameOutside(task, right - left);
+    const gap = outside ? nameWidth(task.name) + 10 : 0;
+    const x = right + gap + 20 <= totalWidth ? right + gap + 4 : right - 20;
     return `<button type="button" class="ux-bar-more" style="left:${x}px" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>`;
   }
 
@@ -193,7 +193,7 @@
     }
     document.querySelector('#workspace')?.classList.toggle('ux-present-workspace', presentMode);
     applyMultiSelectionStyles();
-    updateSelectionBadge();
+    syncSelectionCard();
   })(renderWorkspace);
 
   timelineRowHTML = function enhancedTimelineRowHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
@@ -261,7 +261,6 @@
           <button type="button" data-ux-action="zoom-out" aria-label="縮小" title="縮小">−</button>
           <button type="button" data-ux-action="zoom-in" aria-label="拡大" title="拡大">＋</button>
         </div>
-        <span id="ux-selection-badge" class="ux-selection-badge" hidden></span>
       `;
       const spacer = toolbar.querySelector('.toolbar-spacer');
       toolbar.insertBefore(controls, spacer?.nextSibling || null);
@@ -272,6 +271,10 @@
       wrap.className = 'menu-wrap ux-more-wrap';
       wrap.innerHTML = `<button class="icon-button" type="button" data-toggle-menu="ux-more-menu" aria-expanded="false" aria-label="その他" title="その他">•••</button>
         <div id="ux-more-menu" class="popup-menu popup-menu-right" data-menu-panel hidden>
+          <button type="button" class="ux-mobile-only" data-action="fit"><span>全体を表示</span><small>プロジェクト全体に合わせる</small></button>
+          <button type="button" class="ux-mobile-only" data-menu-do="zoom-in"><span>拡大</span><small>日付の幅を広げる</small></button>
+          <button type="button" class="ux-mobile-only" data-menu-do="zoom-out"><span>縮小</span><small>日付の幅を狭める</small></button>
+          <button type="button" class="ux-mobile-only" data-menu-do="copy-ai-json"><span>AI用JSONをコピー</span><small>外部AIへ渡す入力データ</small></button>
           <button type="button" data-action="today"><span>今日へ移動</span><small>今日の位置を表示</small></button>
           <button type="button" data-action="display-settings"><span>表示設定</span><small>期間・行高・文字サイズ</small></button>
           <button type="button" data-ux-action="download-ai-json"><span>AI用JSONを保存</span><small>外部AIへ渡す入力データ</small></button>
@@ -589,6 +592,16 @@
     else if (action === 'exit-present') setPresent(false);
   });
 
+  // ••• メニューの項目を押したら閉じる(モバイルはここが主要操作の入口になる)
+  document.addEventListener('click', (event) => {
+    const item = event.target.closest('#ux-more-menu button');
+    if (!item) return;
+    closeMenus();
+    if (item.dataset.menuDo === 'zoom-in') zoomTimeline(1);
+    else if (item.dataset.menuDo === 'zoom-out') zoomTimeline(-1);
+    else if (item.dataset.menuDo === 'copy-ai-json') copyAiJson();
+  });
+
   document.addEventListener('click', (event) => {
     const target = event.target.closest('[data-timeline-task], [data-task-row]');
     const id = target?.dataset.timelineTask || target?.dataset.taskRow;
@@ -600,7 +613,7 @@
       return;
     }
     multiSelected.clear();
-    updateSelectionBadge();
+    syncSelectionCard();
   }, true);
 
   document.addEventListener('dblclick', (event) => {
@@ -644,7 +657,7 @@
 
   document.addEventListener('gantt-desk:v5-change', () => {
     if (presentMode) renderPresentBar();
-    requestAnimationFrame(() => { applyMultiSelectionStyles(); updateSelectionBadge(); });
+    requestAnimationFrame(() => { applyMultiSelectionStyles(); syncSelectionCard(); });
   });
 
   function bootUx() {

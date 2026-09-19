@@ -243,7 +243,7 @@ function prepareEditor(task) {
   const today = todayISO();
   const source = task ? deepCopy(task) : {
     id: uid('task'), name: '', start: today, end: today, milestone: false, completed: false,
-    categoryId: DEFAULT_CATEGORY_ID, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'inside', order: state.project.tasks.length,
+    categoryId: DEFAULT_CATEGORY_ID, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'auto', order: state.project.tasks.length,
   };
   state.editor = { isNew: !task, task: source, dirty: false, original: task ? deepCopy(task) : null };
 }
@@ -261,6 +261,7 @@ function editorFormHTML() {
     ${task.milestone
       ? `<label class="field"><span>日付</span><input name="date" type="date" value="${task.start}"></label>`
       : `<div class="form-grid two"><label class="field"><span>開始日</span><input name="start" type="date" value="${task.start}"></label><label class="field"><span>終了日</span><input name="end" type="date" value="${task.end}"></label></div>`}
+    ${task.milestone ? '' : `<label class="field"><span>名前の位置</span><select name="displayNamePosition">${[['auto', '自動'], ['inside', '中に入れる'], ['right', '右に出す']].map(([value, label]) => `<option value="${value}" ${(task.displayNamePosition || 'auto') === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>`}
     <div class="form-grid two">
       <label class="field"><span>個別色</span><select name="colorOverride"><option value="">カテゴリー色を使う</option>${COLOR_PALETTE.map((color) => `<option value="${color}" ${task.colorOverride === color ? 'selected' : ''}>${paletteLabels[color]}</option>`).join('')}</select></label>
       <label class="field checkbox-field"><input type="checkbox" name="completed" ${task.completed ? 'checked' : ''}><span>完了</span></label>

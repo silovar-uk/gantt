@@ -14,6 +14,7 @@ function readEditorForm() {
     end,
     categoryId: String(data.get('categoryId') || DEFAULT_CATEGORY_ID),
     colorOverride: String(data.get('colorOverride') || ''),
+    displayNamePosition: ['auto', 'inside', 'right'].includes(data.get('displayNamePosition')) ? data.get('displayNamePosition') : original.displayNamePosition || 'auto',
     completed: data.get('completed') === 'on',
     isDeadline: milestone && data.get('isDeadline') === 'on',
     isHidden: data.get('isHidden') === 'on',
@@ -80,7 +81,8 @@ function renderMoveModal() {
 }
 
 function renderFilterModal() {
-  const body = `<div class="filter-section"><h3>状態</h3>
+  const body = `<div class="filter-section"><h3>検索</h3><label class="field"><input id="filter-search" type="search" placeholder="予定・カテゴリーを検索" autocomplete="off" value="${escapeHTML(state.ui.search)}" aria-label="予定・カテゴリーを検索"></label></div>
+    <div class="filter-section"><h3>状態</h3>
       <label class="check-row"><input type="checkbox" data-filter="thisWeek" ${state.ui.thisWeek ? 'checked' : ''}><span>今週にかかる予定</span></label>
       <label class="check-row"><input type="checkbox" data-filter="incomplete" ${state.ui.incomplete ? 'checked' : ''}><span>未完了</span></label>
       <label class="check-row"><input type="checkbox" data-filter="overdue" ${state.ui.overdue ? 'checked' : ''}><span>期限超過</span></label>

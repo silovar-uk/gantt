@@ -51,9 +51,9 @@ jobs:
             if grep -q 'assets/v6-workspace-ux.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v7-overview-density.css?v=20260918-density4' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v9-macro-overview.css?v=20260918-macro6' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v11-project-surface.css?v=20260918-surface4' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v11-project-surface.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v12-time-compass.css?v=20260918-window1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v13-sage-polish.css?v=20260918-sage5' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v13-sage-polish.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && ! grep -q 'assets/v8-tighter-rows.css' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/13-overview-density.js?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/15-macro-overview.js?v=20260918-macro4' /tmp/live-index.html 2>/dev/null \
@@ -74,9 +74,9 @@ jobs:
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260919-card1' -o /tmp/v6-workspace.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v7-overview-density.css?v=20260918-density4' -o /tmp/v7-density.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v9-macro-overview.css?v=20260918-macro6' -o /tmp/v9-macro.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260918-surface4' -o /tmp/v11-surface.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260919-card1' -o /tmp/v11-surface.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260918-window1' -o /tmp/v12-compass.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260918-sage5' -o /tmp/v13-sage.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260919-card1' -o /tmp/v13-sage.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v14-task-card.css?v=20260919-card1' -o /tmp/v14-card.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/13-overview-density.js?v=20260919-card1' -o /tmp/v13-overview.js
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/15-macro-overview.js?v=20260918-macro4' -o /tmp/v15-macro.js

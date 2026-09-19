@@ -5,6 +5,8 @@
   let card = null;
   let taskId = '';
   let kind = 'bar'; // 'bar' | 'row': カードを寄せる先
+  let mode = 'single'; // 'single' | 'multi'
+  let multiIds = [];
   let builtKey = '';
   let closedByKey = false;
   let placeQueued = false;
@@ -43,6 +45,70 @@
     </footer>`;
   }
 
+  function multiHTML() {
+    const n = multiIds.length;
+    return `<div class="task-card-head"><strong class="task-card-title">${n}件を選択中</strong><button class="icon-button" type="button" data-card-do="close" aria-label="閉じる">×</button></div>
+    <div class="task-card-line"><span>日付</span><span class="task-card-pair"><button type="button" data-multi="shift" data-days="-1">‹ 1日前へ</button><button type="button" data-multi="shift" data-days="1">1日後へ ›</button></span></div>
+    <label class="task-card-line"><span>カテゴリー</span><select data-multi="category"><option value="">変更しない</option>${state.project.categories.map((category) => `<option value="${category.id}">${escapeHTML(category.name)}</option>`).join('')}</select></label>
+    <div class="task-card-line"><span>完了</span><span class="task-card-pair"><button type="button" data-multi="complete" data-on="1">にする</button><button type="button" data-multi="complete" data-on="0">を外す</button></span></div>
+    <footer class="task-card-foot"><button class="link-button danger" type="button" data-multi="delete">${n}件を削除</button></footer>`;
+  }
+
+  function buildMulti() {
+    card.innerHTML = multiHTML();
+    card.setAttribute('aria-label', `${multiIds.length}件を選択中`);
+    builtKey = `multi|${multiIds.join(',')}`;
+  }
+
+  // 2件以上の選択の道具。open=true(Shift+クリック直後)のときだけ開き、開いていれば中身と位置を保つ
+  function syncMultiCard(open) {
+    const ids = taskSelection.ids().filter(findTask);
+    const showing = isOpen() && mode === 'multi';
+    if (ids.length < 2) { if (showing) hide(); return; }
+    if (!open && !showing) return;
+    ensureCard();
+    if (isOpen() && mode === 'single') flushFields();
+    const wasOpen = isOpen();
+    mode = 'multi';
+    multiIds = ids;
+    kind = 'bar';
+    taskId = ids.includes(state.selectedTaskId) ? state.selectedTaskId : ids.at(-1);
+    if (!wasOpen) {
+      // 外側クリックで閉じない: Shift+クリックで選び足し続けられるように manual にする
+      if (canPopover) card.setAttribute('popover', 'manual');
+      buildMulti();
+      card.classList.toggle('is-sheet', matchMedia(NARROW).matches);
+      show();
+    } else if (builtKey !== `multi|${ids.join(',')}`) buildMulti();
+    place();
+  }
+
+  function multiCommit(mutator, message) {
+    const idSet = new Set(multiIds);
+    contentCommit((project) => mutator(project, idSet), { reason: 'multi', message, undo: true });
+  }
+
+  function multiAction(el) {
+    const act = el.dataset.multi;
+    const n = multiIds.length;
+    if (act === 'shift') taskSelection.shift(multiIds, Number(el.dataset.days));
+    else if (act === 'category' && el.value) {
+      const name = categoryById(el.value).name;
+      multiCommit((project, ids) => project.tasks.forEach((task) => { if (ids.has(task.id)) task.categoryId = el.value; }), `${n}件のカテゴリーを「${name}」にしました`);
+      el.value = '';
+    } else if (act === 'complete') {
+      const on = el.dataset.on === '1';
+      multiCommit((project, ids) => project.tasks.forEach((task) => { if (ids.has(task.id)) task.completed = on; }), `${n}件を${on ? '完了にしました' : '未完了に戻しました'}`);
+    } else if (act === 'delete') {
+      const count = n;
+      hide();
+      const ids = [...multiIds];
+      taskSelection.selectOnly(null);
+      multiIds = ids;
+      multiCommit((project, set) => { project.tasks = project.tasks.filter((task) => !set.has(task.id)); }, `${count}件を削除しました`);
+    }
+  }
+
   function build(task) {
     card.innerHTML = cardHTML(task);
     card.setAttribute('aria-label', `${task.name} の詳細`);
@@ -73,6 +139,12 @@
     const narrow = matchMedia(NARROW).matches;
     card.classList.toggle('is-sheet', narrow);
     if (narrow) { card.style.left = ''; card.style.top = ''; return; }
+    if (mode === 'multi') {
+      // ponytail: 選び足すクリックを邪魔しないよう、バーに寄せず右下に固定。近くに出したくなったらここでアンカー計算に切り替える
+      card.style.left = `${Math.max(8, innerWidth - card.offsetWidth - 16)}px`;
+      card.style.top = `${Math.max(8, innerHeight - card.offsetHeight - 16)}px`;
+      return;
+    }
     const anchor = anchorEl();
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
@@ -168,7 +240,10 @@
 
     card.addEventListener('beforetoggle', (event) => { if (event.newState === 'closed') flushFields(); });
     card.addEventListener('toggle', (event) => { if (event.newState === 'closed') onClosed(); });
-    card.addEventListener('change', (event) => commitField(event.target.closest('[data-card-field]')));
+    card.addEventListener('change', (event) => {
+      if (event.target.matches('select[data-multi]')) multiAction(event.target);
+      else commitField(event.target.closest('[data-card-field]'));
+    });
     card.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') { closedByKey = true; if (!canPopover) hide(); return; }
       if (event.key === 'Enter' && !event.isComposing && event.target.matches('.task-card-name')) { event.preventDefault(); event.target.blur(); }
@@ -176,6 +251,8 @@
     card.addEventListener('click', (event) => {
       const nav = event.target.closest('[data-card-nav]');
       if (nav) { step(Number(nav.dataset.cardNav)); return; }
+      const multi = event.target.closest('button[data-multi]');
+      if (multi) { multiAction(multi); return; }
       const act = event.target.closest('[data-card-do]')?.dataset.cardDo;
       if (!act) return;
       const id = taskId;
@@ -200,10 +277,12 @@
     ensureCard();
     if (source) kind = source.closest?.('.ux-bar-more, [data-timeline-task]') ? 'bar' : 'row';
     const wasOpen = isOpen();
+    mode = 'single';
     taskId = id;
     taskSelection.selectOnly(id);
     renderWorkspace(); // 開いていれば、この中で refreshCard が中身を差し替える
     if (!wasOpen) {
+      if (canPopover) card.setAttribute('popover', 'auto');
       build(findTask(id));
       card.classList.toggle('is-sheet', matchMedia(NARROW).matches);
       show();
@@ -215,6 +294,7 @@
 
   function refreshCard() {
     if (!isOpen()) return;
+    if (mode === 'multi') { syncMultiCard(false); return; }
     const task = findTask(taskId);
     if (!task) { hide(); return; }
     if (builtKey !== `${task.id}|${task.milestone}|${task.isDeadline}`) build(task);
@@ -250,6 +330,12 @@
   });
 
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isOpen() && mode === 'multi') {
+      taskSelection.selectOnly(null);
+      renderWorkspace();
+      hide();
+      return;
+    }
     if (!isOpen() || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     if (event.target.matches('input:not([type="checkbox"]), textarea, select')) return;
@@ -287,6 +373,7 @@
   }, true);
   addEventListener('resize', schedulePlace);
 
+  window.syncMultiCard = syncMultiCard;
   window.openTaskCard = openTaskCard;
   window.closeTaskCard = hide;
   document.body.dataset.taskCardVersion = CARD_VERSION;

@@ -148,7 +148,7 @@ function bindEvents() {
   });
 
   document.addEventListener('input', (event) => {
-    if (event.target.id === 'search-input') {
+    if (event.target.id === 'search-input' || event.target.id === 'filter-search') {
       state.ui.search = event.target.value;
       renderConditionBar(); renderWorkspace();
       const found = filteredTasks();

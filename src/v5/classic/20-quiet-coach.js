@@ -91,7 +91,7 @@
   // Detail: selecting a list row shows the hint; opening details or deleting spends it.
   document.addEventListener('click', (event) => {
     const row = event.target.closest('[data-task-row]');
-    if (row && !event.target.closest('input,button,select,textarea')) trigger('detail', row, '•••で詳細、Deleteで削除');
+    if (row && !event.target.closest('input,button,select,textarea')) trigger('detail', row, 'バーをタップすると直せます');
   }, true);
 
   document.addEventListener('click', (event) => {

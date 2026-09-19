@@ -229,7 +229,7 @@ function normalizeTask(task, categories, order = 0, { strict = false } = {}) {
       colorOverride,
       isDeadline: milestone && (task.isDeadline === true || task.deadline === true),
       isHidden: task.isHidden === true || task.hidden === true,
-      displayNamePosition: task.displayNamePosition === 'right' ? 'right' : 'inside',
+      displayNamePosition: ['inside', 'right', 'auto'].includes(task.displayNamePosition) ? task.displayNamePosition : 'auto',
       order: Number.isInteger(task.order) && task.order >= 0 ? task.order : order,
     },
   };

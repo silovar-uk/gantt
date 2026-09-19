@@ -171,7 +171,7 @@ function validateHandoff(payload) {
     if (typeof task.start === 'string' && typeof task.end === 'string' && parseISO(task.start) && parseISO(task.end) && task.start <= task.end && typeof task.name === 'string' && task.name.trim()) {
       tasks.push({
         id: uid('task'), name: task.name.trim().slice(0, 200), start: task.start, end: task.milestone === true ? task.start : task.end,
-        milestone: task.milestone === true, completed: false, categoryId: category.id, note: String(task.note || '').slice(0, 5000), colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'inside', order: tasks.length,
+        milestone: task.milestone === true, completed: false, categoryId: category.id, note: String(task.note || '').slice(0, 5000), colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'auto', order: tasks.length,
       });
     }
   });

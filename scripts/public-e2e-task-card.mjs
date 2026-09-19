@@ -94,6 +94,21 @@ try {
   assert.equal(await mobile.page.locator(`${openCard}.is-sheet`).count(), 1, 'mobile card must be a bottom sheet');
   const box = await mobile.page.locator(openCard).boundingBox();
   assert.equal(Math.round(box.width), 375, 'bottom sheet must span the screen width');
+  // 12. モバイルのツールバーは、横スクロールで隠れる操作を作らない(一覧・ガントの両方で右端のはみ出し0件)
+  const overflowing = () => mobile.page.evaluate(() => [...document.querySelectorAll('body *')]
+    .filter((el) => el.getClientRects().length && !el.closest('#timeline-scroll, .popup-menu, .toast, .task-card, #modal-root') && el.getBoundingClientRect().right > 376)
+    .map((el) => el.tagName.toLowerCase() + '.' + el.className));
+  await mobile.page.keyboard.press('Escape');
+  assert.deepEqual(await overflowing(), [], 'nothing may overflow the 375px screen in gantt mode');
+  for (const selector of ['.add-button', '[data-action="filter"]', '#mode-switch button:visible', '.ux-more-wrap > .icon-button']) {
+    const b = await mobile.page.locator(selector).first().boundingBox();
+    assert.ok(b && b.x + b.width <= 375, 'primary control must be on screen: ' + selector + ' ' + JSON.stringify(b));
+  }
+  await mobile.page.locator('#mode-switch button:visible').tap();
+  assert.equal(await mobile.page.evaluate(() => effectiveMode()), 'list', 'the single toggle must switch to the other mode');
+  assert.deepEqual(await overflowing(), [], 'nothing may overflow the 375px screen in list mode');
+  await mobile.page.locator('.ux-more-wrap > .icon-button').tap();
+  assert.ok(await mobile.page.locator('#ux-more-menu [data-action="fit"]').isVisible(), 'moved controls must live in the ••• menu');
   assert.equal(mobile.errors.length, 0, mobile.errors.join('\n'));
   await mobile.context.close();
 

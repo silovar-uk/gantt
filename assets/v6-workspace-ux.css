@@ -27,8 +27,6 @@
 .ux-zoom button { width: 36px; border: 0; border-right: 1px solid var(--line); background: #fff; font-size: 19px; line-height: 1; }
 .ux-zoom button:last-child { border-right: 0; }
 .ux-zoom button:hover { background: var(--surface-hover); }
-.ux-selection-badge { align-items: center; height: 28px; padding: 0 9px; border-radius: 999px; background: #eef0ff; color: #2d3bb8; font-size: 11px; font-weight: 800; }
-.ux-selection-badge:not([hidden]) { display: inline-flex; }
 .ux-more-wrap { margin-left: 2px; }
 .modal-foot .link-button.danger { margin-right: auto; }
 .draft-banner-actions { display: flex; gap: 8px; margin-left: auto; }
@@ -125,7 +123,9 @@ body.is-present-mode .ux-resize-handle { display: none; }
   .workspace.mode-split .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
 }
 
+.ux-mobile-only { display: none !important; }
 @media (max-width: 767px) {
+  .ux-mobile-only { display: grid !important; }
   html, body, .app-root, .app-shell { max-width: 100vw; overflow-x: hidden; }
   .topbar { min-height: 54px; width: 100%; min-width: 0; }
   .brand-area { min-width: 0; flex: 1 1 auto; }
@@ -137,11 +137,16 @@ body.is-present-mode .ux-resize-handle { display: none; }
   .top-actions > .menu-wrap .button { padding-inline: 8px; }
   .ux-present-button { min-height: 44px; padding-inline: 9px; }
   .toolbar { min-height: 52px; max-width: 100vw; }
-  .ux-view-controls { order: 2; }
-  .ux-view-controls > [data-action="fit"] { min-height: 44px; }
-  .ux-zoom { height: 44px; }
-  .ux-zoom button { width: 44px; }
-  .ux-more-wrap { order: 3; }
+  /* モバイルのツールバー: 1段目は主要4操作、2段目は時間の窓。横スクロールで隠れる操作を作らない */
+  .toolbar { flex-wrap: wrap; overflow: visible; row-gap: 6px; }
+  .toolbar > .search-box, .toolbar > .toolbar-spacer, #ux-view-controls { display: none !important; }
+  .toolbar > .add-button { order: 1; flex: 1 1 auto; min-width: 0; }
+  .toolbar > [data-action="filter"] { order: 2; }
+  .toolbar > #mode-switch { order: 3; padding: 0; border: 0; background: transparent; }
+  .toolbar > #mode-switch button { min-width: 64px; border: 1px solid var(--line-strong); background: var(--surface); }
+  .toolbar > #mode-switch button.is-active { display: none; }
+  .toolbar > .ux-more-wrap { order: 4; margin-left: 0; }
+  .toolbar > #project-ribbon { order: 5; flex: 1 0 100%; width: 100%; max-width: none; }
   .ux-more-wrap > .icon-button { min-height: 44px; width: 44px; }
   body.is-present-mode .mobile-timeline-labels { flex-basis: 112px; width: 112px; }
   .ux-resize-handle { width: 12px; opacity: .5; }

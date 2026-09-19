@@ -106,7 +106,7 @@ function registerPending(id) {
       project.categories.push(category);
     }
     project.pendingItems = project.pendingItems.filter((p) => p.id !== id);
-    project.tasks.push({ id: uid('task'), name: name.slice(0, 200), start, end, milestone: false, completed: false, categoryId: category.id, note: item.note || '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'inside', order: project.tasks.length });
+    project.tasks.push({ id: uid('task'), name: name.slice(0, 200), start, end, milestone: false, completed: false, categoryId: category.id, note: item.note || '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'auto', order: project.tasks.length });
   }, { reason: 'pending-to-task', message: '保留項目を予定に登録しました' });
   if (!state.project.pendingItems.length) closeModal({ force: true });
 }
