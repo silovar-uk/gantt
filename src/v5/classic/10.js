@@ -19,7 +19,7 @@ function bindEvents() {
     if (timelineTask) { state.selectedTaskId = timelineTask; renderWorkspace(); return; }
     const row = event.target.closest('[data-task-row]');
     if (row && !event.target.closest('input,select,textarea,[data-action]')) {
-      state.selectedTaskId = row.dataset.taskRow; renderWorkspace();
+      state.selectedTaskId = row.dataset.taskRow; renderWorkspace(); revealTask(row.dataset.taskRow);
       if (row.classList.contains('mobile-timeline-label')) openTaskCard(row.dataset.taskRow, row);
       return;
     }
@@ -150,7 +150,10 @@ function bindEvents() {
   document.addEventListener('input', (event) => {
     if (event.target.id === 'search-input') {
       state.ui.search = event.target.value;
-      renderConditionBar(); renderWorkspace(); return;
+      renderConditionBar(); renderWorkspace();
+      const found = filteredTasks();
+      if (state.ui.search && found.length === 1) revealTask(found[0].id);
+      return;
     }
     if (state.modal === 'details' && event.target.closest('#task-form')) state.editor.dirty = true;
     if (state.modal === 'chat-input') {

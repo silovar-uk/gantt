@@ -338,6 +338,87 @@
     }, { reason: 'keyboard-shift', message: `${ids.length}件を${Math.abs(deltaDays)}日${deltaDays > 0 ? '後ろ' : '前'}へ移動しました` });
   }
 
+  const shortMD = (iso) => { const [, m, d] = String(iso).split('-'); return `${Number(m)}/${Number(d)}`; };
+
+  // ドラッグ中の予定の、置いた後の期間
+  function draggedRange(d, original) {
+    if (d.role === 'move') return { start: addDays(original.start, d.delta), end: addDays(original.end, d.delta) };
+    if (d.role === 'start') { const start = addDays(original.start, d.delta); return { start: start <= original.end ? start : original.end, end: original.end }; }
+    const end = addDays(original.end, d.delta);
+    return { start: original.start, end: end >= original.start ? end : original.start };
+  }
+
+  // 同じカテゴリーの締切マイルストーンを、この移動で新たに越えるか(最も近い1件)
+  function deadlineOverrun(d) {
+    if (d.role === 'start') return null;
+    const deadlines = state.project.tasks.filter((task) => task.milestone && task.isDeadline);
+    let hit = null;
+    d.snapshot.forEach((original) => {
+      const task = state.project.tasks.find((item) => item.id === original.id);
+      if (!task || task.milestone) return;
+      const end = draggedRange(d, original).end;
+      deadlines.forEach((deadline) => {
+        if (deadline.categoryId !== task.categoryId || original.end > deadline.start || end <= deadline.start) return;
+        if (!hit || deadline.start < hit.deadline.start) hit = { deadline, days: diffDays(deadline.start, end) };
+      });
+    });
+    return hit;
+  }
+
+  function positionDragReadout(event) {
+    const box = dragState?.readout;
+    if (!box) return;
+    box.style.left = `${Math.min(event.clientX + 14, innerWidth - box.offsetWidth - 8)}px`;
+    box.style.top = `${Math.max(8, event.clientY - box.offsetHeight - 14)}px`;
+  }
+
+  function updateDragReadout(event) {
+    const d = dragState;
+    if (!d.readout) {
+      d.readout = document.createElement('div');
+      d.readout.className = 'ux-drag-readout';
+      d.readout.setAttribute('aria-hidden', 'true');
+      document.body.append(d.readout);
+    }
+    const first = d.snapshot[0];
+    const range = draggedRange(d, first);
+    const before = inclusiveDays(first.start, first.end);
+    const after = inclusiveDays(range.start, range.end);
+    const sign = d.delta > 0 ? '+' : '';
+    let line;
+    if (d.role === 'move' && d.snapshot.length > 1) line = `${d.snapshot.length}件を ${sign}${d.delta}日  (${shortMD(first.start)} → ${shortMD(range.start)})`;
+    else if (d.role === 'move') line = `${shortMD(first.start)} → ${shortMD(range.start)}${first.milestone ? '' : `  (${after}日間)`}  ${sign}${d.delta}日`;
+    else if (d.role === 'start') line = `${shortMD(first.start)} → ${shortMD(range.start)}  (${before}日間 → ${after}日間)`;
+    else line = `${shortMD(first.end)} → ${shortMD(range.end)}  (${before}日間 → ${after}日間)`;
+    const hit = deadlineOverrun(d);
+    d.readout.classList.toggle('is-warning', Boolean(hit));
+    d.readout.replaceChildren(line);
+    if (hit) {
+      const warn = document.createElement('div');
+      warn.textContent = `締切「${hit.deadline.name}」を${hit.days}日超えます`;
+      d.readout.append(warn);
+    }
+    positionDragReadout(event);
+    document.querySelectorAll('.time-compass-milestone.is-alert').forEach((pin) => pin.classList.remove('is-alert'));
+    if (hit) {
+      document.querySelectorAll('.time-compass-milestone').forEach((pin) => {
+        if (pin.dataset.compassDate === hit.deadline.start && pin.dataset.compassName === hit.deadline.name) pin.classList.add('is-alert');
+      });
+    }
+  }
+
+  function clearDragReadout(d) {
+    d.readout?.remove();
+    document.querySelectorAll('.time-compass-milestone.is-alert').forEach((pin) => pin.classList.remove('is-alert'));
+  }
+
+  function dragToast(d, delta) {
+    const first = d.snapshot[0];
+    const range = draggedRange({ ...d, delta }, first);
+    if (d.role === 'move') return `${d.snapshot.length}件を${Math.abs(delta)}日${delta > 0 ? '後ろ' : '前'}へ移動しました(${shortMD(first.start)} → ${shortMD(range.start)})`;
+    return `期間を${inclusiveDays(range.start, range.end)}日間にしました(${shortMD(range.start)} → ${shortMD(range.end)})`;
+  }
+
   function beginTaskDrag(event, element) {
     if (presentMode || event.button !== 0) return;
     const id = element.dataset.timelineTask;
@@ -373,8 +454,10 @@
     if (!dragState.moved && Math.abs(event.clientX - dragState.startX) < TAP_PX) return;
     dragState.moved = true;
     const delta = Math.round((event.clientX - dragState.startX) / dragState.dayWidth);
-    if (delta === dragState.delta) return;
+    positionDragReadout(event);
+    if (delta === dragState.delta && dragState.readout) return;
     dragState.delta = delta;
+    updateDragReadout(event);
     const px = delta * dragState.dayWidth;
     if (dragState.role === 'move') dragState.element.style.translate = `${px}px 0`;
     else if (dragState.role === 'start') {
@@ -390,6 +473,7 @@
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const d = dragState;
     dragState = null;
+    clearDragReadout(d);
     d.element.classList.remove('is-dragging');
     d.element.style.translate = '';
     d.element.style.marginLeft = '';
@@ -422,7 +506,7 @@
           task.end = candidate >= original.start ? candidate : original.start;
         }
       });
-    }, { reason: `timeline-${d.role}`, message: d.role === 'move' ? `${d.snapshot.length}件の日程を移動しました` : '期間を変更しました' });
+    }, { reason: `timeline-${d.role}`, message: dragToast(d, delta), undo: true });
   }
 
   function timelineDateFromPointer(event, row) {

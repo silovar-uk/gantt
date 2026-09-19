@@ -222,9 +222,25 @@
     place();
   }
 
+  // 選択中の予定の期間を、時間の窓の上でも光らせる
+  function syncRibbonSpan() {
+    const track = document.querySelector('#project-ribbon-track');
+    if (!track) return;
+    let span = track.querySelector('.ribbon-selected-span');
+    const task = state.project.tasks.find((item) => item.id === state.selectedTaskId);
+    if (!task) { span?.remove(); return; }
+    const starts = state.project.tasks.map((item) => item.start).sort();
+    const ends = state.project.tasks.map((item) => item.end).sort();
+    const days = inclusiveDays(starts[0], ends.at(-1));
+    if (!span) { span = document.createElement('i'); span.className = 'ribbon-selected-span'; span.setAttribute('aria-hidden', 'true'); track.append(span); }
+    span.style.left = `${(diffDays(starts[0], task.start) / days) * 100}%`;
+    span.style.width = `${(inclusiveDays(task.start, task.end) / days) * 100}%`;
+  }
+
   renderWorkspace = ((baseRenderWorkspace) => function cardRenderWorkspace() {
     baseRenderWorkspace();
     refreshCard();
+    syncRibbonSpan();
   })(renderWorkspace);
 
   // キーボードでバーを押した(click detail=0)ときも同じカードを開く。マウス・タッチは pointerup 側で開く

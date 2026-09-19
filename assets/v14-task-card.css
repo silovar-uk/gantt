@@ -81,3 +81,11 @@ body.is-present-mode .ux-bar-more { display: none; }
 
 .task-bar:focus-visible, .milestone:focus-visible, #timeline-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .task-bar:focus-visible, .milestone:focus-visible { z-index: 8; }
+
+/* ドラッグ中だけ出る、置く前の結果 */
+.ux-drag-readout { position: fixed; z-index: 400; padding: 5px 9px; border-radius: var(--radius-md); background: var(--ink); color: var(--on-primary); box-shadow: var(--shadow-md); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+.ux-drag-readout.is-warning { background: var(--warning-soft); color: var(--warning); box-shadow: 0 0 0 1px var(--warning), var(--shadow-md); }
+.time-compass-milestone.is-alert > i { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-soft), 0 0 0 4px var(--warning); }
+
+/* 選択中の予定の期間(時間の窓) */
+.ribbon-selected-span { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--primary); opacity: .35; pointer-events: none; }
