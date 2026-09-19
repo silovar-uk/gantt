@@ -1,0 +1,80 @@
+/* task card owner — 予定カードとバー右端の ••• */
+
+.task-card {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 300;
+  box-sizing: border-box;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  font-size: 13px;
+}
+.task-card:popover-open,
+.task-card.is-fallback:not([hidden]) { display: grid; gap: 8px; }
+.task-card:focus { outline: none; }
+
+.task-card-head { display: flex; align-items: center; gap: 8px; }
+.task-card-head .icon-button { width: 32px; min-height: 32px; flex: 0 0 32px; border-color: transparent; background: transparent; }
+.task-card-name { flex: 1 1 auto; min-width: 0; height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 700; }
+.task-card-name:hover { border-color: var(--line); }
+.task-card-name:focus { border-color: var(--focus); background: var(--surface); outline: none; }
+
+.task-card-dates { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--muted); }
+.task-card-dates input[type="date"] { width: 118px; height: 30px; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: 12px; }
+.task-card-days, .task-card-tag { font-size: 12px; }
+
+.task-card-line { display: flex; align-items: center; gap: 8px; }
+.task-card-line > span { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+.task-card-line select { flex: 1 1 auto; min-width: 0; height: 30px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: 12px; }
+.task-card-check { gap: 6px; }
+.task-card-check > span { color: var(--ink); font-size: 13px; }
+.task-card-check input { width: 16px; height: 16px; }
+
+.task-card-note { box-sizing: border-box; width: 100%; height: 32px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-subtle); color: var(--ink); font: inherit; font-size: 12px; line-height: 1.5; resize: none; transition: height .12s ease; }
+.task-card-note:focus { height: 84px; border-color: var(--focus); background: var(--surface); outline: none; }
+.task-card-msg { margin: 0; color: var(--danger); font-size: 12px; }
+
+.task-card-foot { display: flex; align-items: center; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+.task-card-foot .danger { color: var(--danger); }
+.task-card-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.task-card-nav button { width: 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-size: 16px; line-height: 1; cursor: pointer; }
+.task-card-nav button:hover:not(:disabled) { background: var(--surface-hover); }
+.task-card-nav button:disabled { opacity: .35; cursor: default; }
+
+/* バー右端の ••• : 見た目16px、当たり判定は ::before で28pxまで広げる */
+.ux-bar-more { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; padding: 0; border: 0; border-radius: 8px; background: var(--surface); color: var(--muted); box-shadow: var(--shadow-sm); font-size: 8px; line-height: 16px; letter-spacing: -1px; text-align: center; opacity: 0; cursor: pointer; z-index: 7; }
+.ux-bar-more::before { content: ""; position: absolute; inset: -6px; }
+.ux-bar-more:hover, .ux-bar-more:focus-visible { background: var(--surface-hover); color: var(--ink); opacity: 1; }
+.timeline-row.is-selected .ux-bar-more { opacity: 1; }
+@media (hover: hover) {
+  .timeline-row:hover .ux-bar-more { opacity: 1; }
+}
+.timeline-row:has(.is-dragging) .ux-bar-more { display: none; }
+body.is-present-mode .ux-bar-more { display: none; }
+
+@media (max-width: 767px) {
+  .task-card.is-sheet {
+    left: 0; right: 0; top: auto; bottom: 0;
+    width: 100%; max-width: none;
+    padding: 20px 16px calc(12px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow);
+  }
+  .task-card.is-sheet::before { content: ""; position: absolute; top: 8px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
+  .task-card.is-sheet::backdrop { background: var(--overlay); }
+  .task-card-head .icon-button { width: 44px; min-height: 44px; flex-basis: 44px; }
+  .task-card-name { height: 44px; font-size: 16px; }
+  .task-card-dates input[type="date"] { height: 44px; width: 132px; font-size: 14px; }
+  .task-card-line select { height: 44px; font-size: 14px; }
+  .task-card-check { min-height: 44px; }
+  .task-card-nav button { width: 44px; height: 44px; }
+  .task-card-foot .link-button { min-height: 44px; }
+}

@@ -5,6 +5,7 @@
   let presentMode = false;
   let dragState = null;
   let createState = null;
+  const TAP_PX = 6;
 
   function clampUx(value, min, max) {
     return Math.min(max, Math.max(min, Number(value) || min));
@@ -134,6 +135,8 @@
     updateSelectionBadge();
   }
 
+  window.taskSelection = { selectOnly, toggle: toggleMulti, ids: () => [...multiSelected] };
+
   function applyMultiSelectionStyles() {
     document.querySelectorAll('[data-task-row], [data-timeline-row]').forEach((element) => {
       const id = element.dataset.taskRow || element.dataset.timelineRow;
@@ -162,14 +165,23 @@
     const left = diffDays(viewStart, clippedStart) * dayWidth;
     const selectedClass = multiSelected.has(task.id) ? ' is-multi-selected' : '';
     if (task.milestone) {
-      return `<button class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start}"></button>`;
+      return `<button class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start} 詳細を開く"></button>`;
     }
     const width = Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
-    return `<button class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}">
+    return `<button class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
       <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
       <span>${escapeHTML(task.name)}</span>
       <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>
     </button>`;
+  }
+
+  function barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
+    const clippedStart = task.start < viewStart ? viewStart : task.start;
+    const clippedEnd = task.end > viewEnd ? viewEnd : task.end;
+    const left = diffDays(viewStart, clippedStart) * dayWidth;
+    const right = task.milestone ? left + Math.max(3, dayWidth / 2) + 10 : left + Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
+    const x = right + 20 <= totalWidth ? right + 4 : right - 20;
+    return `<button type="button" class="ux-bar-more" style="left:${x}px" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>`;
   }
 
   renderWorkspace = ((baseRenderWorkspace) => function enhancedRenderWorkspace() {
@@ -186,7 +198,7 @@
 
   timelineRowHTML = function enhancedTimelineRowHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
     const intersects = task.start <= viewEnd && task.end >= viewStart;
-    const shape = intersects ? taskBarHTML(task, viewStart, viewEnd, dayWidth) : '';
+    const shape = intersects ? taskBarHTML(task, viewStart, viewEnd, dayWidth) + barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) : '';
     const selected = task.id === state.selectedTaskId || multiSelected.has(task.id);
     return `<div class="timeline-row ${selected ? 'is-selected' : ''}" data-timeline-row="${task.id}" style="width:${totalWidth}px">${shape}</div>`;
   };
@@ -348,6 +360,7 @@
       dayWidth: clampUx(state.project.viewSettings.dayWidth, 2, 40),
       snapshot,
       delta: 0,
+      moved: false,
       baseWidth: element.getBoundingClientRect().width,
     };
     element.classList.add('is-dragging');
@@ -357,6 +370,8 @@
 
   function moveTaskDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
+    if (!dragState.moved && Math.abs(event.clientX - dragState.startX) < TAP_PX) return;
+    dragState.moved = true;
     const delta = Math.round((event.clientX - dragState.startX) / dragState.dayWidth);
     if (delta === dragState.delta) return;
     dragState.delta = delta;
@@ -379,12 +394,17 @@
     d.element.style.translate = '';
     d.element.style.marginLeft = '';
     d.element.style.width = '';
-    const delta = Math.round((event.clientX - d.startX) / d.dayWidth);
-    if (!delta && d.role === 'move') {
+    if (event.type === 'pointercancel') return;
+    if (Math.abs(event.clientX - d.startX) < TAP_PX) {
+      if (d.role !== 'move') { renderWorkspace(); return; }
+      if (event.shiftKey) return; // 続く click の toggleMulti に任せる
       selectOnly(d.id);
       renderWorkspace();
+      // ponytail: pointerup中はブラウザのlight dismissがcardを閉じるため、開くのは1tick遅らせる
+      setTimeout(() => openTaskCard(d.id, d.element), 0);
       return;
     }
+    const delta = Math.round((event.clientX - d.startX) / d.dayWidth);
     if (!delta) { renderWorkspace(); return; }
 
     contentCommit((project) => {
@@ -416,7 +436,7 @@
   }
 
   function beginBlankCreate(event, row) {
-    if (presentMode || event.button !== 0 || event.target.closest('[data-timeline-task], .today-line')) return;
+    if (presentMode || event.button !== 0 || event.target.closest('[data-timeline-task], .today-line, .ux-bar-more')) return;
     const date = timelineDateFromPointer(event, row);
     if (!date) return;
     createState = { pointerId: event.pointerId, row, startX: event.clientX, startDate: date, endDate: date, ghost: null };
@@ -503,6 +523,7 @@
     const target = event.target.closest('[data-timeline-task]');
     if (!target || presentMode) return;
     event.preventDefault();
+    closeTaskCard();
     state.selectedTaskId = target.dataset.timelineTask;
     openModal('details', { task: selectedTask() });
   });

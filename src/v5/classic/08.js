@@ -227,12 +227,27 @@ function deleteTask(id) {
 }
 
 function revealSelectedTask() {
-  const task = selectedTask();
+  revealTask(state.selectedTaskId);
+}
+
+// 一覧行は縦に、バーは横に見える位置へ寄せる。表示期間の外なら期間を広げる。
+function revealTask(taskId) {
+  const task = state.project.tasks.find((item) => item.id === taskId);
   if (!task) return;
   const view = state.project.viewSettings;
   if (task.end < view.start || task.start > view.end) {
     const span = Math.min(729, Math.max(28, diffDays(view.start, view.end)));
-    setView({ start: addDays(task.start, -3), end: addDays(task.start, span - 3) });
+    setView({ start: addDays(task.start, -3), end: addDays(task.start, span - 3), overviewAutoFit: false });
   }
-  requestAnimationFrame(() => document.querySelector(`[data-task-row="${CSS.escape(task.id)}"]`)?.scrollIntoView({ block: 'nearest' }));
+  requestAnimationFrame(() => {
+    document.querySelector(`[data-task-row="${CSS.escape(task.id)}"]`)?.scrollIntoView({ block: 'nearest' });
+    const scroll = document.querySelector('#timeline-scroll');
+    const current = state.project.viewSettings;
+    if (!scroll) return;
+    const left = diffDays(current.start, task.start) * current.dayWidth;
+    const right = (diffDays(current.start, task.end) + 1) * current.dayWidth;
+    if (left < scroll.scrollLeft || right > scroll.scrollLeft + scroll.clientWidth) {
+      scroll.scrollLeft = Math.max(0, (left + right) / 2 - scroll.clientWidth / 2);
+    }
+  });
 }
