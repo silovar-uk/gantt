@@ -125,7 +125,10 @@ function persistInputDraft() {
 function renderChatInputModal() {
   const d = state.inputDraft;
   const hasPrevious = d.updatedAt && (d.sourceText || d.prompt || d.answer);
-  const body = `${hasPrevious ? `<div class="draft-banner"><strong>前回の下書きを再開しています。</strong><button class="link-button" type="button" data-action="new-input-draft">新しく作成</button></div>` : ''}
+  const draftBanner = state.confirmDiscardDraft
+    ? `<div class="draft-banner draft-banner-confirm"><strong>下書きを破棄して新しく作成しますか？</strong><div class="draft-banner-actions"><button class="button button-quiet" type="button" data-action="cancel-new-draft">やめる</button><button class="button button-primary" type="button" data-action="confirm-new-draft">破棄する</button></div></div>`
+    : (hasPrevious ? `<div class="draft-banner"><strong>前回の下書きを再開しています。</strong><button class="link-button" type="button" data-action="new-input-draft">新しく作成</button></div>` : '');
+  const body = `${draftBanner}
     <label class="field full"><span>元の文章</span><textarea id="input-source" rows="7" placeholder="日程、メモ、メール本文などを貼り付け">${escapeHTML(d.sourceText)}</textarea></label>
     <div class="form-grid three"><label class="field"><span>対象年（任意）</span><input id="input-year" inputmode="numeric" maxlength="4" placeholder="2026" value="${escapeHTML(d.targetYear)}"></label><label class="field"><span>基準日（任意）</span><input id="input-base-date" type="date" value="${escapeHTML(d.baseDate)}"></label><label class="field"><span>カテゴリー（任意）</span><input id="input-category" value="${escapeHTML(d.category)}"></label></div>
     <div class="prompt-head"><div><h3>ChatGPTへ渡す指示文</h3><p>${d.manual ? '手編集あり。元文や条件を変えたあと「再作成」すると手編集は置き換わります。' : '原文にない日付を推測しないJSON形式で依頼します。'}</p></div><button class="button button-secondary" type="button" data-action="build-input-prompt">${d.prompt ? '再作成' : '指示文を作成'}</button></div>

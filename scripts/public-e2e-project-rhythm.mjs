@@ -92,6 +92,13 @@ async function clearPointer(page) {
   await page.waitForFunction(() => !document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
 }
 
+// A rhythm window's peak (and any milestone marking it) tends to sit near its start, not its
+// center. Hover near its trailing edge so a nearby milestone marker cannot steal the hover target.
+async function hoverRhythmWindow(page, locator) {
+  const box = await locator.boundingBox();
+  await page.mouse.move(box.x + box.width * 0.85, box.y + box.height / 2);
+}
+
 try {
   const desktop = await openFresh();
   const { page } = desktop;
@@ -119,7 +126,7 @@ try {
   assert.ok(trackBox && trackBox.height >= 35 && trackBox.height <= 37, `Time Compass height changed: ${JSON.stringify(trackBox)}`);
   assert.equal(await page.locator('.time-compass-rail').getAttribute('aria-hidden'), null, 'interactive rail must not be aria-hidden');
 
-  await primary.hover();
+  await hoverRhythmWindow(page, primary);
   await page.waitForFunction(() => document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
   const planEcho = await page.evaluate(() => ({
     taskMatch: document.querySelectorAll('.task-row.is-rhythm-match').length,
@@ -147,7 +154,7 @@ try {
     rowHeight: state.project.viewSettings.rowHeight,
     dayWidth: state.project.viewSettings.dayWidth,
   }));
-  await primary.hover();
+  await hoverRhythmWindow(page, primary);
   await primary.click();
   await page.waitForTimeout(120);
   const after = await page.evaluate(() => ({
@@ -178,7 +185,7 @@ try {
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
   primary = page.locator('.time-compass-rhythm-window.is-primary');
   await primary.waitFor({ state: 'visible' });
-  await primary.hover();
+  await hoverRhythmWindow(page, primary);
   await page.waitForFunction(() => document.querySelector('#workspace')?.classList.contains('is-rhythm-echo'));
   const macroEcho = await page.evaluate(() => ({
     taskMatch: document.querySelectorAll('[data-macro-task].is-rhythm-match').length,
@@ -204,7 +211,7 @@ try {
   await desktop.context.close();
 
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
-  assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
+  assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true, 'empty project should not show the Time Window');
   assert.equal(await mobile.page.locator('#workspace').evaluate((el) => el.classList.contains('is-rhythm-echo')), false);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);

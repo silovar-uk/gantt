@@ -13,9 +13,12 @@
 
 .toolbar > [data-action="today"],
 .toolbar > [data-action="fit"],
-.toolbar > #scale-switch,
-.toolbar > #mode-switch,
 .toolbar > [data-action="display-settings"] { display: none !important; }
+
+.toolbar > #mode-switch { display: none !important; }
+@media (max-width: 767px) {
+  .toolbar > #mode-switch { display: inline-flex !important; }
+}
 
 .ux-ai-json { border-color: #cfd6e2; }
 .ux-present-button { padding-inline: 16px; }
@@ -27,6 +30,8 @@
 .ux-selection-badge { align-items: center; height: 28px; padding: 0 9px; border-radius: 999px; background: #eef0ff; color: #2d3bb8; font-size: 11px; font-weight: 800; }
 .ux-selection-badge:not([hidden]) { display: inline-flex; }
 .ux-more-wrap { margin-left: 2px; }
+.modal-foot .link-button.danger { margin-right: auto; }
+.draft-banner-actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* Timeline first: keep the list deliberately compact. Dates belong to the chart. */
 .workspace.mode-split .task-panel {

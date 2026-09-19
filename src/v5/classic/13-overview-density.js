@@ -1,8 +1,8 @@
 (() => {
-  const DENSITY_VERSION = '20260914-density2';
-  const OVERVIEW_MODEL_VERSION = '20260914-overview1';
+  const DENSITY_VERSION = '20260918-density3';
+  const OVERVIEW_MODEL_VERSION = '20260918-overview2';
   const MIGRATION_KEY = `gantt-desk:${DENSITY_VERSION}:defaults`;
-  const ROW_MIN = 20;
+  const ROW_MIN = 14;
   const ROW_MAX = 56;
   const TEXT_MIN = 10;
   const TEXT_MAX = 16;
@@ -58,6 +58,7 @@
     workspace.style.setProperty('--row-height', `${rowHeight}px`);
     workspace.style.setProperty('--text-size', `${textSize}px`);
     workspace.classList.toggle('ux-auto-hide-category', view.autoHideCategory === true);
+    workspace.classList.toggle('ux-row-compact', rowHeight < 18);
     workspace.dataset.semanticZoom = semanticZoom(dayWidth);
     const inner = workspace.querySelector('.timeline-inner');
     if (inner) {
@@ -88,6 +89,8 @@
     if (rowOut) rowOut.textContent = String(rowValue);
     if (textOut) textOut.textContent = String(textValue);
     document.querySelector('#ux-density-controls')?.classList.toggle('is-auto-fit', view.overviewAutoFit === true);
+    const autoChip = document.querySelector('.ux-row-auto-chip');
+    if (autoChip) autoChip.hidden = view.overviewAutoFit === true;
   }
 
   function ensureDensityControls() {
@@ -102,6 +105,7 @@
         <input id="ux-row-height" type="range" min="${ROW_MIN}" max="${ROW_MAX}" step="1" aria-label="行の高さ">
         <output id="ux-row-height-value">${DEFAULT_ROW}</output>
       </label>
+      <button type="button" class="revert-chip ux-row-auto-chip" data-density-action="row-auto-fit" hidden>自動</button>
       <label class="ux-density-control" title="文字サイズ">
         <span>文字</span>
         <input id="ux-text-size" type="range" min="${TEXT_MIN}" max="${TEXT_MAX}" step="1" aria-label="文字サイズ">
@@ -278,6 +282,11 @@
 
   document.addEventListener('click', (event) => {
     const action = event.target.closest('[data-density-action]')?.dataset.densityAction;
+    if (action === 'row-auto-fit') {
+      event.preventDefault();
+      fitOverview({ reason: 'explicit' });
+      return;
+    }
     if (action !== 'apply-display-settings') return;
     event.preventDefault();
     event.stopImmediatePropagation();

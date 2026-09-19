@@ -56,16 +56,16 @@ async function importDenseProject(page) {
 try {
   const desktop = await openFresh({ width: 1440, height: 900 });
   const { page } = desktop;
-  assert.equal(await page.locator('body').getAttribute('data-macro-overview-version'), '20260914-macro3');
+  assert.equal(await page.locator('body').getAttribute('data-macro-overview-version'), '20260918-macro4');
   assert.equal(await page.locator('body').getAttribute('data-macro-detail-lens-version'), '20260914-lens1');
-  assert.equal(await page.locator('body').getAttribute('data-overview-model-version'), '20260914-overview1');
+  assert.equal(await page.locator('body').getAttribute('data-overview-model-version'), '20260918-overview2');
 
   await importDenseProject(page);
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
 
-  assert.equal(await page.locator('#workspace').getAttribute('data-macro-overview'), '20260914-macro3');
+  assert.equal(await page.locator('#workspace').getAttribute('data-macro-overview'), '20260918-macro4');
   assert.equal(await page.locator('.macro-label-head strong').innerText(), '全体');
   assert.ok((await page.locator('.macro-label-head').innerText()).includes('分類'));
   assert.equal((await page.locator('.macro-label-head').innerText()).includes('PROJECT SHAPE'), false);

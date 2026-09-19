@@ -23,6 +23,8 @@ const state = {
   conflict: false,
   migration: null,
   modal: null,
+  confirmDiscardDraft: false,
+  confirmReloadSaved: false,
   editor: null,
   moveDraft: null,
   inputDraft: null,
@@ -154,18 +156,21 @@ function redo() {
   showToast('やり直しました');
 }
 
-function showToast(message, isError = false) {
+function showToast(message, isError = false, withUndo = false) {
   const toast = document.querySelector('#toast');
   if (!toast) return;
   clearTimeout(toastTimer);
-  toast.textContent = message;
+  toast.innerHTML = withUndo
+    ? `<span class="toast-text">${escapeHTML(message)}</span><button type="button" class="toast-undo" data-action="toast-undo">元に戻す</button>`
+    : escapeHTML(message);
   toast.classList.toggle('is-error', isError);
+  toast.classList.toggle('has-action', withUndo);
   toast.hidden = false;
   requestAnimationFrame(() => toast.classList.add('is-visible'));
   toastTimer = setTimeout(() => {
     toast.classList.remove('is-visible');
     setTimeout(() => { toast.hidden = true; }, 160);
-  }, 3000);
+  }, withUndo ? 5000 : 3000);
 }
 
 function closeMenus() {
@@ -225,9 +230,6 @@ function shellHTML() {
           <span class="toolbar-spacer"></span>
           <button class="button button-quiet" type="button" data-action="today">今日</button>
           <button class="button button-quiet" type="button" data-action="fit">全体</button>
-          <div id="scale-switch" class="segmented" aria-label="表示倍率">
-            <button type="button" data-scale="day">日</button><button type="button" data-scale="week">週</button><button type="button" data-scale="month">月</button>
-          </div>
           <div id="mode-switch" class="segmented" aria-label="表示モード">
             <button type="button" data-mode="list">一覧</button><button type="button" data-mode="split">分割</button><button type="button" data-mode="gantt">ガント</button>
           </div>
@@ -275,7 +277,6 @@ function renderToolbarState() {
     badge.hidden = count === 0;
     badge.textContent = String(count);
   }
-  document.querySelectorAll('[data-scale]').forEach((button) => button.classList.toggle('is-active', button.dataset.scale === state.project.viewSettings.scale));
   const mode = effectiveMode();
   document.querySelectorAll('[data-mode]').forEach((button) => {
     const mobileInvalid = breakpoint() === 'mobile' && button.dataset.mode === 'split';

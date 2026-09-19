@@ -34,6 +34,7 @@
   margin-right: 3px;
 }
 #ux-row-density-dock[hidden] { display: none !important; }
+#ux-row-density-dock .ux-row-auto-chip { flex: 0 0 auto; margin-left: 4px; }
 #ux-row-density-dock .ux-row-density-control {
   display: grid !important;
   grid-template-columns: auto 78px 22px;
@@ -96,6 +97,9 @@ body.is-present-mode #ux-row-density-dock { display: none !important; }
 .timeline-head,
 .timeline-head-cell { height: 30px; }
 .task-panel { grid-template-rows: 30px 1fr; }
+@media (max-width: 767px) {
+  .task-panel { grid-template-rows: 1fr; }
+}
 .task-head { font-size: 9px; }
 .timeline-head-cell { font-size: 9px; }
 .timeline-body { min-height: calc(100% - 30px); }
@@ -104,6 +108,12 @@ body.is-present-mode #ux-row-density-dock { display: none !important; }
 .timeline-row {
   height: var(--row-height) !important;
   min-height: var(--row-height) !important;
+}
+@media (max-width: 767px) {
+  .workspace.mode-list .task-row {
+    height: auto !important;
+    min-height: 74px !important;
+  }
 }
 .task-row { font-size: var(--text-size) !important; }
 .inline-name {
@@ -159,6 +169,9 @@ body.is-present-mode #ux-row-density-dock { display: none !important; }
 }
 .workspace.ux-auto-hide-category .task-head > :nth-child(3),
 .workspace.ux-auto-hide-category .category-cell { display: none !important; }
+
+/* Rows below 18px show only the color band, no label text. */
+.workspace.ux-row-compact .task-bar > span { display: none; }
 
 /* Semantic zoom: remove labels before shrinking the bars into illegibility. */
 .workspace[data-semantic-zoom="macro"] .task-bar > span { display: none; }

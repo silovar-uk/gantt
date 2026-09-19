@@ -27,8 +27,8 @@ try {
   const { page } = desktop;
 
   assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
-  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '20');
-  assert.equal(await page.locator('body').getAttribute('data-density-version'), '20260914-density2');
+  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '14');
+  assert.equal(await page.locator('body').getAttribute('data-density-version'), '20260918-density3');
 
   await page.locator('[data-action="add"]').first().click();
   await page.locator('#task-form [name="name"]').fill('Tight Row E2E');
@@ -45,7 +45,7 @@ try {
   await page.locator('[data-toggle-menu="ux-more-menu"]').click();
   await page.locator('#ux-more-menu [data-action="display-settings"]').click();
   await page.locator('.modal-layer').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
+  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '14');
   await page.locator('#setting-row-height').fill('20');
   await page.locator('[data-density-action="apply-display-settings"]').click();
   assert.equal(await page.locator('.modal-layer').count(), 0);
@@ -64,7 +64,7 @@ try {
   // Fit can still use the 20px floor while remaining within valid bounds.
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   const fittedRow = Number(await page.locator('#ux-row-height').inputValue());
-  assert.ok(fittedRow >= 20 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
+  assert.ok(fittedRow >= 14 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
 
   // Existing timeline direct manipulation must still be alive.
   const bar = page.locator(`[data-timeline-task="${id}"]`);
@@ -85,7 +85,7 @@ try {
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.equal(await mobile.page.locator('#ux-density-controls').isHidden(), true);
-  assert.equal(await mobile.page.locator('#ux-row-height').getAttribute('min'), '20');
+  assert.equal(await mobile.page.locator('#ux-row-height').getAttribute('min'), '14');
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
   await mobile.context.close();
 

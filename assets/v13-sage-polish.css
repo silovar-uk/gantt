@@ -107,7 +107,7 @@ input[type="checkbox"] { accent-color: var(--primary); }
 
 .condition-bar { border-color: var(--line); }
 .result-count, .condition-chip, .view-notice { color: var(--muted); }
-.condition-chip { background: var(--surface-subtle); border-color: var(--line); }
+.condition-chip { background: var(--surface-subtle); }
 .pending-link, .view-notice { color: var(--warning); }
 .pending-link { background: var(--warning-soft); }
 .conflict-banner { background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 25%, var(--line)); color: var(--warning); }
@@ -166,8 +166,31 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .stale-banner, .duplicate-warning { background: var(--warning-soft); color: var(--warning); border-color: color-mix(in srgb, var(--warning) 25%, var(--line)); }
 .validation-ok > strong { color: var(--success); }
 
+.revert-chip { display: inline-flex; align-items: center; height: 22px; padding-inline: 9px; border: 0; border-radius: 999px; background: var(--surface-subtle); color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; }
+.revert-chip:hover { color: var(--ink); }
+
 .toast { background: var(--ink); color: var(--on-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
 .toast.is-error { background: var(--danger); }
+.toast.has-action { display: flex; align-items: center; gap: 12px; }
+.toast-undo { flex: 0 0 auto; border: 0; background: transparent; color: var(--on-primary); font-weight: 700; text-decoration: underline; padding: 0; cursor: pointer; }
+
+.quiet-coach-hint {
+  position: fixed;
+  z-index: 200;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  background: var(--ink);
+  color: var(--on-primary);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.quiet-coach-hint.is-visible { opacity: .92; }
+.quiet-coach-hint.is-instant { opacity: .92; transition: none; }
 
 /* Time Compass + row density belong to the same sage visual system. */
 .project-ribbon { border-color: var(--line); background: var(--surface); }

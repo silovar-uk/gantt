@@ -59,7 +59,7 @@ try {
   await importProject(page, handoff());
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260914-compass6');
+  await page.waitForFunction(() => document.body.dataset.timeCompassVersion === '20260918-window1');
 
   // Architecture contract: the old Ribbon drawing layer is gone; Time Compass owns visualization.
   assert.equal(await page.locator('.project-ribbon-activity').count(), 0);
@@ -82,7 +82,7 @@ try {
   assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
   assert.equal(await page.locator('#ux-row-density-dock').isVisible(), true);
   const rowSlider = page.locator('#ux-row-density-dock #ux-row-height');
-  assert.equal(await rowSlider.getAttribute('min'), '20');
+  assert.equal(await rowSlider.getAttribute('min'), '14');
   assert.equal(await rowSlider.getAttribute('max'), '56');
   await rowSlider.evaluate((el) => { el.value = '32'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.waitForTimeout(60);
@@ -136,22 +136,32 @@ try {
   await page.locator('.workspace.mode-macro').waitFor({ state: 'visible' });
   assert.equal(await page.locator('body').getAttribute('data-surface-level'), 'shape');
   assert.equal(await page.locator('#ux-row-density-dock').isHidden(), true);
-  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260914-compass6');
+  assert.equal(await page.locator('body').getAttribute('data-time-compass-version'), '20260918-window1');
   assert.equal(await page.locator('.macro-density-strip').count(), 0);
   assert.equal(await page.locator('#ux-macro-indicator').count(), 0);
 
   assert.deepEqual(desktop.errors, [], `desktop page errors: ${desktop.errors.join(' | ')}`);
   await desktop.context.close();
 
-  // Mobile keeps the touch-first chrome; desktop slider/compass exist in DOM but stay hidden and do not create overflow.
+  // Mobile keeps the touch-first chrome; the row-density slider stays hidden and nothing creates overflow.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
-  assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true);
+  assert.equal(await mobile.page.locator('#project-ribbon').isHidden(), true, 'empty project should not show the Time Window');
   const mobileDock = mobile.page.locator('#ux-row-density-dock');
   if (await mobileDock.count()) assert.equal(await mobileDock.isHidden(), true);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   const addBox = await mobile.page.locator('[data-action="add"]').first().boundingBox();
   assert.ok(addBox && addBox.height >= 44, `mobile add target regressed: ${JSON.stringify(addBox)}`);
+
+  // Once there is data, the Time Window shows on mobile too, at its compact 36px height.
+  await importProject(mobile.page, handoff());
+  await mobile.page.locator('#project-ribbon').waitFor({ state: 'visible' });
+  const mobileRibbonBox = await mobile.page.locator('#project-ribbon').boundingBox();
+  assert.ok(mobileRibbonBox && mobileRibbonBox.height >= 34 && mobileRibbonBox.height <= 38, `mobile Time Window height wrong: ${JSON.stringify(mobileRibbonBox)}`);
+  const mobileAnnotation = (await mobile.page.locator('.time-compass-annotation').innerText()).trim();
+  assert.ok(mobileAnnotation.length > 0, 'Time Window should render content on mobile');
+  const dimsAfter = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
+  assert.ok(dimsAfter.scrollWidth <= dimsAfter.innerWidth + 1, `mobile overflow after import: ${JSON.stringify(dimsAfter)}`);
   assert.deepEqual(mobile.errors, [], `mobile page errors: ${mobile.errors.join(' | ')}`);
   await mobile.context.close();
 

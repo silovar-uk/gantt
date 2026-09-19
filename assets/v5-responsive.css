@@ -130,7 +130,7 @@
   .task-head { display: none; }
   .task-panel { grid-template-rows: 1fr; }
   .task-row { height: auto; min-height: 74px; grid-template-columns: 44px minmax(0, 1fr) 44px; grid-template-rows: 36px 30px; padding: 5px 8px; }
-  .complete-cell { grid-column: 1; grid-row: 1 / span 2; }
+  .complete-cell { grid-column: 1; grid-row: 1 / span 2; align-self: stretch; }
   .name-cell { grid-column: 2; grid-row: 1; }
   .row-menu-button { grid-column: 3; grid-row: 1; width: 44px; height: 44px; }
   .category-cell { grid-column: 2; grid-row: 2; font-size: 11px; }

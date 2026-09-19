@@ -86,7 +86,6 @@ body.is-present-mode .project-ribbon { display: none !important; }
 }
 
 @media (max-width: 767px) {
-  .project-ribbon { display: none !important; }
   #ux-density-controls { display: none !important; }
   .toolbar > .toolbar-spacer { display: inline-block !important; flex: 1 1 auto; }
   .ux-view-controls { order: 2; }

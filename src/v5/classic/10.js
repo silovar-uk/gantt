@@ -12,12 +12,8 @@ function bindEvents() {
     }
     if (!event.target.closest('.menu-wrap')) closeMenus();
 
-    const scale = event.target.closest('[data-scale]')?.dataset.scale;
-    if (scale) { setScale(scale); return; }
     const mode = event.target.closest('[data-mode]')?.dataset.mode;
     if (mode) { setMode(mode); return; }
-    const shift = event.target.closest('[data-shift-range]')?.dataset.shiftRange;
-    if (shift) { shiftRange(Number(shift)); return; }
 
     const timelineTask = event.target.closest('[data-timeline-task]')?.dataset.timelineTask;
     if (timelineTask) { state.selectedTaskId = timelineTask; renderWorkspace(); return; }
@@ -85,7 +81,12 @@ function bindEvents() {
     }
     else if (action === 'paste-answer') { state.inputDraft.answer = state.inputDraft.answer || ''; persistInputDraft(); openModal('import', { prefill: state.inputDraft.answer }); }
     else if (action === 'new-input-draft') {
-      if ((state.inputDraft.sourceText || state.inputDraft.prompt) && !confirm('前回の下書きを破棄して新しく作成しますか？')) return;
+      if (state.inputDraft.sourceText || state.inputDraft.prompt) { state.confirmDiscardDraft = true; renderModal(); return; }
+      state.inputDraft = { sourceText: '', targetYear: '', baseDate: '', category: '', prompt: '', manual: false, answer: '', completed: false }; persistInputDraft(); renderModal();
+    }
+    else if (action === 'cancel-new-draft') { state.confirmDiscardDraft = false; renderModal(); }
+    else if (action === 'confirm-new-draft') {
+      state.confirmDiscardDraft = false;
       state.inputDraft = { sourceText: '', targetYear: '', baseDate: '', category: '', prompt: '', manual: false, answer: '', completed: false }; persistInputDraft(); renderModal();
     }
     else if (action === 'refresh-output') { prepareOutputSession(); renderModal(); }
@@ -101,9 +102,16 @@ function bindEvents() {
     else if (action === 'apply-import') applyImport();
     else if (action === 'register-pending') registerPending(actionEl.dataset.pendingId);
     else if (action === 'delete-pending') {
-      const id = actionEl.dataset.pendingId; if (!confirm('この保留項目を削除しますか？')) return;
-      contentCommit((project) => { project.pendingItems = project.pendingItems.filter((item) => item.id !== id); }, { reason: 'delete-pending', message: '保留項目を削除しました' });
+      const id = actionEl.dataset.pendingId;
+      contentCommit((project) => { project.pendingItems = project.pendingItems.filter((item) => item.id !== id); }, { reason: 'delete-pending' });
+      showToast('保留項目を削除しました', false, true);
       state.modal = 'pending'; renderModal();
+    }
+    else if (action === 'delete-task') { deleteTask(actionEl.dataset.taskId); closeModal({ force: true }); }
+    else if (action === 'toast-undo') {
+      undo();
+      const toast = document.querySelector('#toast');
+      if (toast) { toast.classList.remove('is-visible'); setTimeout(() => { toast.hidden = true; }, 160); }
     }
     else if (action === 'save-project-settings') saveProjectSettings();
     else if (action === 'add-category') addCategory();
@@ -124,12 +132,14 @@ function bindEvents() {
     }
     else if (action === 'download-tsv') { const o = currentExportOptions(); downloadBlob(new Blob([`\ufeff${tsvText(o.tasks, o.includeNotes)}`], { type: 'text/tab-separated-values;charset=utf-8' }), `${safeFileName(state.project.title)}-${fileStamp()}.tsv`); }
     else if (action === 'download-xlsx') { const o = currentExportOptions(); downloadBlob(makeXlsxBlob({ sheetName: '予定', rows: tsvRows(o.tasks, o.includeNotes) }), `${safeFileName(state.project.title)}-${fileStamp()}.xlsx`); }
-    else if (action === 'reload-saved') {
-      if (!confirm('このタブの未保存内容を破棄して、保存済みの内容へ切り替えますか？必要なら先にダウンロードしてください。')) return;
+    else if (action === 'reload-saved') { state.confirmReloadSaved = true; renderConflictBanner(); }
+    else if (action === 'cancel-reload-saved') { state.confirmReloadSaved = false; renderConflictBanner(); }
+    else if (action === 'confirm-reload-saved') {
+      state.confirmReloadSaved = false;
       try { state.project = await state.storage.reloadSaved(); state.conflict = false; state.history = []; state.future = []; state.selectedTaskId = null; state.saveStatus = 'saved'; renderAll(); }
       catch (error) { showToast(error.message || '読み込みに失敗しました。', true); }
     }
-    else if (action === 'save-status') { if (state.saveStatus === 'error' || state.saveStatus === 'conflict') openModal('export'); }
+    else if (action === 'save-status') openModal('export');
     else if (action === 'sample') loadSample();
   });
 
@@ -209,7 +219,7 @@ function bindEvents() {
     if (row && event.target === row) {
       const tasks = filteredTasks(); const index = tasks.findIndex((t) => t.id === row.dataset.taskRow);
       if (event.key === 'Enter') { event.preventDefault(); state.selectedTaskId = row.dataset.taskRow; openModal('details', { task: selectedTask() }); }
-      else if (event.key === 'Delete') { event.preventDefault(); const task = state.project.tasks.find((t) => t.id === row.dataset.taskRow); if (task && confirm(`「${task.name}」を削除しますか？`)) contentCommit((project) => { project.tasks = project.tasks.filter((t) => t.id !== task.id); }, { reason: 'delete-task', message: '予定を削除しました。元に戻せます。' }); }
+      else if (event.key === 'Delete') { event.preventDefault(); deleteTask(row.dataset.taskRow); }
       else if (event.key === 'ArrowDown' && index < tasks.length - 1) { event.preventDefault(); document.querySelector(`[data-task-row="${CSS.escape(tasks[index + 1].id)}"]`)?.focus(); }
       else if (event.key === 'ArrowUp' && index > 0) { event.preventDefault(); document.querySelector(`[data-task-row="${CSS.escape(tasks[index - 1].id)}"]`)?.focus(); }
     }

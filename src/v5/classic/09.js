@@ -101,7 +101,7 @@ function addCategory() {
     const base = '新しいカテゴリー';
     let name = base; let n = 2;
     while (project.categories.some((c) => c.name === name)) name = `${base}${n++}`;
-    project.categories.push({ id: uid('cat'), name, color: COLOR_PALETTE[project.categories.length % COLOR_PALETTE.length], order: project.categories.length });
+    project.categories.push({ id: uid('cat'), name, color: nextCategoryColor(project.categories), order: project.categories.length });
   }, { reason: 'add-category', message: 'カテゴリーを追加しました' });
   state.modal = 'project';
   renderModal();
@@ -111,17 +111,16 @@ function deleteCategory(id) {
   if (id === DEFAULT_CATEGORY_ID) return;
   const category = categoryById(id);
   const count = state.project.tasks.filter((task) => task.categoryId === id).length;
-  if (!confirm(`「${category.name}」を削除しますか？${count ? `\n${count}件の予定は「未分類」へ移動します。` : ''}`)) return;
   contentCommit((project) => {
     project.tasks.forEach((task) => { if (task.categoryId === id) task.categoryId = DEFAULT_CATEGORY_ID; });
     project.categories = project.categories.filter((c) => c.id !== id);
-  }, { reason: 'delete-category', message: 'カテゴリーを削除しました' });
+  }, { reason: 'delete-category' });
+  showToast(`「${category.name}」を削除しました${count ? `。${count}件は未分類へ移動しました` : ''}`, false, true);
   state.modal = 'project';
   renderModal();
 }
 
 function loadSample() {
-  if (!confirm('サンプル予定を追加しますか？現在の予定は削除しません。')) return;
   const today = todayISO();
   contentCommit((project) => {
     let promo = project.categories.find((c) => c.name === 'プロモーション');
@@ -130,7 +129,9 @@ function loadSample() {
       { id: uid('task'), name: '媒体・予算・ターゲット整理', start: today, end: addDays(today, 2), milestone: false, completed: false, categoryId: promo.id, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'inside', order: project.tasks.length },
       { id: uid('task'), name: 'プラン確定', start: addDays(today, 7), end: addDays(today, 7), milestone: true, completed: false, categoryId: promo.id, note: '', colorOverride: '', isDeadline: true, isHidden: false, displayNamePosition: 'inside', order: project.tasks.length + 1 },
     );
-  }, { reason: 'sample', message: 'サンプルを追加しました' });
+  }, { reason: 'sample' });
+  showToast('サンプルを追加しました', false, true);
+  if (state.project.tasks.some((task) => taskOutsideView(task, state.project.viewSettings))) fitAll({ reason: 'explicit' });
 }
 
 function renderMigrationNotice() {
