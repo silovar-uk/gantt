@@ -130,11 +130,11 @@ function renderWorkspace() {
     <div id="task-scroll" class="task-scroll" role="rowgroup">${tasks.length ? tasks.map(listRowHTML).join('') : `<div class="zero-result"><strong>条件に合う予定がありません。</strong><button class="link-button" type="button" data-action="clear-filters">条件を解除</button></div>`}</div>
   </section>`;
 
-  const mobileLabels = `<div id="mobile-timeline-labels" class="mobile-timeline-labels"><div class="mobile-label-head">予定</div><div id="mobile-label-scroll" class="mobile-label-scroll">${tasks.map((task) => `<button type="button" data-task-row="${task.id}" class="mobile-timeline-label ${task.id === state.selectedTaskId ? 'is-selected' : ''}">${escapeHTML(task.name)}</button>`).join('')}</div></div>`;
+  const mobileLabels = `<div id="mobile-timeline-labels" class="mobile-timeline-labels"><div class="mobile-label-head">予定</div><div id="mobile-label-scroll" class="mobile-label-scroll">${tasks.map((task) => `<div data-task-row="${task.id}" class="mobile-timeline-label ${task.id === state.selectedTaskId ? 'is-selected' : ''}"><button type="button" class="mobile-label-name">${escapeHTML(task.name)}</button><button type="button" class="row-menu-button" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button></div>`).join('')}</div></div>`;
 
   const timelinePanel = `<section class="timeline-panel">
     ${mode === 'gantt' && breakpoint() === 'mobile' ? mobileLabels : ''}
-    <div id="timeline-scroll" class="timeline-scroll">
+    <div id="timeline-scroll" class="timeline-scroll" tabindex="0" role="grid" aria-label="ガント。上下キーで予定を選び、Enterで開きます">
       <div class="timeline-inner" style="width:${totalWidth}px;--day-width:${dayWidth}px;--row-height:${clamp(view.rowHeight, 36, 64)}px">
         <div class="timeline-head" style="width:${totalWidth}px">${timelineHeaderHTML(start, days, dayWidth, view.scale)}</div>
         <div id="timeline-body" class="timeline-body" style="width:${totalWidth}px">
@@ -243,7 +243,7 @@ function prepareEditor(task) {
   const today = todayISO();
   const source = task ? deepCopy(task) : {
     id: uid('task'), name: '', start: today, end: today, milestone: false, completed: false,
-    categoryId: DEFAULT_CATEGORY_ID, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'inside', order: state.project.tasks.length,
+    categoryId: DEFAULT_CATEGORY_ID, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'auto', order: state.project.tasks.length,
   };
   state.editor = { isNew: !task, task: source, dirty: false, original: task ? deepCopy(task) : null };
 }
@@ -261,6 +261,7 @@ function editorFormHTML() {
     ${task.milestone
       ? `<label class="field"><span>日付</span><input name="date" type="date" value="${task.start}"></label>`
       : `<div class="form-grid two"><label class="field"><span>開始日</span><input name="start" type="date" value="${task.start}"></label><label class="field"><span>終了日</span><input name="end" type="date" value="${task.end}"></label></div>`}
+    ${task.milestone ? '' : `<label class="field"><span>名前の位置</span><select name="displayNamePosition">${[['auto', '自動'], ['inside', '中に入れる'], ['right', '右に出す']].map(([value, label]) => `<option value="${value}" ${(task.displayNamePosition || 'auto') === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>`}
     <div class="form-grid two">
       <label class="field"><span>個別色</span><select name="colorOverride"><option value="">カテゴリー色を使う</option>${COLOR_PALETTE.map((color) => `<option value="${color}" ${task.colorOverride === color ? 'selected' : ''}>${paletteLabels[color]}</option>`).join('')}</select></label>
       <label class="field checkbox-field"><input type="checkbox" name="completed" ${task.completed ? 'checked' : ''}><span>完了</span></label>

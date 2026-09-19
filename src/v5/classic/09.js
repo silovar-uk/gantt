@@ -126,8 +126,8 @@ function loadSample() {
     let promo = project.categories.find((c) => c.name === 'プロモーション');
     if (!promo) { promo = { id: uid('cat'), name: 'プロモーション', color: 'indigo', order: project.categories.length }; project.categories.push(promo); }
     project.tasks.push(
-      { id: uid('task'), name: '媒体・予算・ターゲット整理', start: today, end: addDays(today, 2), milestone: false, completed: false, categoryId: promo.id, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'inside', order: project.tasks.length },
-      { id: uid('task'), name: 'プラン確定', start: addDays(today, 7), end: addDays(today, 7), milestone: true, completed: false, categoryId: promo.id, note: '', colorOverride: '', isDeadline: true, isHidden: false, displayNamePosition: 'inside', order: project.tasks.length + 1 },
+      { id: uid('task'), name: '媒体・予算・ターゲット整理', start: today, end: addDays(today, 2), milestone: false, completed: false, categoryId: promo.id, note: '', colorOverride: '', isDeadline: false, isHidden: false, displayNamePosition: 'auto', order: project.tasks.length },
+      { id: uid('task'), name: 'プラン確定', start: addDays(today, 7), end: addDays(today, 7), milestone: true, completed: false, categoryId: promo.id, note: '', colorOverride: '', isDeadline: true, isHidden: false, displayNamePosition: 'auto', order: project.tasks.length + 1 },
     );
   }, { reason: 'sample' });
   showToast('サンプルを追加しました', false, true);

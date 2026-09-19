@@ -52,7 +52,9 @@
     const view = currentView();
     const workspace = document.querySelector('#workspace');
     if (!view || !workspace) return;
-    const rowHeight = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    // 指で押せるよう、モバイルのガント表示だけ行を44px以上にする
+    const touchFloor = innerWidth <= 767 && workspace.classList.contains('mode-gantt') ? 44 : 0;
+    const rowHeight = Math.max(touchFloor, densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW));
     const textSize = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     const dayWidth = densityClamp(view.dayWidth, 2, 40, 12);
     workspace.style.setProperty('--row-height', `${rowHeight}px`);

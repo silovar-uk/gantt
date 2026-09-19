@@ -27,6 +27,7 @@ jobs:
           node --check src/v5/classic/18-time-compass.js
           node --check src/v5/classic/19-ui-polish.js
           node --check src/v5/classic/20-quiet-coach.js
+          node --check src/v5/classic/21-task-card.js
           test ! -e src/v5/classic/14-tighter-rows.js
           test ! -e assets/v8-tighter-rows.css
           node --check scripts/validate-css-architecture.mjs
@@ -38,6 +39,7 @@ jobs:
           node --check scripts/public-e2e-one-overview.mjs
           node --check scripts/public-e2e-project-rhythm.mjs
           node --check scripts/public-e2e-visible-truth.mjs
+          node --check scripts/public-e2e-task-card.mjs
           node scripts/validate-css-architecture.mjs
       - name: Wait for matching public deployment
         shell: bash
@@ -46,18 +48,20 @@ jobs:
           matched=0
           for i in $(seq 1 50); do
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
-            if grep -q 'assets/v6-workspace-ux.css?v=20260918-ux6' /tmp/live-index.html 2>/dev/null \
+            if grep -q 'assets/v6-workspace-ux.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v7-overview-density.css?v=20260918-density4' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v9-macro-overview.css?v=20260918-macro6' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v11-project-surface.css?v=20260918-surface4' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v11-project-surface.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v12-time-compass.css?v=20260918-window1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v13-sage-polish.css?v=20260918-sage5' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v13-sage-polish.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && ! grep -q 'assets/v8-tighter-rows.css' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/13-overview-density.js?v=20260918-overview2' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/13-overview-density.js?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/15-macro-overview.js?v=20260918-macro4' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/17-project-surface.js?v=20260918-surface4' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/18-time-compass.js?v=20260918-window1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/19-ui-polish.js?v=20260914-sage3' /tmp/live-index.html 2>/dev/null; then
+              && grep -q 'src/v5/classic/19-ui-polish.js?v=20260914-sage3' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v14-task-card.css?v=20260919-card1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/21-task-card.js?v=20260919-card1' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi
@@ -67,13 +71,14 @@ jobs:
             echo 'Matching Rhythm Context Echo deployment did not become public in time' >&2
             exit 1
           fi
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260918-ux6' -o /tmp/v6-workspace.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260919-card1' -o /tmp/v6-workspace.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v7-overview-density.css?v=20260918-density4' -o /tmp/v7-density.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v9-macro-overview.css?v=20260918-macro6' -o /tmp/v9-macro.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260918-surface4' -o /tmp/v11-surface.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260919-card1' -o /tmp/v11-surface.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260918-window1' -o /tmp/v12-compass.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260918-sage5' -o /tmp/v13-sage.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/13-overview-density.js?v=20260918-overview2' -o /tmp/v13-overview.js
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260919-card1' -o /tmp/v13-sage.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v14-task-card.css?v=20260919-card1' -o /tmp/v14-card.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/13-overview-density.js?v=20260919-card1' -o /tmp/v13-overview.js
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/15-macro-overview.js?v=20260918-macro4' -o /tmp/v15-macro.js
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/18-time-compass.js?v=20260918-window1' -o /tmp/v18-compass.js
           grep -q 'workspace.is-rhythm-echo' /tmp/v6-workspace.css
@@ -84,6 +89,7 @@ jobs:
           grep -q 'Time Compass visual owner' /tmp/v12-compass.css
           grep -q 'time-compass-rhythm-window' /tmp/v12-compass.css
           grep -q 'Present is a HUD' /tmp/v13-sage.css
+          grep -q 'task card owner' /tmp/v14-card.css
           grep -q "OVERVIEW_MODEL_VERSION = '20260918-overview2'" /tmp/v13-overview.js
           grep -q "MACRO_VERSION = '20260918-macro4'" /tmp/v15-macro.js
           grep -q '<strong>全体</strong>' /tmp/v15-macro.js
@@ -140,3 +146,4 @@ jobs:
           node scripts/public-e2e-one-overview.mjs
           node scripts/public-e2e-project-rhythm.mjs
           node scripts/public-e2e-visible-truth.mjs
+          node scripts/public-e2e-task-card.mjs

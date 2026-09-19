@@ -18,7 +18,11 @@ function bindEvents() {
     const timelineTask = event.target.closest('[data-timeline-task]')?.dataset.timelineTask;
     if (timelineTask) { state.selectedTaskId = timelineTask; renderWorkspace(); return; }
     const row = event.target.closest('[data-task-row]');
-    if (row && !event.target.closest('input,button,select,textarea')) { state.selectedTaskId = row.dataset.taskRow; renderWorkspace(); return; }
+    if (row && !event.target.closest('input,select,textarea,[data-action]')) {
+      state.selectedTaskId = row.dataset.taskRow; renderWorkspace(); revealTask(row.dataset.taskRow);
+      if (row.classList.contains('mobile-timeline-label')) openTaskCard(row.dataset.taskRow, row);
+      return;
+    }
 
     const actionEl = event.target.closest('[data-action]');
     if (!actionEl) return;
@@ -37,7 +41,7 @@ function bindEvents() {
     else if (action === 'today') scrollToday();
     else if (action === 'fit') fitAll();
     else if (action === 'clear-filters') clearFilters();
-    else if (action === 'details') { state.selectedTaskId = actionEl.dataset.taskId; openModal('details', { task: selectedTask() }); }
+    else if (action === 'details') openTaskCard(actionEl.dataset.taskId, actionEl);
     else if (action === 'close-modal') closeModal();
     else if (action === 'save-task') saveEditor();
     else if (action === 'move-period') { const task = state.project.tasks.find((item) => item.id === actionEl.dataset.taskId); if (task) openModal('move', { task }); }
@@ -144,9 +148,12 @@ function bindEvents() {
   });
 
   document.addEventListener('input', (event) => {
-    if (event.target.id === 'search-input') {
+    if (event.target.id === 'search-input' || event.target.id === 'filter-search') {
       state.ui.search = event.target.value;
-      renderConditionBar(); renderWorkspace(); return;
+      renderConditionBar(); renderWorkspace();
+      const found = filteredTasks();
+      if (state.ui.search && found.length === 1) revealTask(found[0].id);
+      return;
     }
     if (state.modal === 'details' && event.target.closest('#task-form')) state.editor.dirty = true;
     if (state.modal === 'chat-input') {
@@ -218,7 +225,7 @@ function bindEvents() {
     const row = event.target.closest('.task-row');
     if (row && event.target === row) {
       const tasks = filteredTasks(); const index = tasks.findIndex((t) => t.id === row.dataset.taskRow);
-      if (event.key === 'Enter') { event.preventDefault(); state.selectedTaskId = row.dataset.taskRow; openModal('details', { task: selectedTask() }); }
+      if (event.key === 'Enter') { event.preventDefault(); openTaskCard(row.dataset.taskRow, row); }
       else if (event.key === 'Delete') { event.preventDefault(); deleteTask(row.dataset.taskRow); }
       else if (event.key === 'ArrowDown' && index < tasks.length - 1) { event.preventDefault(); document.querySelector(`[data-task-row="${CSS.escape(tasks[index + 1].id)}"]`)?.focus(); }
       else if (event.key === 'ArrowUp' && index > 0) { event.preventDefault(); document.querySelector(`[data-task-row="${CSS.escape(tasks[index - 1].id)}"]`)?.focus(); }

@@ -5,6 +5,7 @@
   let presentMode = false;
   let dragState = null;
   let createState = null;
+  const TAP_PX = 6;
 
   function clampUx(value, min, max) {
     return Math.min(max, Math.max(min, Number(value) || min));
@@ -131,8 +132,10 @@
     else multiSelected.add(id);
     state.selectedTaskId = multiSelected.has(id) ? id : ([...multiSelected].at(-1) || null);
     applyMultiSelectionStyles();
-    updateSelectionBadge();
+    syncSelectionCard(true);
   }
+
+  window.taskSelection = { selectOnly, toggle: toggleMulti, ids: () => [...multiSelected], shift: (ids, days) => shiftTasks(ids, days) };
 
   function applyMultiSelectionStyles() {
     document.querySelectorAll('[data-task-row], [data-timeline-row]').forEach((element) => {
@@ -144,16 +147,9 @@
     });
   }
 
-  function updateSelectionBadge() {
-    const badge = document.querySelector('#ux-selection-badge');
-    if (!badge) return;
-    if (multiSelected.size > 1) {
-      badge.hidden = false;
-      badge.textContent = `${multiSelected.size}件選択`;
-    } else {
-      badge.hidden = true;
-      badge.textContent = '';
-    }
+  // 2件以上の選択は、まとめてカード(21-task-card.js)が受け持つ
+  function syncSelectionCard(open = false) {
+    window.syncMultiCard?.(open);
   }
 
   function taskBarHTML(task, viewStart, viewEnd, dayWidth) {
@@ -162,14 +158,30 @@
     const left = diffDays(viewStart, clippedStart) * dayWidth;
     const selectedClass = multiSelected.has(task.id) ? ' is-multi-selected' : '';
     if (task.milestone) {
-      return `<button class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start}"></button>`;
+      return `<button tabindex="-1" class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start} 詳細を開く"></button>`;
     }
     const width = Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
-    return `<button class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}">
+    return `<button tabindex="-1" class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
       <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
-      <span>${escapeHTML(task.name)}</span>
+      ${nameOutside(task, width) ? `<b class="ux-bar-name-out">${escapeHTML(task.name)}</b>` : `<span>${escapeHTML(task.name)}</span>`}
       <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>
     </button>`;
+  }
+
+  // ponytail: 全角1.0em/半角0.6emの概算。40件×2回のreflowを避けるため実測しない。実測が要るなら canvas.measureText
+  const NAME_FONT = 12;
+  const nameWidth = (name) => [...name].reduce((sum, ch) => sum + (ch.charCodeAt(0) > 255 ? 1 : 0.6), 0) * NAME_FONT;
+  const nameOutside = (task, width) => task.displayNamePosition === 'right' || (task.displayNamePosition === 'auto' && nameWidth(task.name) > width - 14);
+
+  function barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
+    const clippedStart = task.start < viewStart ? viewStart : task.start;
+    const clippedEnd = task.end > viewEnd ? viewEnd : task.end;
+    const left = diffDays(viewStart, clippedStart) * dayWidth;
+    const right = task.milestone ? left + Math.max(3, dayWidth / 2) + 10 : left + Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
+    const outside = !task.milestone && nameOutside(task, right - left);
+    const gap = outside ? nameWidth(task.name) + 10 : 0;
+    const x = right + gap + 20 <= totalWidth ? right + gap + 4 : right - 20;
+    return `<button type="button" class="ux-bar-more" style="left:${x}px" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>`;
   }
 
   renderWorkspace = ((baseRenderWorkspace) => function enhancedRenderWorkspace() {
@@ -181,12 +193,12 @@
     }
     document.querySelector('#workspace')?.classList.toggle('ux-present-workspace', presentMode);
     applyMultiSelectionStyles();
-    updateSelectionBadge();
+    syncSelectionCard();
   })(renderWorkspace);
 
   timelineRowHTML = function enhancedTimelineRowHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
     const intersects = task.start <= viewEnd && task.end >= viewStart;
-    const shape = intersects ? taskBarHTML(task, viewStart, viewEnd, dayWidth) : '';
+    const shape = intersects ? taskBarHTML(task, viewStart, viewEnd, dayWidth) + barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) : '';
     const selected = task.id === state.selectedTaskId || multiSelected.has(task.id);
     return `<div class="timeline-row ${selected ? 'is-selected' : ''}" data-timeline-row="${task.id}" style="width:${totalWidth}px">${shape}</div>`;
   };
@@ -249,7 +261,6 @@
           <button type="button" data-ux-action="zoom-out" aria-label="縮小" title="縮小">−</button>
           <button type="button" data-ux-action="zoom-in" aria-label="拡大" title="拡大">＋</button>
         </div>
-        <span id="ux-selection-badge" class="ux-selection-badge" hidden></span>
       `;
       const spacer = toolbar.querySelector('.toolbar-spacer');
       toolbar.insertBefore(controls, spacer?.nextSibling || null);
@@ -260,6 +271,10 @@
       wrap.className = 'menu-wrap ux-more-wrap';
       wrap.innerHTML = `<button class="icon-button" type="button" data-toggle-menu="ux-more-menu" aria-expanded="false" aria-label="その他" title="その他">•••</button>
         <div id="ux-more-menu" class="popup-menu popup-menu-right" data-menu-panel hidden>
+          <button type="button" class="ux-mobile-only" data-action="fit"><span>全体を表示</span><small>プロジェクト全体に合わせる</small></button>
+          <button type="button" class="ux-mobile-only" data-menu-do="zoom-in"><span>拡大</span><small>日付の幅を広げる</small></button>
+          <button type="button" class="ux-mobile-only" data-menu-do="zoom-out"><span>縮小</span><small>日付の幅を狭める</small></button>
+          <button type="button" class="ux-mobile-only" data-menu-do="copy-ai-json"><span>AI用JSONをコピー</span><small>外部AIへ渡す入力データ</small></button>
           <button type="button" data-action="today"><span>今日へ移動</span><small>今日の位置を表示</small></button>
           <button type="button" data-action="display-settings"><span>表示設定</span><small>期間・行高・文字サイズ</small></button>
           <button type="button" data-ux-action="download-ai-json"><span>AI用JSONを保存</span><small>外部AIへ渡す入力データ</small></button>
@@ -326,6 +341,87 @@
     }, { reason: 'keyboard-shift', message: `${ids.length}件を${Math.abs(deltaDays)}日${deltaDays > 0 ? '後ろ' : '前'}へ移動しました` });
   }
 
+  const shortMD = (iso) => { const [, m, d] = String(iso).split('-'); return `${Number(m)}/${Number(d)}`; };
+
+  // ドラッグ中の予定の、置いた後の期間
+  function draggedRange(d, original) {
+    if (d.role === 'move') return { start: addDays(original.start, d.delta), end: addDays(original.end, d.delta) };
+    if (d.role === 'start') { const start = addDays(original.start, d.delta); return { start: start <= original.end ? start : original.end, end: original.end }; }
+    const end = addDays(original.end, d.delta);
+    return { start: original.start, end: end >= original.start ? end : original.start };
+  }
+
+  // 同じカテゴリーの締切マイルストーンを、この移動で新たに越えるか(最も近い1件)
+  function deadlineOverrun(d) {
+    if (d.role === 'start') return null;
+    const deadlines = state.project.tasks.filter((task) => task.milestone && task.isDeadline);
+    let hit = null;
+    d.snapshot.forEach((original) => {
+      const task = state.project.tasks.find((item) => item.id === original.id);
+      if (!task || task.milestone) return;
+      const end = draggedRange(d, original).end;
+      deadlines.forEach((deadline) => {
+        if (deadline.categoryId !== task.categoryId || original.end > deadline.start || end <= deadline.start) return;
+        if (!hit || deadline.start < hit.deadline.start) hit = { deadline, days: diffDays(deadline.start, end) };
+      });
+    });
+    return hit;
+  }
+
+  function positionDragReadout(event) {
+    const box = dragState?.readout;
+    if (!box) return;
+    box.style.left = `${Math.min(event.clientX + 14, innerWidth - box.offsetWidth - 8)}px`;
+    box.style.top = `${Math.max(8, event.clientY - box.offsetHeight - 14)}px`;
+  }
+
+  function updateDragReadout(event) {
+    const d = dragState;
+    if (!d.readout) {
+      d.readout = document.createElement('div');
+      d.readout.className = 'ux-drag-readout';
+      d.readout.setAttribute('aria-hidden', 'true');
+      document.body.append(d.readout);
+    }
+    const first = d.snapshot[0];
+    const range = draggedRange(d, first);
+    const before = inclusiveDays(first.start, first.end);
+    const after = inclusiveDays(range.start, range.end);
+    const sign = d.delta > 0 ? '+' : '';
+    let line;
+    if (d.role === 'move' && d.snapshot.length > 1) line = `${d.snapshot.length}件を ${sign}${d.delta}日  (${shortMD(first.start)} → ${shortMD(range.start)})`;
+    else if (d.role === 'move') line = `${shortMD(first.start)} → ${shortMD(range.start)}${first.milestone ? '' : `  (${after}日間)`}  ${sign}${d.delta}日`;
+    else if (d.role === 'start') line = `${shortMD(first.start)} → ${shortMD(range.start)}  (${before}日間 → ${after}日間)`;
+    else line = `${shortMD(first.end)} → ${shortMD(range.end)}  (${before}日間 → ${after}日間)`;
+    const hit = deadlineOverrun(d);
+    d.readout.classList.toggle('is-warning', Boolean(hit));
+    d.readout.replaceChildren(line);
+    if (hit) {
+      const warn = document.createElement('div');
+      warn.textContent = `締切「${hit.deadline.name}」を${hit.days}日超えます`;
+      d.readout.append(warn);
+    }
+    positionDragReadout(event);
+    document.querySelectorAll('.time-compass-milestone.is-alert').forEach((pin) => pin.classList.remove('is-alert'));
+    if (hit) {
+      document.querySelectorAll('.time-compass-milestone').forEach((pin) => {
+        if (pin.dataset.compassDate === hit.deadline.start && pin.dataset.compassName === hit.deadline.name) pin.classList.add('is-alert');
+      });
+    }
+  }
+
+  function clearDragReadout(d) {
+    d.readout?.remove();
+    document.querySelectorAll('.time-compass-milestone.is-alert').forEach((pin) => pin.classList.remove('is-alert'));
+  }
+
+  function dragToast(d, delta) {
+    const first = d.snapshot[0];
+    const range = draggedRange({ ...d, delta }, first);
+    if (d.role === 'move') return `${d.snapshot.length}件を${Math.abs(delta)}日${delta > 0 ? '後ろ' : '前'}へ移動しました(${shortMD(first.start)} → ${shortMD(range.start)})`;
+    return `期間を${inclusiveDays(range.start, range.end)}日間にしました(${shortMD(range.start)} → ${shortMD(range.end)})`;
+  }
+
   function beginTaskDrag(event, element) {
     if (presentMode || event.button !== 0) return;
     const id = element.dataset.timelineTask;
@@ -348,6 +444,7 @@
       dayWidth: clampUx(state.project.viewSettings.dayWidth, 2, 40),
       snapshot,
       delta: 0,
+      moved: false,
       baseWidth: element.getBoundingClientRect().width,
     };
     element.classList.add('is-dragging');
@@ -357,9 +454,13 @@
 
   function moveTaskDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
+    if (!dragState.moved && Math.abs(event.clientX - dragState.startX) < TAP_PX) return;
+    dragState.moved = true;
     const delta = Math.round((event.clientX - dragState.startX) / dragState.dayWidth);
-    if (delta === dragState.delta) return;
+    positionDragReadout(event);
+    if (delta === dragState.delta && dragState.readout) return;
     dragState.delta = delta;
+    updateDragReadout(event);
     const px = delta * dragState.dayWidth;
     if (dragState.role === 'move') dragState.element.style.translate = `${px}px 0`;
     else if (dragState.role === 'start') {
@@ -375,16 +476,22 @@
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const d = dragState;
     dragState = null;
+    clearDragReadout(d);
     d.element.classList.remove('is-dragging');
     d.element.style.translate = '';
     d.element.style.marginLeft = '';
     d.element.style.width = '';
-    const delta = Math.round((event.clientX - d.startX) / d.dayWidth);
-    if (!delta && d.role === 'move') {
+    if (event.type === 'pointercancel') return;
+    if (Math.abs(event.clientX - d.startX) < TAP_PX) {
+      if (d.role !== 'move') { renderWorkspace(); return; }
+      if (event.shiftKey) return; // 続く click の toggleMulti に任せる
       selectOnly(d.id);
       renderWorkspace();
+      // ponytail: pointerup中はブラウザのlight dismissがcardを閉じるため、開くのは1tick遅らせる
+      setTimeout(() => openTaskCard(d.id, d.element), 0);
       return;
     }
+    const delta = Math.round((event.clientX - d.startX) / d.dayWidth);
     if (!delta) { renderWorkspace(); return; }
 
     contentCommit((project) => {
@@ -402,7 +509,7 @@
           task.end = candidate >= original.start ? candidate : original.start;
         }
       });
-    }, { reason: `timeline-${d.role}`, message: d.role === 'move' ? `${d.snapshot.length}件の日程を移動しました` : '期間を変更しました' });
+    }, { reason: `timeline-${d.role}`, message: dragToast(d, delta), undo: true });
   }
 
   function timelineDateFromPointer(event, row) {
@@ -416,7 +523,7 @@
   }
 
   function beginBlankCreate(event, row) {
-    if (presentMode || event.button !== 0 || event.target.closest('[data-timeline-task], .today-line')) return;
+    if (presentMode || event.button !== 0 || event.target.closest('[data-timeline-task], .today-line, .ux-bar-more')) return;
     const date = timelineDateFromPointer(event, row);
     if (!date) return;
     createState = { pointerId: event.pointerId, row, startX: event.clientX, startDate: date, endDate: date, ghost: null };
@@ -485,6 +592,16 @@
     else if (action === 'exit-present') setPresent(false);
   });
 
+  // ••• メニューの項目を押したら閉じる(モバイルはここが主要操作の入口になる)
+  document.addEventListener('click', (event) => {
+    const item = event.target.closest('#ux-more-menu button');
+    if (!item) return;
+    closeMenus();
+    if (item.dataset.menuDo === 'zoom-in') zoomTimeline(1);
+    else if (item.dataset.menuDo === 'zoom-out') zoomTimeline(-1);
+    else if (item.dataset.menuDo === 'copy-ai-json') copyAiJson();
+  });
+
   document.addEventListener('click', (event) => {
     const target = event.target.closest('[data-timeline-task], [data-task-row]');
     const id = target?.dataset.timelineTask || target?.dataset.taskRow;
@@ -496,13 +613,14 @@
       return;
     }
     multiSelected.clear();
-    updateSelectionBadge();
+    syncSelectionCard();
   }, true);
 
   document.addEventListener('dblclick', (event) => {
     const target = event.target.closest('[data-timeline-task]');
     if (!target || presentMode) return;
     event.preventDefault();
+    closeTaskCard();
     state.selectedTaskId = target.dataset.timelineTask;
     openModal('details', { task: selectedTask() });
   });
@@ -539,7 +657,7 @@
 
   document.addEventListener('gantt-desk:v5-change', () => {
     if (presentMode) renderPresentBar();
-    requestAnimationFrame(() => { applyMultiSelectionStyles(); updateSelectionBadge(); });
+    requestAnimationFrame(() => { applyMultiSelectionStyles(); syncSelectionCard(); });
   });
 
   function bootUx() {

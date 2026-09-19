@@ -186,17 +186,7 @@
     if (taskId) state.selectedTaskId = taskId;
     renderToolbarState();
     renderWorkspace();
-    requestAnimationFrame(() => {
-      if (!taskId) return;
-      const row = document.querySelector(`[data-task-row="${CSS.escape(taskId)}"]`);
-      row?.scrollIntoView({ block: 'nearest' });
-      const task = state.project.tasks.find((item) => item.id === taskId);
-      const scroll = document.querySelector('#timeline-scroll');
-      if (task && scroll) {
-        const center = diffDays(view.start, task.start) * view.dayWidth;
-        scroll.scrollLeft = Math.max(0, center - scroll.clientWidth * 0.32);
-      }
-    });
+    if (taskId) revealTask(taskId);
   }
 
   function handleLensAction(target) {

@@ -78,7 +78,7 @@ function pushHistory(snapshot) {
   }
 }
 
-function contentCommit(mutator, { reason = 'change', message = '' } = {}) {
+function contentCommit(mutator, { reason = 'change', message = '', undo = false } = {}) {
   if (state.conflict) {
     showToast('別のタブで更新されています。保存済み内容を確認してください。', true);
     return false;
@@ -93,7 +93,7 @@ function contentCommit(mutator, { reason = 'change', message = '' } = {}) {
   state.project.updatedAt = new Date().toISOString();
   queueSave(deepCopy(state.project), expectedRevision);
   renderAll();
-  if (message) showToast(message);
+  if (message) showToast(message, false, undo);
   document.dispatchEvent(new CustomEvent('gantt-desk:v5-change', { detail: { reason, revision: state.project.revision } }));
   return true;
 }

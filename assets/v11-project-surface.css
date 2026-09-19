@@ -45,7 +45,6 @@
   width: 28px;
   font-size: 16px;
 }
-.project-ribbon-nav .ux-selection-badge { height: 26px; }
 
 /* Semantic levels are internal: the surface changes meaning without adding mode chrome. */
 body[data-surface-level="plan"] .workspace.mode-split .task-bar > span { opacity: .2; }
