@@ -1,7 +1,7 @@
 function importModeOptions(preview) {
   if (!preview || preview.errors?.length) return '';
-  if (preview.format === 'backup') return `<label><input type="radio" name="import-mode" value="append" checked>予定を追加</label><label><input type="radio" name="import-mode" value="replace">予定を置換</label><label><input type="radio" name="import-mode" value="restore">プロジェクトを復元</label>`;
-  return `<label><input type="radio" name="import-mode" value="append" checked>予定を追加</label><label><input type="radio" name="import-mode" value="replace">予定を置換</label>`;
+  if (preview.format === 'backup') return `<label><input type="radio" name="import-mode" value="append" checked>予定を追加</label><label><input type="radio" name="import-mode" value="replace">予定をすべて入れ替え</label><label><input type="radio" name="import-mode" value="restore">プロジェクトを復元（backup形式のみ）</label>`;
+  return `<label><input type="radio" name="import-mode" value="append" checked>予定を追加</label><label><input type="radio" name="import-mode" value="replace">予定をすべて入れ替え</label>`;
 }
 
 function renderImportModal() {
@@ -12,6 +12,7 @@ function renderImportModal() {
         ${p.tasks.length || p.pendingItems.length ? `<div class="import-preview-list">${p.tasks.slice(0, 8).map((task) => `<div><strong>${escapeHTML(task.name)}</strong><span>${task.start}〜${task.end}</span></div>`).join('')}${p.tasks.length > 8 ? `<small>ほか${p.tasks.length - 8}件</small>` : ''}${p.pendingItems.slice(0, 4).map((item) => `<div class="pending-preview"><strong>保留: ${escapeHTML(item.name || item.sourceText.slice(0, 30))}</strong><span>${escapeHTML(item.reason)}</span></div>`).join('')}</div>` : '<p>取り込む予定・保留項目がありません。</p>'}
         ${p.duplicate ? `<label class="duplicate-warning"><input id="duplicate-confirm" type="checkbox">同じ内容を取り込み済みです。再度追加する</label>` : ''}
         <fieldset class="choice-group import-mode"><legend>反映方法</legend>${importModeOptions(p)}</fieldset>
+        <p class="form-help">入れ替え後も残るもの: プロジェクト名、既存のカテゴリー</p>
       </div>`;
   const body = `<div class="import-layout"><div class="import-main"><label class="field full"><span>JSON／ChatGPTの回答</span><textarea id="import-input" class="code-area" rows="18" spellcheck="false" placeholder='{"handoffVersion":1,"tasks":[],"needsReview":[]}'>${escapeHTML(state.importRaw)}</textarea></label><button class="button button-secondary" type="button" data-action="validate-import">検証する</button></div><aside class="import-result">${result}</aside></div>`;
   const canApply = p && !p.errors?.length && (p.tasks.length || p.pendingItems.length) && (!p.duplicate);
@@ -26,7 +27,7 @@ function remapIncoming(tasks, categories) {
   categories.forEach((incoming) => {
     if (incoming.name === '未分類') return;
     if (!projectCategories.some((c) => c.name === incoming.name) && !newCategories.some((c) => c.name === incoming.name)) {
-      newCategories.push({ id: uid('cat'), name: incoming.name, color: incoming.color || COLOR_PALETTE[(projectCategories.length + newCategories.length) % COLOR_PALETTE.length], order: projectCategories.length + newCategories.length });
+      newCategories.push({ id: uid('cat'), name: incoming.name, color: incoming.color || nextCategoryColor([...projectCategories, ...newCategories]), order: projectCategories.length + newCategories.length });
     }
   });
   const allCategories = [...projectCategories, ...newCategories];
@@ -77,6 +78,7 @@ function applyImport() {
     state.inputDraft.completed = true;
     persistInputDraft();
   }
+  if (state.project.tasks.some((task) => taskOutsideView(task, state.project.viewSettings))) fitAll({ reason: 'explicit' });
   closeModal({ force: true });
 }
 
@@ -100,7 +102,7 @@ function registerPending(id) {
   contentCommit((project) => {
     let category = project.categories.find((c) => c.name === categoryName);
     if (!category) {
-      category = { id: uid('cat'), name: categoryName.slice(0, 60), color: COLOR_PALETTE[project.categories.length % COLOR_PALETTE.length], order: project.categories.length };
+      category = { id: uid('cat'), name: categoryName.slice(0, 60), color: nextCategoryColor(project.categories), order: project.categories.length };
       project.categories.push(category);
     }
     project.pendingItems = project.pendingItems.filter((p) => p.id !== id);
@@ -111,7 +113,7 @@ function registerPending(id) {
 
 function renderProjectSettingsModal() {
   const body = `<label class="field full"><span>プロジェクト名</span><input id="project-settings-title" maxlength="120" value="${escapeHTML(state.project.title)}"></label><label class="field full"><span>全体メモ</span><textarea id="project-settings-memo" maxlength="10000" rows="5">${escapeHTML(state.project.memo)}</textarea></label>
-    <div class="section-head"><h3>カテゴリー</h3><button class="button button-secondary" type="button" data-action="add-category">＋ 追加</button></div><div class="category-settings">${state.project.categories.map((category) => `<div class="category-setting-row" data-category-setting="${category.id}"><span class="category-dot color-${category.color}"></span><input data-category-name="${category.id}" maxlength="60" value="${escapeHTML(category.name)}" ${category.id === DEFAULT_CATEGORY_ID ? 'readonly' : ''}><select data-category-color="${category.id}">${COLOR_PALETTE.map((color) => `<option value="${color}" ${color === category.color ? 'selected' : ''}>${paletteLabels[color]}</option>`).join('')}</select>${category.id === DEFAULT_CATEGORY_ID ? '<span class="fixed-label">固定</span>' : `<button class="link-button danger" type="button" data-action="delete-category" data-category-id="${category.id}">削除</button>`}</div>`).join('')}</div><div id="project-settings-error" class="form-error" hidden></div>`;
+    <div class="section-head"><h3>カテゴリー</h3><button class="button button-secondary" type="button" data-action="add-category">＋ 追加</button></div><p class="form-help">9分類以上では色が重なります。</p><div class="category-settings">${state.project.categories.map((category) => `<div class="category-setting-row" data-category-setting="${category.id}"><span class="category-dot color-${category.color}"></span><input data-category-name="${category.id}" maxlength="60" value="${escapeHTML(category.name)}" ${category.id === DEFAULT_CATEGORY_ID ? 'readonly' : ''}><select data-category-color="${category.id}">${COLOR_PALETTE.map((color) => `<option value="${color}" ${color === category.color ? 'selected' : ''}>${paletteLabels[color]}</option>`).join('')}</select>${category.id === DEFAULT_CATEGORY_ID ? '<span class="fixed-label">固定</span>' : `<button class="link-button danger" type="button" data-action="delete-category" data-category-id="${category.id}">削除</button>`}</div>`).join('')}</div><div id="project-settings-error" class="form-error" hidden></div>`;
   const footer = `<button class="button button-quiet" type="button" data-action="close-modal">キャンセル</button><button class="button button-primary" type="button" data-action="save-project-settings">保存</button>`;
   return modalFrame('プロジェクト設定', 'PROJECT', body, footer, true);
 }
@@ -138,12 +140,6 @@ function renderModal() {
   else if (state.modal === 'export') html = renderExportModal();
   root.innerHTML = html;
   root.querySelector('input[autofocus], textarea[autofocus]')?.focus();
-}
-
-function setScale(scale) {
-  const widths = { day: 32, week: 12, month: 4 };
-  if (!(scale in widths)) return;
-  setView({ scale, dayWidth: widths[scale] });
 }
 
 function scrollToday() {
@@ -186,12 +182,6 @@ function fitAll() {
   setView({ start, end, dayWidth });
 }
 
-function shiftRange(direction) {
-  const view = state.project.viewSettings;
-  const span = Math.min(730, inclusiveDays(view.start, view.end));
-  setView({ start: addDays(view.start, direction * span), end: addDays(view.end, direction * span) });
-}
-
 function clearFilters() {
   state.ui.search = '';
   state.ui.searchNotes = false;
@@ -227,6 +217,13 @@ function updateInlineDate(input, edge) {
   if (edge === 'end' && value < task.start) { input.value = task.end; showToast('終了日は開始日以降にしてください。', true); return; }
   if (value === task[edge]) return;
   contentCommit((project) => { const target = project.tasks.find((item) => item.id === task.id); target[edge] = value; if (target.milestone) target.end = target.start; }, { reason: `inline-${edge}` });
+}
+
+function deleteTask(id) {
+  const task = state.project.tasks.find((item) => item.id === id);
+  if (!task) return;
+  contentCommit((project) => { project.tasks = project.tasks.filter((item) => item.id !== id); }, { reason: 'delete-task' });
+  showToast(`「${task.name}」を削除しました`, false, true);
 }
 
 function revealSelectedTask() {

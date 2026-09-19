@@ -55,20 +55,20 @@ async function importProject(page, data) {
 try {
   const desktop = await openFresh();
   const { page } = desktop;
-  assert.equal(await page.locator('body').getAttribute('data-overview-model-version'), '20260914-overview1');
+  assert.equal(await page.locator('body').getAttribute('data-overview-model-version'), '20260918-overview2');
   assert.equal(await page.evaluate(() => typeof globalThis.ganttOverviewModel?.fit), 'function');
   assert.equal(await page.evaluate(() => typeof globalThis.ganttOverviewModel?.resolveRepresentation), 'function');
 
   // The resolver uses one explicit boundary and a resize-only hysteresis band.
   const resolution = await page.evaluate(() => {
-    const tasks = Array.from({ length: 30 }, () => ({})); // required height = 600px at the 20px floor
+    const tasks = Array.from({ length: 30 }, () => ({})); // required height = 420px at the 14px floor
     const resolve = globalThis.ganttOverviewModel.resolveRepresentation;
     return {
-      explicit: resolve(tasks, 590, { reason: 'explicit', currentShape: false }),
-      resizeRowsNear: resolve(tasks, 590, { reason: 'resize', currentShape: false }),
-      resizeRowsBeyond: resolve(tasks, 550, { reason: 'resize', currentShape: false }),
-      resizeShapeNear: resolve(tasks, 630, { reason: 'resize', currentShape: true }),
-      resizeShapeClear: resolve(tasks, 650, { reason: 'resize', currentShape: true }),
+      explicit: resolve(tasks, 413, { reason: 'explicit', currentShape: false }),
+      resizeRowsNear: resolve(tasks, 413, { reason: 'resize', currentShape: false }),
+      resizeRowsBeyond: resolve(tasks, 385, { reason: 'resize', currentShape: false }),
+      resizeShapeNear: resolve(tasks, 441, { reason: 'resize', currentShape: true }),
+      resizeShapeClear: resolve(tasks, 455, { reason: 'resize', currentShape: true }),
     };
   });
   assert.deepEqual(resolution, {

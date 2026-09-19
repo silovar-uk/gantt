@@ -1,5 +1,5 @@
 (() => {
-  const MACRO_VERSION = '20260914-macro3';
+  const MACRO_VERSION = '20260918-macro4';
   const MACRO_MIN_LANE = 26;
   const MACRO_MAX_LANE = 68;
   const HEADER_HEIGHT = 36;
@@ -113,7 +113,7 @@
     root.dataset.macroOverview = MACRO_VERSION;
     root.innerHTML = `
       <section class="macro-label-panel">
-        <div class="macro-label-head"><strong>全体</strong><span>${tasks.length}件 · ${groups.length}分類</span></div>
+        <div class="macro-label-head"><strong>全体</strong><span>${tasks.length}件 · ${groups.length}分類</span><button class="link-button" type="button" data-macro-action="exit-shape">1件ずつ見る</button></div>
         <div id="macro-label-scroll" class="macro-label-scroll">${macroLabelRows(groups, laneHeight)}</div>
       </section>
       <section class="macro-timeline-panel">
@@ -187,6 +187,11 @@
   };
 
   document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-macro-action="exit-shape"]')) {
+      event.preventDefault();
+      exitMacro();
+      return;
+    }
     const task = event.target.closest('[data-macro-task]')?.dataset.macroTask;
     if (task) {
       event.preventDefault();

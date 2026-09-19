@@ -1,14 +1,31 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 const index = readFileSync('index.html', 'utf8');
 const activeCss = [...index.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)]
   .map((match) => match[1].split('?')[0])
   .filter((path) => path.endsWith('.css'));
+const activeJs = [...index.matchAll(/<script[^>]+src="([^"]+)"/g)]
+  .map((match) => match[1].split('?')[0]);
 
 assert.ok(activeCss.length > 0, 'no active CSS found in index.html');
 assert.ok(!activeCss.includes('assets/v8-tighter-rows.css'), 'obsolete v8 tighter-row layer is still loaded');
 assert.equal(existsSync('assets/v8-tighter-rows.css'), false, 'obsolete v8 tighter-row file still exists');
+
+function listFiles(dir, extension) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) out.push(...listFiles(path, extension));
+    else if (entry.name.endsWith(extension)) out.push(path);
+  }
+  return out;
+}
+
+const orphanCss = listFiles('assets', '.css').filter((path) => !activeCss.includes(path));
+const orphanJs = listFiles('src', '.js').filter((path) => !activeJs.includes(path));
+assert.deepEqual(orphanCss, [], `index.html does not load these CSS files: ${orphanCss.join(', ')}`);
+assert.deepEqual(orphanJs, [], `index.html does not load these JS files: ${orphanJs.join(', ')}`);
 
 const cssByPath = new Map(activeCss.map((path) => [path, readFileSync(path, 'utf8')]));
 const allCss = [...cssByPath.values()].join('\n');

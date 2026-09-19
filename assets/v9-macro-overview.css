@@ -31,7 +31,8 @@
   letter-spacing: .04em;
 }
 .macro-label-head strong { color: #344054; font-size: 9px; }
-.macro-label-head span { white-space: nowrap; }
+.macro-label-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.macro-label-head .link-button { flex: 0 0 auto; font-size: 9px; white-space: nowrap; }
 .macro-label-scroll { min-height: 0; overflow: auto hidden; scrollbar-width: none; }
 .macro-label-scroll::-webkit-scrollbar { display: none; }
 

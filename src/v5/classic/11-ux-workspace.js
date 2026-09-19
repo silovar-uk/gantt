@@ -268,6 +268,10 @@
       toolbar.append(wrap);
     }
 
+    const modeSwitch = document.querySelector('#mode-switch');
+    const moreWrap = document.querySelector('.ux-more-wrap');
+    if (modeSwitch && moreWrap && modeSwitch.nextElementSibling !== moreWrap) toolbar.insertBefore(modeSwitch, moreWrap);
+
     ensurePresentBar();
   }
 

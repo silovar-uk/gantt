@@ -68,7 +68,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .condition-bar { min-height: 35px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 5px 16px 9px; border-top: 1px solid #f0f2f5; }
 .result-count, .condition-chip, .view-notice { color: #667085; font-size: 12px; }
-.condition-chip { padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; background: #fafbfc; }
+.condition-chip { display: inline-flex; align-items: center; height: 22px; padding-inline: 9px; border: 0; border-radius: 999px; background: #fafbfc; font-size: 11px; }
 .pending-link { border: 0; border-radius: 999px; background: #fff5e8; color: #a15c00; padding: 5px 9px; font-weight: 700; }
 .view-notice { margin-left: auto; color: #a15c00; }
 .conflict-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 16px; background: #fff6ed; border-top: 1px solid #ffd7ae; color: #7a2e0e; }

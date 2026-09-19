@@ -1,16 +1,20 @@
 (() => {
-  const COMPASS_VERSION = '20260914-compass6';
+  const COMPASS_VERSION = '20260918-window1';
   const RHYTHM_VERSION = '20260914-rhythm3';
   const ECHO_VERSION = '20260914-echo1';
   const FULL_COVERAGE = 0.94;
   const BUSY_BUCKETS = 48;
   const RHYTHM_MAX_WINDOWS = 3;
   const RHYTHM_MIN_TASKS = 8;
-  const ROW_MIN = 20;
+  const ROW_MIN = 14;
   const ROW_MAX = 56;
+  const WINDOW_MIN_DAYS = 7;
+  const WINDOW_MAX_DAYS = 730;
   let rowBubbleTimer = 0;
   let activeEchoKey = '';
   let activeEchoContext = null;
+  let windowDrag = null;
+  let windowFrame = 0;
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
   const tasks = () => state?.project?.tasks || [];
@@ -108,6 +112,8 @@
       control.classList.add('ux-row-density-control');
       dock.append(control);
     }
+    const autoChip = document.querySelector('.ux-row-auto-chip');
+    if (autoChip && autoChip.parentElement !== dock) dock.append(autoChip);
     bindRowInput(input);
     syncRowDock();
   }
@@ -159,11 +165,139 @@
     const today = track.querySelector('.project-ribbon-today');
     if (rail && viewport && viewport.parentElement !== rail) rail.append(viewport);
     if (rail && today && today.parentElement !== rail) rail.append(today);
+    if (viewport && !viewport.querySelector('[data-window-handle]')) {
+      ['start', 'end'].forEach((edge) => {
+        const handle = document.createElement('i');
+        handle.className = `time-window-handle time-window-handle-${edge}`;
+        handle.dataset.windowHandle = edge;
+        handle.setAttribute('aria-hidden', 'true');
+        viewport.append(handle);
+      });
+    }
+    ensureWindowChip(ribbon);
 
     ensureRowDock(ribbon);
     bindRail(rail);
     bindTrack(track);
     return { ribbon, track, rail };
+  }
+
+  function ensureWindowChip(ribbon) {
+    let chip = ribbon.querySelector('.time-window-chip');
+    if (chip) return chip;
+    chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'revert-chip time-window-chip';
+    chip.hidden = true;
+    chip.title = '窓を全期間に戻す';
+    chip.textContent = '全体';
+    ribbon.append(chip);
+    return chip;
+  }
+
+  function fitDayWidthToAvailable(span) {
+    const active = scroller();
+    const available = Math.max(120, active?.clientWidth || innerWidth * 0.6);
+    return clamp(Math.floor((available / Math.max(1, span)) * 10) / 10, 2, 32);
+  }
+
+  function commitWindowRange(start, end) {
+    const current = view();
+    if (!current) return;
+    const dayWidth = fitDayWidthToAvailable(inclusiveDays(start, end));
+    Object.assign(current, {
+      start, end, dayWidth, preferredDayWidth: dayWidth,
+      scale: dayWidth >= 18 ? 'day' : dayWidth >= 6 ? 'week' : 'month',
+      overviewAutoFit: false,
+    });
+    state.storage.saveView(current);
+    renderWorkspace();
+    renderToolbarState();
+    syncCompass();
+  }
+
+  function beginWindowResize(event, handle, track) {
+    const range = projectRange();
+    const current = view();
+    const rail = track.querySelector('.time-compass-rail');
+    if (!range || !current || !rail) return;
+    windowDrag = {
+      pointerId: event.pointerId,
+      edge: handle.dataset.windowHandle,
+      startX: event.clientX,
+      railWidth: rail.getBoundingClientRect().width,
+      range,
+      startView: { start: current.start, end: current.end },
+      pendingStart: current.start,
+      pendingEnd: current.end,
+    };
+    try { handle.setPointerCapture?.(event.pointerId); } catch { /* pointer already released */ }
+  }
+
+  function previewWindowResize(event) {
+    if (!windowDrag || event.pointerId !== windowDrag.pointerId) return;
+    const deltaRatio = (event.clientX - windowDrag.startX) / Math.max(1, windowDrag.railWidth);
+    const deltaDays = Math.round(deltaRatio * windowDrag.range.days);
+    let { start, end } = windowDrag.startView;
+    if (windowDrag.edge === 'start') {
+      let candidate = addDays(windowDrag.startView.start, deltaDays);
+      const minStart = addDays(end, -(WINDOW_MAX_DAYS - 1));
+      const maxStart = addDays(end, -(WINDOW_MIN_DAYS - 1));
+      if (candidate < minStart) candidate = minStart;
+      if (candidate > maxStart) candidate = maxStart;
+      if (candidate < DATE_MIN) candidate = DATE_MIN;
+      start = candidate;
+    } else {
+      let candidate = addDays(windowDrag.startView.end, deltaDays);
+      const minEnd = addDays(start, WINDOW_MIN_DAYS - 1);
+      const maxEnd = addDays(start, WINDOW_MAX_DAYS - 1);
+      if (candidate < minEnd) candidate = minEnd;
+      if (candidate > maxEnd) candidate = maxEnd;
+      if (candidate > DATE_MAX) candidate = DATE_MAX;
+      end = candidate;
+    }
+    windowDrag.pendingStart = start;
+    windowDrag.pendingEnd = end;
+    cancelAnimationFrame(windowFrame);
+    windowFrame = requestAnimationFrame(() => {
+      const current = view();
+      if (!current || !windowDrag) return;
+      current.start = windowDrag.pendingStart;
+      current.end = windowDrag.pendingEnd;
+      current.overviewAutoFit = false;
+      renderWorkspace();
+      renderToolbarState();
+      syncCompass();
+    });
+    event.preventDefault();
+  }
+
+  function endWindowResize(event) {
+    if (!windowDrag || event.pointerId !== windowDrag.pointerId) return;
+    const drag = windowDrag;
+    windowDrag = null;
+    cancelAnimationFrame(windowFrame);
+    commitWindowRange(drag.pendingStart, drag.pendingEnd);
+  }
+
+  function snapToMonth(date) {
+    const parsed = parseISO(date);
+    if (!parsed) return;
+    const year = parsed.getUTCFullYear();
+    const month = parsed.getUTCMonth();
+    const start = toISO(new Date(Date.UTC(year, month, 1)));
+    const end = toISO(new Date(Date.UTC(year, month + 1, 0)));
+    commitWindowRange(start, end);
+  }
+
+  function centerOnToday() {
+    const current = view();
+    if (!current) return;
+    const span = clamp(inclusiveDays(current.start, current.end), WINDOW_MIN_DAYS, WINDOW_MAX_DAYS);
+    const today = todayISO();
+    const start = addDays(today, -Math.floor((span - 1) / 2));
+    const end = addDays(start, span - 1);
+    commitWindowRange(start, end);
   }
 
   function bucketActivity(range) {
@@ -476,7 +610,7 @@
   function syncCompass() {
     const dom = ensureCompassDOM();
     const range = projectRange();
-    if (!dom || !range || dom.ribbon.hidden || breakpoint() === 'mobile') {
+    if (!dom || !range || dom.ribbon.hidden) {
       clearRhythmContext();
       return;
     }
@@ -503,6 +637,8 @@
     }
     syncSemantics(track, active, whole, visible, range);
     syncRowDock();
+    const chip = ribbon.querySelector('.time-window-chip');
+    if (chip) chip.hidden = whole;
   }
 
   function dayAtPointer(rail, clientX) {
@@ -690,6 +826,13 @@
     if (track.dataset.timeCompassBound === COMPASS_VERSION) return;
     track.dataset.timeCompassBound = COMPASS_VERSION;
     track.addEventListener('pointerdown', (event) => {
+      const handle = event.target.closest('[data-window-handle]');
+      if (handle) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        beginWindowResize(event, handle, track);
+        return;
+      }
       if (event.target.closest('.time-compass-meta')) {
         event.stopImmediatePropagation();
         event.preventDefault();
@@ -705,6 +848,15 @@
         event.preventDefault();
       }
     }, true);
+    track.addEventListener('dblclick', (event) => {
+      if (event.target.closest('.time-compass-milestone, .time-compass-rhythm-window, [data-window-handle]')) return;
+      const rail = track.querySelector('.time-compass-rail');
+      const point = rail && dayAtPointer(rail, event.clientX);
+      if (!point) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      snapToMonth(point.date);
+    }, true);
     track.addEventListener('keydown', (event) => {
       if ((event.key !== 'Enter' && event.key !== ' ') || !event.target.matches('.time-compass-rhythm-window, .time-compass-milestone')) return;
       if (activateTemporalTarget(event.target)) {
@@ -713,7 +865,6 @@
       }
     }, true);
     track.addEventListener('wheel', (event) => {
-      if (!event.ctrlKey && !event.metaKey) return;
       const rail = event.target.closest('.time-compass-rail') || track.querySelector('.time-compass-rail');
       const point = rail && dayAtPointer(rail, event.clientX);
       if (!point) return;
@@ -722,6 +873,25 @@
       zoomAtDate(point.date, event.deltaY < 0 ? 1 : -1);
     }, { capture: true, passive: false });
   }
+
+  document.addEventListener('pointermove', previewWindowResize, true);
+  document.addEventListener('pointerup', endWindowResize, true);
+  document.addEventListener('pointercancel', endWindowResize, true);
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('.time-window-chip')) {
+      event.preventDefault();
+      fitAll({ reason: 'explicit' });
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.target.matches('input, textarea, select, [contenteditable="true"]')) return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.key.toLowerCase() !== 't') return;
+    if (!view()) return;
+    event.preventDefault();
+    centerOnToday();
+  }, true);
 
   globalThis.ganttTimeCompassSync = syncCompass;
   globalThis.ganttProjectRhythm = {

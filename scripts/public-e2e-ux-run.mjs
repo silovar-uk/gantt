@@ -55,7 +55,7 @@ try {
   await page.locator('#ux-present').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#ux-density-controls').isHidden(), true);
   assert.equal(await page.locator('#ux-view-controls').isHidden(), true, 'empty projects should not show irrelevant timeline navigation');
-  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '20');
+  assert.equal(await page.locator('#ux-row-height').getAttribute('min'), '14');
   assert.equal(await page.locator('#ux-text-size').getAttribute('min'), '10');
   assert.equal(await page.locator('#io-menu [data-action="chat-input"]').isHidden(), true);
   assert.equal(await page.locator('#io-menu [data-action="chat-output"]').isHidden(), true);
@@ -75,7 +75,7 @@ try {
 
   // Compact density still works, but is now an advanced display setting rather than primary chrome.
   await openMore(page, 'display-settings');
-  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
+  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '14');
   assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
   await page.locator('#setting-row-height').fill('24');
   await page.locator('#setting-text-size').fill('10');
@@ -130,12 +130,12 @@ try {
   await page.locator(`[data-timeline-task="${task.id}"]`).waitFor({ state: 'visible' });
   const fittedRow = Number(await page.locator('#ux-row-height').inputValue());
   const fittedText = Number(await page.locator('#ux-text-size').inputValue());
-  assert.ok(fittedRow >= 20 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
+  assert.ok(fittedRow >= 14 && fittedRow <= 56, `invalid fitted row height: ${fittedRow}`);
   assert.ok(fittedText >= 10 && fittedText <= 16, `invalid fitted text size: ${fittedText}`);
 
   // Display settings remain the escape hatch for deliberate manual tuning.
   await openMore(page, 'display-settings');
-  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '20');
+  assert.equal(await page.locator('#setting-row-height').getAttribute('min'), '14');
   assert.equal(await page.locator('#setting-text-size').getAttribute('min'), '10');
   await page.locator('#setting-list-width').fill('420');
   await page.locator('#setting-row-height').fill('24');
@@ -175,7 +175,7 @@ try {
   // Mobile keeps the existing compact navigation model; advanced density chrome remains out of the way.
   const mobile = await openFresh({ width: 390, height: 844, touch: true });
   assert.equal(await mobile.page.locator('#ux-density-controls').isHidden(), true);
-  assert.equal(await mobile.page.locator('#ux-row-height').getAttribute('min'), '20');
+  assert.equal(await mobile.page.locator('#ux-row-height').getAttribute('min'), '14');
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
   assert.equal(await mobile.page.locator('#ux-ai-json').isHidden(), true);

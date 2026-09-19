@@ -163,7 +163,7 @@ function validateHandoff(payload) {
     if (!category && categoryName) {
       if (tempCategories.length >= MAX_CATEGORIES) errors.push('カテゴリー数の上限を超えています。');
       else {
-        category = { id: categoryIdFromName(categoryName, new Set(tempCategories.map((c) => c.id))), name: categoryName, color: COLOR_PALETTE[(tempCategories.length - 1) % COLOR_PALETTE.length], order: tempCategories.length };
+        category = { id: categoryIdFromName(categoryName, new Set(tempCategories.map((c) => c.id))), name: categoryName, color: nextCategoryColor(tempCategories), order: tempCategories.length };
         tempCategories.push(category);
       }
     }

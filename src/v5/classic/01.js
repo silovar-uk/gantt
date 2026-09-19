@@ -9,6 +9,11 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 const DEFAULT_CATEGORY_ID = 'cat-uncategorized';
 const COLOR_PALETTE = ['slate', 'indigo', 'emerald', 'amber', 'rose', 'violet', 'cyan', 'orange'];
 
+function nextCategoryColor(existingCategories, index = existingCategories.length) {
+  const used = new Set(existingCategories.map((category) => category.color));
+  return COLOR_PALETTE.find((color) => !used.has(color)) || COLOR_PALETTE[index % COLOR_PALETTE.length];
+}
+
 function uid(prefix = 'item') {
   if (globalThis.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -52,6 +57,10 @@ function diffDays(start, end) {
 
 function inclusiveDays(start, end) {
   return diffDays(start, end) + 1;
+}
+
+function taskOutsideView(task, view) {
+  return task.end < view.start || task.start > view.end;
 }
 
 function clamp(value, min, max) {

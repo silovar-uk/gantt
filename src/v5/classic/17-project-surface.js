@@ -1,5 +1,5 @@
 (() => {
-  const SURFACE_VERSION = '20260914-surface2';
+  const SURFACE_VERSION = '20260918-surface4';
   let ribbonFrame = 0;
   let dragState = null;
 
@@ -71,14 +71,12 @@
     if (!controls) return;
     const nav = ribbon.querySelector('.project-ribbon-nav');
     if (breakpoint() === 'mobile') {
-      ribbon.hidden = true;
       if (controls.parentElement !== toolbar) {
         const more = toolbar.querySelector('.ux-more-wrap');
         toolbar.insertBefore(controls, more || null);
       }
       return;
     }
-    ribbon.hidden = false;
     if (controls.parentElement !== nav) nav.append(controls);
   }
 
@@ -106,17 +104,15 @@
     const ribbon = ensureRibbon();
     const range = projectRange();
     if (!ribbon) return;
-    if (!range || !(state.project.tasks || []).length || breakpoint() === 'mobile') {
+    if (!range || !(state.project.tasks || []).length) {
       ribbon.hidden = true;
       syncSurfaceLevel();
       return;
     }
     ribbon.hidden = false;
     syncSurfaceLevel();
-    requestAnimationFrame(() => {
-      bindScroller();
-      syncCompass();
-    });
+    bindScroller();
+    syncCompass();
   }
 
   function bindScroller() {

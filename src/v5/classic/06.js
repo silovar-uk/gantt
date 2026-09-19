@@ -11,14 +11,17 @@ function renderConditionBar() {
   if (state.ui.categoryIds.size) chips.push(`<span class="condition-chip">カテゴリー ${state.ui.categoryIds.size}</span>`);
   if (state.ui.sort !== 'manual') chips.push(`<span class="condition-chip">並び: ${state.ui.sort === 'start' ? '開始日' : 'カテゴリー'}</span>`);
   const pending = state.project.pendingItems.length;
+  const view = state.project.viewSettings;
+  const outsideCount = tasks.filter((task) => taskOutsideView(task, view)).length;
   bar.innerHTML = `
     <span class="result-count">表示中 ${tasks.length} / ${state.project.tasks.length}件</span>
     ${chips.join('')}
     ${chips.length ? '<button class="link-button" type="button" data-action="clear-filters">条件解除</button>' : ''}
     ${pending ? `<button class="pending-link" type="button" data-action="pending">保留 ${pending}件</button>` : ''}
-    ${state.ui.viewNotice ? `<span class="view-notice">${escapeHTML(state.ui.viewNotice)}</span><button class="link-button" type="button" data-shift-range="-1">前の期間</button><button class="link-button" type="button" data-shift-range="1">次の期間</button>` : ''}
+    ${outsideCount ? `<span class="view-notice">この期間の外に ${outsideCount}件</span><button class="link-button" type="button" data-action="fit">全体を表示</button>` : ''}
+    ${state.ui.viewNotice ? `<span class="view-notice">${escapeHTML(state.ui.viewNotice)}</span>` : ''}
   `;
-  bar.hidden = !(chips.length || pending || state.ui.viewNotice || state.project.tasks.length);
+  bar.hidden = !(chips.length || pending || outsideCount || state.ui.viewNotice || state.project.tasks.length);
 }
 
 function renderConflictBanner() {
@@ -30,6 +33,15 @@ function renderConflictBanner() {
     return;
   }
   banner.hidden = false;
+  if (state.confirmReloadSaved) {
+    banner.innerHTML = `
+      <strong>このタブの未保存の変更を破棄します。</strong>
+      <span>元に戻せません。必要なら先にダウンロードしてください。</span>
+      <button class="button button-secondary" type="button" data-action="cancel-reload-saved">やめる</button>
+      <button class="button button-primary" type="button" data-action="confirm-reload-saved">破棄して切り替え</button>
+    `;
+    return;
+  }
   banner.innerHTML = `
     <strong>別のタブで予定が更新されています。</strong>
     <span>このタブの編集は保持したまま止めています。</span>
@@ -211,6 +223,7 @@ function closeModal({ force = false } = {}) {
   state.editor = null;
   state.moveDraft = null;
   state.importPreview = null;
+  state.confirmDiscardDraft = false;
   const root = document.querySelector('#modal-root');
   if (root) root.innerHTML = '';
 }
@@ -262,6 +275,7 @@ function editorFormHTML() {
 
 function renderDetailsModal() {
   const title = state.editor.isNew ? '予定を追加' : '予定の詳細';
-  const footer = `<button class="button button-quiet" type="button" data-action="close-modal">キャンセル</button><button class="button button-primary" type="button" data-action="save-task">保存</button>`;
+  const deleteButton = state.editor.isNew ? '' : `<button class="link-button danger" type="button" data-action="delete-task" data-task-id="${state.editor.task.id}">削除</button>`;
+  const footer = `${deleteButton}<button class="button button-quiet" type="button" data-action="close-modal">キャンセル</button><button class="button button-primary" type="button" data-action="save-task">保存</button>`;
   return modalFrame(title, 'SCHEDULE DETAILS', editorFormHTML(), footer);
 }
