@@ -165,3 +165,61 @@ dialog.command-palette::backdrop { background: rgba(31, 38, 34, .18); backdrop-f
 @media (prefers-reduced-motion: reduce) {
   dialog.command-palette[open] { animation: none; }
 }
+
+
+/* ── 可読性: 図形・ガイド・文字を別レイヤーにする ── */
+:root {
+  --gantt-layer-guide: 5;
+  --gantt-layer-bar: 6;
+  --gantt-layer-label: 7;
+  --gantt-layer-control: 8;
+}
+
+/* 締切の柱は意味を残す。ただし、予定そのものと文字よりは一段後ろ。 */
+.ux-deadline-pillar { z-index: var(--gantt-layer-guide); }
+.task-bar, .milestone { z-index: var(--gantt-layer-bar); }
+.ux-bar-more, .ux-resize-handle { z-index: var(--gantt-layer-control); }
+
+/* 長い名前はバーの子にせず、行直下の「文字レイヤー」に置く。 */
+.ux-bar-name-out {
+  z-index: var(--gantt-layer-label);
+  left: auto;
+  margin-left: 0;
+  max-width: min(640px, 72vw);
+  padding: 1px 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.ux-bar-name-out > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ux-bar-name-out em { flex: 0 0 auto; }
+
+/* 行が詰まっても、企画名そのものは消さない。 */
+.workspace.ux-row-compact .ux-bar-name-out { display: flex; }
+
+/* 右端の予定にもラベルを置けるよう、日付領域の後ろに「読むための余白」をつくる。 */
+.timeline-body.has-label-gutter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--timeline-base-width);
+  z-index: 1;
+  width: var(--label-gutter-width);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--surface) 70%, transparent), var(--surface) 16px);
+  pointer-events: none;
+}
+
+/* プレゼンテーションでは、編集密度より読めることを優先。 */
+body.is-present-mode .task-bar { font-size: 13px; }
+body.is-present-mode .task-bar .bar-dates { font-size: 11.5px; }
+body.is-present-mode .ux-bar-name-out {
+  max-width: min(680px, 76vw);
+  font-size: 13px;
+}

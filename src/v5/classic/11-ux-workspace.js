@@ -1,5 +1,5 @@
 (() => {
-  const UX_VERSION = '20260913-ux1';
+  const UX_VERSION = '20260921-label-clarity1';
   const UX_MIGRATION_KEY = `gantt-desk:${UX_VERSION}:defaults`;
   const multiSelected = new Set();
   let presentMode = false;
@@ -152,10 +152,33 @@
     window.syncMultiCard?.(open);
   }
 
-  // ponytail: 全角1.0em/半角0.6emの概算。40件×2回のreflowを避けるため実測しない。実測が要るなら canvas.measureText
-  const NAME_FONT = 12;
-  const nameWidth = (name) => [...name].reduce((sum, ch) => sum + (ch.charCodeAt(0) > 255 ? 1 : 0.6), 0) * NAME_FONT;
+  // 文字は図形とは別の情報層。日本語・英数字混在でも「実際に入るか」を実測して決める。
   const BAR_PAD = 20;
+  const LABEL_GAP = 7;
+  const LABEL_GUTTER_MIN = 72;
+  const LABEL_GUTTER_MAX = 640;
+  const labelMeasureContext = document.createElement('canvas').getContext('2d');
+  const labelMeasureCache = new Map();
+
+  function uiFontFamily() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--font-ui').trim()
+      || 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  }
+
+  function measuredTextWidth(text, size = 12, weight = 600) {
+    const value = String(text || '');
+    const key = `${size}|${weight}|${value}`;
+    if (labelMeasureCache.has(key)) return labelMeasureCache.get(key);
+    if (!labelMeasureContext) return value.length * size;
+    labelMeasureContext.font = `${weight} ${size}px ${uiFontFamily()}`;
+    const width = Math.ceil(labelMeasureContext.measureText(value).width);
+    labelMeasureCache.set(key, width);
+    if (labelMeasureCache.size > 600) labelMeasureCache.clear();
+    return width;
+  }
+
+  const nameWidth = (name) => measuredTextWidth(name, 12, 600);
+  const dateWidth = (dates) => measuredTextWidth(dates, 11, 500);
   const dateText = (task) => (task.milestone ? shortMD(task.start) : `${shortMD(task.start)}–${shortMD(task.end)}`);
 
   // 1行ぶんの配置。バー・遅れの糸・外に出す名前・••• の位置を、同じ概算で一度に決める
@@ -184,19 +207,35 @@
     }
 
     if (intersects) {
-      const namePos = task.displayNamePosition;
-      layout.outside = milestone || namePos === 'right' || (namePos !== 'inside' && nameWidth(task.name) > width - BAR_PAD);
-      layout.insideDates = !layout.outside && nameWidth(task.name) + 8 + flagTextWidth(layout.dates) + BAR_PAD <= width;
+      const namePos = task.displayNamePosition || 'auto';
+      const measuredName = nameWidth(task.name);
+      const completionPad = task.completed ? 14 : 0;
+      const insideBudget = Math.max(0, width - BAR_PAD - completionPad);
+      layout.outside = milestone || namePos === 'right' || (namePos !== 'inside' && measuredName > insideBudget);
+      layout.insideDates = !layout.outside && measuredName + 8 + dateWidth(layout.dates) <= insideBudget;
       if (layout.outside) {
-        const textWidth = nameWidth(task.name) + 7 + flagTextWidth(layout.dates);
+        const textWidth = measuredName + LABEL_GAP + dateWidth(layout.dates);
         const start = (layout.lateLabel ? layout.lateLabel.right + 8 : right + 6);
-        layout.nameSide = start + textWidth <= totalWidth ? 'right' : 'left';
+        layout.nameSide = 'right';
         layout.nameStart = start;
-        if (layout.nameSide === 'right') trail = Math.max(trail, start + textWidth);
+        layout.labelWidth = textWidth;
+        trail = Math.max(trail, start + Math.min(textWidth, LABEL_GUTTER_MAX));
       }
     }
     layout.moreX = trail + 20 <= totalWidth ? trail + 4 : right - 20;
     return layout;
+  }
+
+  function labelGutterWidth(tasks, viewStart, viewEnd, dayWidth, totalWidth) {
+    let overflow = 0;
+    for (const task of tasks) {
+      const layout = rowLayout(task, viewStart, viewEnd, dayWidth, totalWidth);
+      if (!layout.intersects || !layout.outside) continue;
+      const labelRight = layout.nameStart + Math.min(layout.labelWidth || 0, LABEL_GUTTER_MAX) + 28;
+      overflow = Math.max(overflow, labelRight - totalWidth);
+    }
+    if (overflow <= 0) return 0;
+    return Math.ceil(clampUx(Math.max(LABEL_GUTTER_MIN, overflow), LABEL_GUTTER_MIN, LABEL_GUTTER_MAX));
   }
 
   function taskBarHTML(task, viewStart, viewEnd, dayWidth, layout) {
@@ -210,17 +249,23 @@
     let elapsed = 0;
     if (layout.status === 'late') elapsed = 100;
     else if (layout.status === 'active') elapsed = clampUx(((diffDays(viewStart, layout.today) * dayWidth + dayWidth / 2 - left) / width) * 100, 0, 100);
-    const out = layout.outside
-      ? `<b class="ux-bar-name-out" style="${layout.nameSide === 'left' ? 'left:auto;right:calc(100% + 6px)' : `left:calc(100% + ${layout.nameStart - layout.right}px);margin-left:0`}">${escapeHTML(task.name)}<em>${layout.dates}</em></b>`
-      : '';
+
     const inside = layout.outside
       ? ''
       : `<span class="bar-name">${escapeHTML(task.name)}</span>${layout.insideDates ? `<span class="bar-dates">${layout.dates}</span>` : ''}`;
     return `<button tabindex="-1" class="task-bar ux-draggable color-${color} ${task.completed ? 'is-completed' : ''}${layout.status === 'late' ? ' is-late' : ''}${selectedClass}" style="left:${left}px;width:${width}px;--elapsed:${elapsed.toFixed(1)}%" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
       <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
-      ${inside}${out}
+      ${inside}
       <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>
     </button>`;
+  }
+
+  function taskLabelHTML(task, layout) {
+    if (!layout.outside) return '';
+    const color = taskColor(task, state.project.categories);
+    const milestoneClass = task.milestone ? ' ux-ms-name' : '';
+    const maxWidth = Math.max(120, Math.min(LABEL_GUTTER_MAX, Math.ceil(layout.labelWidth || LABEL_GUTTER_MIN)));
+    return `<b class="ux-bar-name-out ux-task-label-out color-${color}${milestoneClass}" style="left:${layout.nameStart}px;max-width:${maxWidth}px;margin-left:0"><span>${escapeHTML(task.name)}</span><em>${layout.dates}</em></b>`;
   }
 
   renderWorkspace = ((baseRenderWorkspace) => function enhancedRenderWorkspace() {
@@ -230,6 +275,26 @@
       const width = clampUx(state.project.viewSettings.listWidth || 300, 240, 520);
       panel.style.setProperty('--list-width', `${width}px`);
     }
+    // バーの右側を「余り」ではなくラベル領域として確保する。
+    const inner = document.querySelector('.timeline-inner');
+    const body = document.querySelector('#timeline-body');
+    const head = document.querySelector('.timeline-head');
+    if (inner && body && head) {
+      const view = state.project.viewSettings;
+      const viewStart = view.start;
+      const viewEnd = view.end;
+      const dayWidth = clampUx(view.dayWidth, 2, 32);
+      const baseWidth = Number.parseFloat(head.style.width) || inclusiveDays(viewStart, viewEnd) * dayWidth;
+      const gutter = labelGutterWidth(filteredTasks(), viewStart, viewEnd, dayWidth, baseWidth);
+      const canvasWidth = baseWidth + gutter;
+      inner.style.width = `${canvasWidth}px`;
+      body.style.width = `${canvasWidth}px`;
+      body.style.setProperty('--timeline-base-width', `${baseWidth}px`);
+      body.style.setProperty('--label-gutter-width', `${gutter}px`);
+      body.classList.toggle('has-label-gutter', gutter > 0);
+      document.querySelectorAll('[data-timeline-row]').forEach((row) => { row.style.width = `${canvasWidth}px`; });
+    }
+
     document.querySelector('#workspace')?.classList.toggle('ux-present-workspace', presentMode);
     applyMultiSelectionStyles();
     syncSelectionCard();
@@ -242,10 +307,7 @@
     if (layout.lateLabel) shape += `<span class="ux-late-label" style="left:${layout.lateLabel.left}px">${layout.lateLabel.text}</span>`;
     if (layout.intersects) {
       shape += taskBarHTML(task, viewStart, viewEnd, dayWidth, layout);
-      if (layout.milestone) {
-        const side = layout.nameSide === 'left' ? `left:auto;right:${totalWidth - layout.anchor + 12}px` : `left:${layout.nameStart}px`;
-        shape += `<b class="ux-bar-name-out ux-ms-name" style="${side};margin-left:0">${escapeHTML(task.name)}<em>${layout.dates}</em></b>`;
-      }
+      shape += taskLabelHTML(task, layout);
       shape += `<button type="button" class="ux-bar-more" style="left:${layout.moreX}px" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>`;
     }
     const selected = task.id === state.selectedTaskId || multiSelected.has(task.id);
@@ -296,7 +358,9 @@
       present.className = 'button button-primary ux-present-button';
       present.type = 'button';
       present.dataset.uxAction = 'present';
-      present.textContent = 'Present';
+      present.textContent = 'プレゼンテーション';
+      present.setAttribute('aria-label', 'プレゼンテーション表示');
+      present.title = 'プレゼンテーション表示';
       topActions.append(present);
     }
 

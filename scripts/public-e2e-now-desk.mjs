@@ -44,7 +44,11 @@ function handoff() {
     t('完了済みA', -20, -14, 3),
     t('完了済みB', -18, -10, 0),
   ];
-  for (let index = 0; index < 17; index += 1) tasks.push(t(`これから ${String(index + 1).padStart(2, '0')}`, 2 + index * 2, 6 + index * 2, index));
+  for (let index = 0; index < 17; index += 1) {
+    const n = String(index + 1).padStart(2, '0');
+    const name = n === '17' ? 'これから 17｜スポンサー向けプレゼンテーション資料・最終確認' : `これから ${n}`;
+    tasks.push(t(name, 2 + index * 2, 6 + index * 2, index));
+  }
   return { handoffVersion: 1, tasks, needsReview: [] };
 }
 
@@ -115,6 +119,38 @@ try {
     const row = page.locator(`[data-timeline-row="${id}"]`);
     assert.ok((await row.locator('.ux-ms-name').innerText()).trim().length > 0, 'a milestone must show its name without hover');
   }
+
+  // 5b. 長い企画名はバー外の独立ラベルへ。右端でも読むための余白を確保し、締切の点線より前に描く
+  const longId = await page.evaluate(() => state.project.tasks.find((task) => task.name.startsWith('これから 17｜'))?.id || '');
+  assert.ok(longId, 'long-label fixture must exist');
+  const labelTruth = await page.evaluate((id) => {
+    const row = document.querySelector(`[data-timeline-row="${id}"]`);
+    const label = row?.querySelector('.ux-bar-name-out');
+    const bar = row?.querySelector('[data-timeline-task]');
+    const pillar = document.querySelector('.ux-deadline-pillar');
+    const inner = document.querySelector('.timeline-inner');
+    const head = document.querySelector('.timeline-head');
+    if (!row || !label || !bar || !pillar || !inner || !head) return null;
+    const labelBox = label.getBoundingClientRect();
+    const rowBox = row.getBoundingClientRect();
+    return {
+      parentIsRow: label.parentElement === row,
+      text: label.textContent,
+      labelZ: Number(getComputedStyle(label).zIndex),
+      barZ: Number(getComputedStyle(bar).zIndex),
+      pillarZ: Number(getComputedStyle(pillar).zIndex),
+      fullTextFits: label.scrollWidth <= label.clientWidth + 1,
+      labelInsideCanvas: labelBox.right <= rowBox.right + 1,
+      canvasWidth: inner.getBoundingClientRect().width,
+      dateWidth: head.getBoundingClientRect().width,
+    };
+  }, longId);
+  assert.ok(labelTruth?.parentIsRow, 'outside label must be a sibling of the bar, not trapped inside it');
+  assert.match(labelTruth.text, /スポンサー向けプレゼンテーション資料・最終確認/);
+  assert.ok(labelTruth.fullTextFits, 'long task name should remain readable without truncation in this fixture');
+  assert.ok(labelTruth.labelInsideCanvas, 'label must fit inside the extended timeline canvas');
+  assert.ok(labelTruth.canvasWidth > labelTruth.dateWidth, 'timeline must reserve a label gutter after the final date');
+  assert.ok(labelTruth.labelZ > labelTruth.pillarZ && labelTruth.barZ > labelTruth.pillarZ, 'labels and bars must render above deadline pillars');
 
   // 6. 「全体」を押したあと、すべての行が浮かぶ操作盤の上に収まる
   await page.locator('#ux-view-controls [data-action="fit"]').click();

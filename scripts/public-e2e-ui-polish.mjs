@@ -19,7 +19,8 @@ try {
   const desktop = await openFresh({ width: 1440, height: 900 });
   const { page } = desktop;
 
-  assert.equal(await page.locator('#ux-present-bar').isHidden(), true, 'hidden Present HUD must not reserve space');
+  assert.equal(await page.locator('#ux-present-bar').isHidden(), true, 'hidden presentation HUD must not reserve space');
+  assert.equal((await page.locator('#ux-present').innerText()).trim(), 'プレゼンテーション', 'presentation button must use the Japanese label');
   const conflict = page.locator('.conflict-banner[hidden]');
   if (await conflict.count()) assert.equal(await conflict.first().isHidden(), true, 'hidden conflict banner must not reserve space');
 

@@ -65,7 +65,7 @@ jobs:
               && grep -q 'src/v5/classic/19-ui-polish.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v14-task-card.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/21-task-card.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v15-now-desk.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v15-now-desk.css?v=20260921-label1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/22-command-palette.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/23-afterimage.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null; then
               matched=1
@@ -84,7 +84,7 @@ jobs:
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260921-desk1' -o /tmp/v12-compass.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v13-sage-polish.css?v=20260921-desk1' -o /tmp/v13-sage.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v14-task-card.css?v=20260921-desk1' -o /tmp/v14-card.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v15-now-desk.css?v=20260921-desk1' -o /tmp/v15-desk.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v15-now-desk.css?v=20260921-label1' -o /tmp/v15-desk.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/13-overview-density.js?v=20260921-desk1' -o /tmp/v13-overview.js
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/15-macro-overview.js?v=20260921-desk1' -o /tmp/v15-macro.js
           curl -fsSL 'https://silovar-uk.github.io/gantt/src/v5/classic/18-time-compass.js?v=20260921-desk1' -o /tmp/v18-compass.js
@@ -123,7 +123,7 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1440,900 --virtual-time-budget=5000 --user-data-dir=/tmp/chrome-desktop --dump-dom https://silovar-uk.github.io/gantt/ > /tmp/desktop.html
           grep -q 'data-action="add"' /tmp/desktop.html
           grep -q 'AI用JSON' /tmp/desktop.html
-          grep -q 'Present' /tmp/desktop.html
+          grep -q 'プレゼンテーション' /tmp/desktop.html
           grep -q 'id="ux-density-controls"' /tmp/desktop.html
           grep -q 'id="macro-detail-lens"' /tmp/desktop.html
           if grep -q 'boot-state' /tmp/desktop.html; then
