@@ -172,15 +172,17 @@ function timelineHeaderHTML(start, days, dayWidth) {
     if (index === 0 || date.getUTCDate() === 1) marks.push({ index, x: index * dayWidth, month: date.getUTCMonth() + 1, year: date.getUTCFullYear() });
   }
   const cells = [];
+  let firstLabel = true; // 年は、最初に出る月と1月にだけ添える
   marks.forEach((mark, i) => {
     if (mark.index > 0) cells.push(`<i class="month-tick" style="left:${mark.x}px"></i>`);
-    const withYear = i === 0 || mark.month === 1;
+    const withYear = firstLabel || mark.month === 1;
     const labelW = flagTextWidth(`${mark.month}月`, 12) + (withYear ? flagTextWidth(String(mark.year), 10.5) + 4 : 0) + 8;
     let left = mark.x + 6;
     const hit = rects.find((rect) => left < rect.right + 4 && left + labelW > rect.left - 4);
     if (hit) left = hit.right + 8;
     const nextX = i + 1 < marks.length ? marks[i + 1].x : width;
     if (left + labelW > nextX - 4) return;
+    firstLabel = false;
     cells.push(`<span class="month-label" style="left:${left}px">${mark.month}月${withYear ? `<small>${mark.year}</small>` : ''}</span>`);
   });
 

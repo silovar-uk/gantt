@@ -42,7 +42,12 @@
 /* 全幅の一覧: 図が無いので、表が幅を使い切る */
 @media (min-width: 768px) {
   .workspace.mode-list .task-panel { flex: 1 1 auto; width: auto; }
+  /* 一覧の行は図と切り離して、読みやすい40pxに */
+  .workspace.mode-list .task-row { --row-height: 40px; }
 }
+/* 日付の入力は、触れたときだけカレンダーの印を出す */
+.date-cell input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; }
+.date-cell input[type="date"]:hover::-webkit-calendar-picker-indicator, .date-cell input[type="date"]:focus::-webkit-calendar-picker-indicator { opacity: .6; }
 .task-panel { overflow: hidden; }
 .pane-resizer { flex-basis: 4px; background: #f5f6f8; }
 .pane-resizer:hover::after { opacity: .7; }

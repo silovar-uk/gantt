@@ -88,7 +88,7 @@ body.is-present-mode .ux-bar-more { display: none; }
 .time-compass-milestone.is-alert > i { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-soft), 0 0 0 4px var(--warning); }
 
 /* 選択中の予定の期間(時間の窓) */
-.ribbon-selected-span { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--primary); opacity: .35; pointer-events: none; }
+.ribbon-selected-span { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--primary); opacity: .18; pointer-events: none; }
 
 /* 名前がバーに入らないとき、バーの外に名前と日付を出す(右端で切れるなら左) */
 .ux-bar-name-out { position: absolute; left: 100%; top: 50%; margin-left: 6px; transform: translateY(-50%); display: flex; align-items: baseline; gap: 7px; color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; }
