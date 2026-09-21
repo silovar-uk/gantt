@@ -15,6 +15,12 @@ function bindEvents() {
     const mode = event.target.closest('[data-mode]')?.dataset.mode;
     if (mode) { setMode(mode); return; }
 
+    const titleDisplay = event.target.closest('[data-task-title-display]');
+    if (titleDisplay) {
+      selectTaskInWorkspace(titleDisplay.dataset.taskTitleDisplay);
+      return;
+    }
+
     const timelineTask = event.target.closest('[data-timeline-task]')?.dataset.timelineTask;
     if (timelineTask) { state.selectedTaskId = timelineTask; renderWorkspace(); return; }
     const row = event.target.closest('[data-task-row]');
@@ -147,7 +153,18 @@ function bindEvents() {
     else if (action === 'sample') loadSample();
   });
 
+  document.addEventListener('dblclick', (event) => {
+    const titleDisplay = event.target.closest('[data-task-title-display]');
+    if (!titleDisplay) return;
+    beginInlineNameEdit(titleDisplay.dataset.taskTitleDisplay);
+  });
+
   document.addEventListener('input', (event) => {
+    if (event.target.matches('[data-inline-name]')) {
+      autosizeInlineNameEditor(event.target);
+      requestAnimationFrame(syncVisibleRowHeights);
+      return;
+    }
     if (event.target.id === 'search-input' || event.target.id === 'filter-search') {
       state.ui.search = event.target.value;
       renderConditionBar(); renderWorkspace();
@@ -205,11 +222,11 @@ function bindEvents() {
 
   document.addEventListener('focusin', (event) => {
     const row = event.target.closest('[data-task-row]');
-    if (row) state.selectedTaskId = row.dataset.taskRow;
+    if (row) selectTaskInWorkspace(row.dataset.taskRow);
   });
 
   document.addEventListener('focusout', (event) => {
-    if (event.target.matches('[data-inline-name]')) updateInlineName(event.target);
+    if (event.target.matches('[data-inline-name]') && !event.target.hidden) finishInlineNameEdit(event.target);
   });
 
   document.addEventListener('keydown', (event) => {
@@ -220,8 +237,21 @@ function bindEvents() {
     }
     if (!isMac && event.ctrlKey && event.key.toLowerCase() === 'y' && !event.target.matches('input,textarea,[contenteditable="true"]')) { event.preventDefault(); redo(); return; }
     if (event.key === 'Escape' && state.modal) { closeModal(); return; }
-    if (event.target.matches('[data-inline-name]') && event.key === 'Enter' && !event.isComposing) { event.preventDefault(); event.target.blur(); return; }
-    if (event.target.matches('[data-inline-name]') && event.key === 'Escape') { const task = state.project.tasks.find((item) => item.id === event.target.dataset.inlineName); event.target.value = task?.name || ''; event.target.blur(); return; }
+    if (event.target.matches('[data-task-title-display]') && (event.key === 'Enter' || event.key === 'F2')) {
+      event.preventDefault();
+      beginInlineNameEdit(event.target.dataset.taskTitleDisplay);
+      return;
+    }
+    if (event.target.matches('[data-inline-name]') && event.key === 'Enter' && !event.isComposing) {
+      event.preventDefault();
+      event.target.blur();
+      return;
+    }
+    if (event.target.matches('[data-inline-name]') && event.key === 'Escape') {
+      event.preventDefault();
+      finishInlineNameEdit(event.target, { cancel: true, focusDisplay: true });
+      return;
+    }
     const row = event.target.closest('.task-row');
     if (row && event.target === row) {
       const tasks = filteredTasks(); const index = tasks.findIndex((t) => t.id === row.dataset.taskRow);

@@ -38,7 +38,7 @@ try {
   await waitSaved(page);
   await page.locator('#project-ribbon').waitFor({ state: 'visible' });
 
-  const id = await page.locator('input.inline-name').evaluateAll((inputs) => inputs.find((el) => el.value === 'Tight Row E2E')?.dataset.inlineName || null);
+  const id = await page.locator('[data-task-title-display]').evaluateAll((titles) => titles.find((el) => el.textContent.trim() === 'Tight Row E2E')?.dataset.taskTitleDisplay || null);
   assert.ok(id);
 
   // Extreme compact density remains available from advanced display settings.
@@ -52,12 +52,13 @@ try {
 
   const listGeometry = await page.locator(`[data-task-row="${id}"]`).evaluate((el) => ({
     height: el.getBoundingClientRect().height,
+    scrollHeight: el.scrollHeight,
     menuHeight: el.querySelector('.row-menu-button')?.getBoundingClientRect().height || 0,
   }));
   const timelineHeight = await page.locator(`[data-timeline-row="${id}"]`).evaluate((el) => el.getBoundingClientRect().height);
   const barHeight = await page.locator(`[data-timeline-task="${id}"]`).evaluate((el) => el.getBoundingClientRect().height);
-  assert.ok(listGeometry.height >= 19 && listGeometry.height <= 21, `list row is not 20px: ${JSON.stringify(listGeometry)}`);
-  assert.ok(timelineHeight >= 19 && timelineHeight <= 21, `timeline row is not 20px: ${timelineHeight}`);
+  assert.ok(listGeometry.height >= 20 && listGeometry.height + 1 >= listGeometry.scrollHeight, `readable list row clipped at 20px preference: ${JSON.stringify(listGeometry)}`);
+  assert.ok(Math.abs(timelineHeight - listGeometry.height) <= 1, `split row heights diverged: ${timelineHeight} vs ${listGeometry.height}`);
   assert.ok(listGeometry.menuHeight <= listGeometry.height, `row menu overflows: ${JSON.stringify(listGeometry)}`);
   assert.ok(barHeight >= 15 && barHeight <= 17, `bar lost density balance: ${barHeight}`);
 

@@ -31,7 +31,10 @@ async function waitSaved(page) {
 }
 
 async function taskId(page, name) {
-  return page.locator('input.inline-name').evaluateAll((inputs, target) => inputs.find((el) => el.value === target)?.dataset.inlineName || null, name);
+  return page.locator('[data-task-title-display]').evaluateAll(
+    (titles, target) => titles.find((el) => el.textContent.trim() === target)?.dataset.taskTitleDisplay || null,
+    name,
+  );
 }
 
 async function taskRow(page, name) {
@@ -86,11 +89,11 @@ try {
   await page.locator('#setting-row-height').fill('24');
   await page.locator('#setting-text-size').fill('10');
   await page.locator('[data-density-action="apply-display-settings"]').click();
-  const rowGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
-  assert.ok(rowGeometry.height <= 25 && rowGeometry.height >= 23, `row height is not compact: ${JSON.stringify(rowGeometry)}`);
+  const rowGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, scrollHeight: el.scrollHeight, fontSize: getComputedStyle(el).fontSize }));
+  assert.ok(rowGeometry.height >= 24 && rowGeometry.height + 1 >= rowGeometry.scrollHeight, `readable row clipped at compact density: ${JSON.stringify(rowGeometry)}`);
   assert.equal(rowGeometry.fontSize, '10px');
   const timelineRowHeight = await page.locator(`[data-timeline-row="${task.id}"]`).evaluate((el) => el.getBoundingClientRect().height);
-  assert.ok(timelineRowHeight <= 25 && timelineRowHeight >= 23, `timeline row height is not compact: ${timelineRowHeight}`);
+  assert.ok(Math.abs(timelineRowHeight - rowGeometry.height) <= 1, `split rows diverged: ${rowGeometry.height} vs ${timelineRowHeight}`);
 
   // The compact list must never overlap the timeline or block its own detail button.
   const listBox = await page.locator('.task-panel').boundingBox();
@@ -150,8 +153,8 @@ try {
   await page.locator('[data-density-action="apply-display-settings"]').click();
   assert.equal(await page.locator('.modal-layer').count(), 0);
   task = await taskRow(page, 'UX E2E タスク');
-  const settingsGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize }));
-  assert.ok(settingsGeometry.height <= 25 && settingsGeometry.height >= 23);
+  const settingsGeometry = await task.row.evaluate((el) => ({ height: el.getBoundingClientRect().height, scrollHeight: el.scrollHeight, fontSize: getComputedStyle(el).fontSize }));
+  assert.ok(settingsGeometry.height >= 24 && settingsGeometry.height + 1 >= settingsGeometry.scrollHeight);
   assert.equal(settingsGeometry.fontSize, '10px');
 
   // Present mode removes editing chrome and can return cleanly.
