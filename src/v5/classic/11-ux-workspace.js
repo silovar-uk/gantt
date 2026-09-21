@@ -322,6 +322,7 @@
     const move = (moveEvent) => {
       const next = clampUx(initial + moveEvent.clientX - startX, 240, 520);
       document.querySelector('.task-panel')?.style.setProperty('--list-width', `${next}px`);
+      requestAnimationFrame(syncVisibleRowHeights);
     };
     const end = (upEvent) => {
       removeEventListener('pointermove', move);
