@@ -86,12 +86,18 @@ try {
   assert.equal(await rowSlider.getAttribute('max'), '56');
   await rowSlider.evaluate((el) => { el.value = '32'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.waitForTimeout(60);
-  const row32 = await page.locator('.task-row').first().evaluate((el) => el.getBoundingClientRect().height);
-  assert.ok(row32 >= 31 && row32 <= 33, `row slider did not apply 32px: ${row32}`);
+  const row32 = await page.locator('.task-row').first().evaluate((el) => ({ height: el.getBoundingClientRect().height, scrollHeight: el.scrollHeight }));
+  const timeline32 = await page.locator('.timeline-row').first().evaluate((el) => el.getBoundingClientRect().height);
+  assert.equal(await page.evaluate(() => state.project.viewSettings.rowHeight), 32, 'row preference must remain 32px');
+  assert.ok(row32.height >= 32 && row32.height + 1 >= row32.scrollHeight, `32px preference clipped readable content: ${JSON.stringify(row32)}`);
+  assert.ok(Math.abs(timeline32 - row32.height) <= 1, `split rows diverged at 32px: ${timeline32} vs ${row32.height}`);
   await rowSlider.evaluate((el) => { el.value = '24'; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.waitForTimeout(60);
-  const row24 = await page.locator('.task-row').first().evaluate((el) => el.getBoundingClientRect().height);
-  assert.ok(row24 >= 23 && row24 <= 25, `row slider did not apply 24px: ${row24}`);
+  const row24 = await page.locator('.task-row').first().evaluate((el) => ({ height: el.getBoundingClientRect().height, scrollHeight: el.scrollHeight }));
+  const timeline24 = await page.locator('.timeline-row').first().evaluate((el) => el.getBoundingClientRect().height);
+  assert.equal(await page.evaluate(() => state.project.viewSettings.rowHeight), 24, 'row preference must remain 24px');
+  assert.ok(row24.height >= 24 && row24.height + 1 >= row24.scrollHeight, `24px preference clipped readable content: ${JSON.stringify(row24)}`);
+  assert.ok(Math.abs(timeline24 - row24.height) <= 1, `split rows diverged at 24px: ${timeline24} vs ${row24.height}`);
 
   // Hover stays inside the rail and replaces one annotation channel instead of stacking labels.
   const wholeScrollBefore = await page.locator('#timeline-scroll').evaluate((el) => el.scrollLeft);
