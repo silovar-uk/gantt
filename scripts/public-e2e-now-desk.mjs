@@ -165,6 +165,40 @@ try {
   const workspaceWidth = (await page.locator('#workspace').boundingBox()).width;
   const panelWidth = (await page.locator('.task-panel').boundingBox()).width;
   assert.ok(panelWidth >= workspaceWidth * 0.9, `list must fill the width (${panelWidth} of ${workspaceWidth})`);
+
+  // 7b. 一覧では予定名が入力欄に閉じ込められず、全文を通常テキストとして読める
+  const longTitle = page.locator(`[data-task-title-display="${longId}"]`);
+  const titleTruth = await longTitle.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      text: el.textContent.trim(),
+      whiteSpace: style.whiteSpace,
+      overflowWrap: style.overflowWrap,
+      textOverflow: style.textOverflow,
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    };
+  });
+  assert.match(titleTruth.text, /スポンサー向けプレゼンテーション資料・最終確認/);
+  assert.notEqual(titleTruth.whiteSpace, 'nowrap', 'task title must wrap instead of truncating');
+  assert.notEqual(titleTruth.textOverflow, 'ellipsis', 'task title must not use ellipsis');
+  assert.ok(['anywhere', 'break-word'].includes(titleTruth.overflowWrap), `task title must be breakable: ${JSON.stringify(titleTruth)}`);
+  assert.ok(titleTruth.scrollWidth <= titleTruth.clientWidth + 1, `task title overflows horizontally: ${JSON.stringify(titleTruth)}`);
+  assert.ok(titleTruth.scrollHeight <= titleTruth.clientHeight + 1, `task title is vertically clipped: ${JSON.stringify(titleTruth)}`);
+
+  // Enterで編集へ、Escapeで破棄して「読む状態」へ戻れる
+  await longTitle.focus();
+  await page.keyboard.press('Enter');
+  const longEditor = page.locator(`[data-inline-name="${longId}"]`);
+  await longEditor.waitFor({ state: 'visible' });
+  const originalLongName = await longEditor.inputValue();
+  await longEditor.fill(originalLongName + ' 仮編集');
+  await page.keyboard.press('Escape');
+  await longTitle.waitFor({ state: 'visible' });
+  assert.equal((await longTitle.innerText()).trim(), originalLongName, 'Escape must cancel inline title editing');
+
   await page.locator('#mode-switch [data-mode="gantt"]').click();
   await page.waitForFunction(() => {
     const scroll = document.querySelector('#timeline-scroll');
@@ -227,6 +261,20 @@ try {
     .filter((el) => el.getClientRects().length && !el.closest('#timeline-scroll, .popup-menu, .toast, .task-card, #modal-root, dialog') && el.getBoundingClientRect().right > 390.5)
     .map((el) => el.tagName.toLowerCase() + '.' + el.className));
   assert.deepEqual(await overflowing(), [], 'nothing may overflow the 390px screen in list mode');
+  const mobileLongId = await mobile.page.evaluate(() => state.project.tasks.find((task) => task.name.startsWith('これから 17｜'))?.id || '');
+  const mobileTitleTruth = await mobile.page.locator(`[data-task-title-display="${mobileLongId}"]`).evaluate((el) => ({
+    text: el.textContent.trim(),
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+    scrollHeight: el.scrollHeight,
+    clientHeight: el.clientHeight,
+    whiteSpace: getComputedStyle(el).whiteSpace,
+  }));
+  assert.match(mobileTitleTruth.text, /スポンサー向けプレゼンテーション資料・最終確認/);
+  assert.notEqual(mobileTitleTruth.whiteSpace, 'nowrap');
+  assert.ok(mobileTitleTruth.scrollWidth <= mobileTitleTruth.clientWidth + 1, `mobile title overflows horizontally: ${JSON.stringify(mobileTitleTruth)}`);
+  assert.ok(mobileTitleTruth.scrollHeight <= mobileTitleTruth.clientHeight + 1, `mobile title is clipped: ${JSON.stringify(mobileTitleTruth)}`);
+
   const small = await mobile.page.locator('.toolbar button:visible').evaluateAll((els) => els.map((el) => {
     const box = el.getBoundingClientRect();
     return { label: el.textContent.trim() || el.getAttribute('aria-label'), w: Math.round(box.width), h: Math.round(box.height) };
