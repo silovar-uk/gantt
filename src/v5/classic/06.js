@@ -90,15 +90,25 @@ function listRowHTML(task) {
   const color = taskColor(task, state.project.categories);
   const days = task.milestone ? '◆' : `${inclusiveDays(task.start, task.end)}日`;
   const range = task.milestone ? shortMD(task.start) : `${shortMD(task.start)}–${shortMD(task.end)}`;
+  const endControl = task.milestone
+    ? '<span class="single-day" aria-label="単日">◆</span>'
+    : `<input type="date" data-inline-end="${task.id}" value="${task.end}" aria-label="終了日">`;
   return `<div class="task-row cat-${color} state-${taskState(task)} ${selected ? 'is-selected' : ''} ${task.completed ? 'is-completed' : ''} ${task.isHidden ? 'is-hidden-task' : ''}" data-task-row="${task.id}" tabindex="0" role="row" aria-selected="${selected}">
     <label class="complete-cell"><input type="checkbox" data-task-complete="${task.id}" ${task.completed ? 'checked' : ''} aria-label="${escapeHTML(task.name)}を完了"></label>
-    <div class="name-cell"><input class="inline-name" data-inline-name="${task.id}" value="${escapeHTML(task.name)}" aria-label="予定名"></div>
-    <div class="category-cell"><span class="category-dot color-${color}"></span><span>${escapeHTML(category.name)}</span></div>
-    <div class="span-cell">${miniSpanHTML(task)}</div>
-    <div class="date-cell"><input type="date" data-inline-start="${task.id}" value="${task.start}" aria-label="開始日"></div>
-    <div class="date-cell end-cell">${task.milestone ? '<span class="single-day">◆</span>' : `<input type="date" data-inline-end="${task.id}" value="${task.end}" aria-label="終了日">`}</div>
-    <div class="days-cell"><span class="days-range">${range} · </span>${days}</div>
-    ${stateCellHTML(task)}
+    <div class="task-main">
+      <div class="task-title-zone">
+        <button type="button" class="task-title-display" data-task-title-display="${task.id}" aria-label="${escapeHTML(task.name)}。Enterで編集">${escapeHTML(task.name)}</button>
+        <textarea class="inline-name task-title-editor" data-inline-name="${task.id}" maxlength="200" rows="1" hidden aria-label="予定名を編集">${escapeHTML(task.name)}</textarea>
+      </div>
+      <div class="task-meta">
+        <span class="task-meta-category category-cell"><span class="category-dot color-${color}"></span><span>${escapeHTML(category.name)}</span></span>
+        <span class="task-meta-dates date-cell"><input type="date" data-inline-start="${task.id}" value="${task.start}" aria-label="開始日"><span class="task-date-arrow" aria-hidden="true">→</span>${endControl}</span>
+        <span class="task-meta-range-text">${range}</span>
+        <span class="task-meta-days days-cell">${days}</span>
+        ${stateCellHTML(task)}
+      </div>
+      <div class="task-mini-time span-cell">${miniSpanHTML(task)}</div>
+    </div>
     <button class="row-menu-button" type="button" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>
   </div>`;
 }
@@ -272,8 +282,11 @@ function renderWorkspace() {
   }
 
   listSpan = computeListSpan();
+  const listHead = mode === 'list'
+    ? ''
+    : `<div class="task-head" role="row"><span></span><span class="h-name">予定 <b>${tasks.length}</b></span><span></span></div>`;
   const listPanel = `<section class="task-panel" style="--list-width:${clamp(view.listWidth, 360, 640)}px">
-    <div class="task-head" role="row"><span></span><span class="h-name">予定 <b>${tasks.length}</b></span><span class="h-cat">カテゴリー</span><span class="h-span">期間</span><span class="h-start">開始</span><span class="h-end">終了</span><span class="h-days">日数</span><span class="h-state">状態</span><span></span></div>
+    ${listHead}
     <div id="task-scroll" class="task-scroll" role="rowgroup">${tasks.length ? tasks.map(listRowHTML).join('') : `<div class="zero-result"><strong>条件に合う予定がありません。</strong><button class="link-button" type="button" data-action="clear-filters">条件を解除</button></div>`}</div>
   </section>`;
 
@@ -297,7 +310,26 @@ function renderWorkspace() {
   root.style.setProperty('--row-height', `${clamp(view.rowHeight, 36, 64)}px`);
   root.style.setProperty('--text-size', `${clamp(view.textSize, 12, 18)}px`);
   root.innerHTML = `${mode !== 'gantt' ? listPanel : ''}${mode === 'split' ? '<div id="pane-resizer" class="pane-resizer" role="separator" aria-label="一覧の幅を変更"></div>' : ''}${mode !== 'list' ? timelinePanel : ''}`;
-  requestAnimationFrame(syncScrollBindings);
+  requestAnimationFrame(() => { syncScrollBindings(); syncVisibleRowHeights(); });
+}
+
+function syncVisibleRowHeights() {
+  const workspace = document.querySelector('#workspace');
+  if (!workspace) return;
+  const listRows = [...document.querySelectorAll('.task-row[data-task-row]')];
+  const timelineRows = [...document.querySelectorAll('.timeline-row[data-timeline-row]')];
+  listRows.forEach((row) => { row.style.height = ''; });
+  timelineRows.forEach((row) => { row.style.height = ''; });
+  if (effectiveMode() !== 'split') return;
+  const timelineById = new Map(timelineRows.map((row) => [row.dataset.timelineRow, row]));
+  const minimum = Number.parseFloat(getComputedStyle(workspace).getPropertyValue('--row-height')) || 36;
+  for (const row of listRows) {
+    const timeline = timelineById.get(row.dataset.taskRow);
+    if (!timeline) continue;
+    const required = Math.ceil(Math.max(minimum, row.getBoundingClientRect().height, row.scrollHeight));
+    row.style.height = `${required}px`;
+    timeline.style.height = `${required}px`;
+  }
 }
 
 function syncScrollBindings() {
