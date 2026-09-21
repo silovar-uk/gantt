@@ -31,13 +31,26 @@ async function waitSaved(page) {
 }
 
 async function taskId(page, name) {
-  return page.locator('input.inline-name').evaluateAll((inputs, target) => inputs.find((el) => el.value === target)?.dataset.inlineName || null, name);
+  return page.locator('[data-task-title-display]').evaluateAll(
+    (titles, target) => titles.find((el) => el.textContent.trim() === target)?.dataset.taskTitleDisplay || null,
+    name,
+  );
 }
 
 async function taskRow(page, name) {
   const id = await taskId(page, name);
   assert.ok(id, `task not found: ${name}`);
   return page.locator(`[data-task-row="${id}"]`);
+}
+
+async function renameTaskInline(page, row, name) {
+  const title = row.locator('[data-task-title-display]');
+  await title.dblclick();
+  const editor = row.locator('[data-inline-name]');
+  await editor.waitFor({ state: 'visible' });
+  await editor.fill(name);
+  await editor.press('Enter');
+  await waitSaved(page);
 }
 
 async function openIO(page, action) {
@@ -129,9 +142,7 @@ try {
   assert.equal(await page.locator('.task-row').count(), 1);
   await page.locator('#search-input').fill('');
   row = await taskRow(page, 'E2E タスク');
-  await row.locator('[data-inline-name]').fill('E2E renamed');
-  await row.locator('[data-inline-name]').blur();
-  await waitSaved(page);
+  await renameTaskInline(page, row, 'E2E renamed');
   assert.ok(await taskId(page, 'E2E renamed'));
   await page.locator('[data-action="undo"]').click();
   await waitSaved(page);
@@ -243,9 +254,7 @@ try {
   await second.goto(BASE, { waitUntil: 'networkidle' });
   await second.locator('[data-action="add"]').first().waitFor({ state: 'visible' });
   row = await taskRow(page, 'E2E renamed');
-  await row.locator('[data-inline-name]').fill('E2E conflict source');
-  await row.locator('[data-inline-name]').blur();
-  await waitSaved(page);
+  await renameTaskInline(page, row, 'E2E conflict source');
   await second.locator('#conflict-banner').waitFor({ state: 'visible', timeout: 10000 });
   assert.match(await second.locator('#conflict-banner').innerText(), /別のタブで予定が更新されています/);
   await second.close();
