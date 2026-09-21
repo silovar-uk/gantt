@@ -59,7 +59,9 @@ try {
   await mobile.page.locator('#ux-present-bar').waitFor({ state: 'visible' });
   const mobileBar = await mobile.page.locator('#ux-present-bar').boundingBox();
   assert.ok(mobileBar && mobileBar.height <= 48, `mobile Present HUD too tall: ${JSON.stringify(mobileBar)}`);
-  const exitBox = await mobile.page.locator('#ux-present-bar [data-ux-action="exit-present"]').boundingBox();
+  const mobileExit = mobile.page.locator('#ux-present-bar [data-ux-action="exit-present"]');
+  await mobileExit.waitFor({ state: 'visible', timeout: 3000 });
+  const exitBox = await mobileExit.boundingBox();
   assert.ok(exitBox && exitBox.height >= 44, `mobile Present exit target below 44px: ${JSON.stringify(exitBox)}`);
   const dims = await mobile.page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
   assert.ok(dims.scrollWidth <= dims.innerWidth + 1, `mobile overflow: ${JSON.stringify(dims)}`);
