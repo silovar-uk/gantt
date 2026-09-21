@@ -49,7 +49,7 @@
 .task-card-nav button:disabled { opacity: .35; cursor: default; }
 
 /* バー右端の ••• : 見た目16px、当たり判定は ::before で28pxまで広げる */
-.ux-bar-more { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; padding: 0; border: 0; border-radius: 8px; background: var(--surface); color: var(--muted); box-shadow: var(--shadow-sm); font-size: 8px; line-height: 16px; letter-spacing: -1px; text-align: center; opacity: 0; cursor: pointer; z-index: 7; }
+.ux-bar-more { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; padding: 0; border: 0; border-radius: 8px; background: var(--surface); color: var(--muted); box-shadow: var(--shadow-sm); font-size: 11px; line-height: 16px; letter-spacing: -1px; text-align: center; opacity: 0; cursor: pointer; z-index: 7; }
 .ux-bar-more::before { content: ""; position: absolute; inset: -6px; }
 .ux-bar-more:hover, .ux-bar-more:focus-visible { background: var(--surface-hover); color: var(--ink); opacity: 1; }
 .timeline-row.is-selected .ux-bar-more { opacity: 1; }
@@ -90,10 +90,11 @@ body.is-present-mode .ux-bar-more { display: none; }
 /* 選択中の予定の期間(時間の窓) */
 .ribbon-selected-span { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--primary); opacity: .35; pointer-events: none; }
 
-/* 名前がバーに入らないとき、バーの右外に出す */
-.ux-bar-name-out { position: absolute; left: 100%; top: 50%; margin-left: 6px; transform: translateY(-50%); color: var(--ink); font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; }
-.workspace.ux-row-compact .ux-bar-name-out,
-.workspace[data-semantic-zoom="macro"] .ux-bar-name-out { display: none; }
+/* 名前がバーに入らないとき、バーの外に名前と日付を出す(右端で切れるなら左) */
+.ux-bar-name-out { position: absolute; left: 100%; top: 50%; margin-left: 6px; transform: translateY(-50%); display: flex; align-items: baseline; gap: 7px; color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+.ux-bar-name-out em { color: var(--muted); font-size: 11px; font-style: normal; font-weight: 500; }
+.workspace.ux-row-compact .ux-bar-name-out { display: none; }
+.timeline-row:has(.is-dragging) .ux-ms-name { opacity: 0; }
 
 /* まとめてカード */
 .task-card-title { flex: 1 1 auto; padding-left: 4px; font-size: 14px; }
@@ -102,9 +103,4 @@ body.is-present-mode .ux-bar-more { display: none; }
 .task-card-pair button:hover { background: var(--surface-hover); }
 @media (max-width: 767px) {
   .task-card-pair button { height: 44px; }
-}
-
-/* モバイルのツールバー: v11 が空きスペーサーを出すため、ここで最終的に消す */
-@media (max-width: 767px) {
-  .toolbar > .toolbar-spacer { display: none !important; }
 }

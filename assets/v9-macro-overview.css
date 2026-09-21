@@ -12,28 +12,27 @@
   width: clamp(180px, 18vw, 250px);
   min-width: 0;
   display: grid;
-  grid-template-rows: 28px 1fr;
+  grid-template-rows: var(--head, 44px) 1fr;
   border-right: 1px solid var(--line);
   background: #fff;
   z-index: 3;
 }
 .macro-label-head {
-  height: 28px;
+  height: var(--head, 44px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 9px;
+  padding: 0 10px;
   border-bottom: 1px solid var(--line);
-  background: #fafbfc;
-  color: #667085;
-  font-size: 9px;
-  letter-spacing: .04em;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-size: 11px;
 }
-.macro-label-head strong { color: #344054; font-size: 9px; }
+.macro-label-head strong { color: var(--ink); font-size: 12px; }
 .macro-label-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.macro-label-head .link-button { flex: 0 0 auto; font-size: 9px; white-space: nowrap; }
-.macro-label-scroll { min-height: 0; overflow: auto hidden; scrollbar-width: none; }
+.macro-label-head .link-button { flex: 0 0 auto; font-size: 11px; white-space: nowrap; }
+.macro-label-scroll { min-height: 0; overflow: auto hidden; scrollbar-width: none; padding-bottom: var(--dock-reserve, 0px); }
 .macro-label-scroll::-webkit-scrollbar { display: none; }
 
 .macro-category-row {
@@ -45,24 +44,24 @@
   gap: 6px;
   padding: 0 8px;
   border: 0;
-  border-bottom: 1px solid #eef1f5;
+  border-bottom: 1px solid var(--line-soft);
   background: #fff;
   text-align: left;
 }
-.macro-category-row:hover { background: #f8f9ff; }
+.macro-category-row:hover { background: var(--surface-hover); }
 .macro-category-row .category-dot { width: 7px; height: 7px; flex-basis: 7px; }
 .macro-category-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #344054;
-  font-size: 11px;
-  font-weight: 720;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 650;
 }
 .macro-category-count {
-  color: #98a2b3;
-  font-size: 9px;
+  color: var(--faint);
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -81,28 +80,21 @@
 }
 .macro-timeline-inner { min-height: 100%; position: relative; }
 .macro-time-head {
-  height: 28px;
-  display: flex;
+  height: var(--head, 44px);
   position: sticky;
   top: 0;
   z-index: 8;
-  background: #fafbfc;
-  border-bottom: 0;
-}
-.macro-time-head .timeline-head-cell {
-  height: 28px;
-  font-size: 8px;
-  color: #667085;
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--line);
 }
 
-.macro-timeline-body { position: relative; }
+.macro-timeline-body { position: relative; padding-bottom: var(--dock-reserve, 0px); }
 .macro-timeline-row {
   position: relative;
   min-height: 26px;
-  border-bottom: 1px solid rgba(228,232,240,.8);
-  background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(var(--day-width, 2px) - 1px), rgba(228,232,240,.26) calc(var(--day-width, 2px) - 1px), rgba(228,232,240,.26) var(--day-width, 2px));
+  border-bottom: 1px solid var(--line-soft);
 }
-.macro-timeline-row:hover { background-color: rgba(54,71,215,.025); }
+.macro-timeline-row:hover { background-color: rgba(31, 38, 34, .022); }
 
 .macro-task-bar,
 .macro-milestone {
@@ -118,13 +110,14 @@
   min-width: 3px;
   border-radius: 2px;
 }
+.macro-task-bar[class*="color-"] { background-color: var(--c-fill); }
+.macro-milestone[class*="color-"] { background-color: var(--c-mid); }
 .macro-task-bar:hover,
 .macro-milestone:hover {
   z-index: 10;
   opacity: 1;
-  filter: saturate(1.1);
   transform: scaleY(1.35);
-  box-shadow: 0 0 0 1px rgba(16,24,40,.13), 0 2px 7px rgba(16,24,40,.15);
+  box-shadow: 0 0 0 1px rgba(31, 38, 34, .13), var(--shadow-sm);
 }
 .macro-task-bar.is-completed { opacity: .34; }
 .macro-task-bar.is-selected,
@@ -148,21 +141,10 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #e5484d;
+  margin-left: -1px;
+  background: var(--now);
   z-index: 5;
   pointer-events: none;
-}
-.macro-today-line span {
-  position: sticky;
-  top: 30px;
-  transform: translateX(-50%);
-  display: inline-block;
-  padding: 1px 3px;
-  border-radius: 4px;
-  background: #fff0f0;
-  color: #b42318;
-  font-size: 8px;
-  white-space: nowrap;
 }
 
 /* Rhythm Context Echo: preserve the macro overview while cueing the tasks that form the hovered time window. */
@@ -203,7 +185,7 @@ body.is-present-mode .workspace.mode-macro .macro-label-panel {
 
 @media (max-width: 1199px) {
   .macro-label-panel { flex-basis: 180px; width: 180px; }
-  .macro-category-name { font-size: 10px; }
+  .macro-category-name { font-size: 11px; }
 }
 
 @media (max-width: 767px) {

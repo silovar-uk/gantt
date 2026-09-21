@@ -22,7 +22,7 @@
 .macro-lens-eyebrow {
   margin-bottom: 7px;
   color: #98a2b3;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -74,7 +74,7 @@
   border-radius: 999px;
   background: #f2f4f7;
   color: #667085;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -88,7 +88,7 @@
   border-radius: 8px;
   background: #f8f9fb;
   color: #667085;
-  font-size: 10px;
+  font-size: 11px;
 }
 .macro-lens-period strong {
   color: #344054;
@@ -107,7 +107,7 @@
   margin: 10px 0 0;
   padding: 0 0 0 17px;
   color: #475467;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.55;
 }
 .macro-lens-list li { margin: 2px 0; }
@@ -122,7 +122,7 @@
 .macro-lens-actions .button {
   min-height: 30px;
   padding: 5px 9px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .workspace.mode-macro .macro-task-bar.is-lens-focus,
@@ -130,11 +130,11 @@
   z-index: 14;
   opacity: 1;
   filter: saturate(1.18);
-  box-shadow: 0 0 0 2px rgba(54,71,215,.35), 0 2px 8px rgba(16,24,40,.18);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 35%, transparent), 0 2px 8px rgba(16,24,40,.18);
 }
 .workspace.mode-macro .macro-category-row.is-lens-focus,
 .workspace.mode-macro .macro-timeline-row.is-lens-focus {
-  background-color: rgba(54,71,215,.055);
+  background-color: color-mix(in srgb, var(--primary) 6%, transparent);
 }
 .workspace.mode-macro .macro-category-row.is-lens-focus {
   box-shadow: inset 3px 0 0 var(--primary);

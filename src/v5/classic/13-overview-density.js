@@ -8,7 +8,8 @@
   const TEXT_MAX = 16;
   const LIST_MIN = 200;
   const LIST_MAX = 520;
-  const DEFAULT_ROW = 24;
+  const COMFORT_ROW = 36;
+  const COMFORT_KEY = 'gantt-desk:20260921-desk:rows';
   const DEFAULT_TEXT = 11;
   const REPRESENTATION_HYSTERESIS = ROW_MIN * 2;
   let resizeFitTimer = null;
@@ -48,13 +49,31 @@
     return 'detail';
   }
 
+  // 下に浮かぶ操作盤と条件の帯が図を隠すぶん。実測して #workspace に置き、末尾の行をその上まで出せるようにする
+  function syncDockReserve() {
+    const workspace = document.querySelector('#workspace');
+    if (!workspace) return 0;
+    let reserve = 0;
+    if (!document.body.classList.contains('is-present-mode')) {
+      const bottom = workspace.getBoundingClientRect().bottom;
+      const top = Math.min(...['.toolbar', '#condition-bar'].map((selector) => {
+        const el = document.querySelector(selector);
+        return el && el.getClientRects().length ? el.getBoundingClientRect().top : Infinity;
+      }));
+      if (Number.isFinite(top)) reserve = Math.max(0, Math.ceil(bottom - top)) + 8;
+    }
+    document.documentElement.style.setProperty('--dock-reserve', `${reserve}px`);
+    return reserve;
+  }
+
   function applyDensityToDom() {
     const view = currentView();
     const workspace = document.querySelector('#workspace');
     if (!view || !workspace) return;
+    syncDockReserve();
     // 指で押せるよう、モバイルのガント表示だけ行を44px以上にする
     const touchFloor = innerWidth <= 767 && workspace.classList.contains('mode-gantt') ? 44 : 0;
-    const rowHeight = Math.max(touchFloor, densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW));
+    const rowHeight = Math.max(touchFloor, densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, COMFORT_ROW));
     const textSize = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     const dayWidth = densityClamp(view.dayWidth, 2, 40, 12);
     workspace.style.setProperty('--row-height', `${rowHeight}px`);
@@ -74,7 +93,7 @@
     if (!view) return;
     const row = document.querySelector('#ux-row-height');
     const text = document.querySelector('#ux-text-size');
-    const rowValue = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    const rowValue = densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, COMFORT_ROW);
     const textValue = densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     if (row) {
       row.min = String(ROW_MIN);
@@ -105,7 +124,7 @@
       <label class="ux-density-control" title="行の高さ">
         <span>行</span>
         <input id="ux-row-height" type="range" min="${ROW_MIN}" max="${ROW_MAX}" step="1" aria-label="行の高さ">
-        <output id="ux-row-height-value">${DEFAULT_ROW}</output>
+        <output id="ux-row-height-value">${COMFORT_ROW}</output>
       </label>
       <button type="button" class="revert-chip ux-row-auto-chip" data-density-action="row-auto-fit" hidden>自動</button>
       <label class="ux-density-control" title="文字サイズ">
@@ -135,7 +154,7 @@
   }
 
   function preferredRowHeight(view) {
-    return densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    return densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, COMFORT_ROW);
   }
 
   function preferredTextSize(view) {
@@ -178,11 +197,12 @@
 
     const workspace = document.querySelector('#workspace');
     const timeline = document.querySelector('#macro-timeline-scroll') || document.querySelector('#timeline-scroll');
-    const availableHeight = Math.max(ROW_MIN, (workspace?.clientHeight || innerHeight * 0.7) - 31);
+    // 見出し44pxと、下に浮かぶ操作盤のぶんを引いた、行に使える高さ
+    const availableHeight = Math.max(ROW_MIN, (workspace?.clientHeight || innerHeight * 0.7) - 44 - syncDockReserve());
     const requiredHeight = tasks.length * ROW_MIN;
     const rawRowHeight = Math.floor(availableHeight / Math.max(1, tasks.length));
     const preferredRow = preferredRowHeight(view);
-    const rowHeight = densityClamp(Math.min(preferredRow, Math.max(ROW_MIN, rawRowHeight)), ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    const rowHeight = densityClamp(Math.min(preferredRow, Math.max(ROW_MIN, rawRowHeight)), ROW_MIN, ROW_MAX, COMFORT_ROW);
     const preferredText = preferredTextSize(view);
     const textSize = fitTextForRow(rowHeight, preferredText);
     const representation = resolveOverviewRepresentation(tasks, availableHeight, { reason, currentShape: view.overviewMacroMode === true });
@@ -225,6 +245,7 @@
     previousRenderToolbarState();
     ensureDensityControls();
     syncDensityControls();
+    syncDockReserve();
   };
 
   fitAll = fitOverview;
@@ -233,7 +254,7 @@
     const view = state.project.viewSettings;
     const body = `<div class="form-grid two">
       <label class="field"><span>一覧の幅</span><input id="setting-list-width" type="number" min="${LIST_MIN}" max="${LIST_MAX}" value="${densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280)}"><small>${LIST_MIN}〜${LIST_MAX}px</small></label>
-      <label class="field"><span>行の高さ</span><input id="setting-row-height" type="number" min="${ROW_MIN}" max="${ROW_MAX}" value="${densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW)}"><small>${ROW_MIN}〜${ROW_MAX}px</small></label>
+      <label class="field"><span>行の高さ</span><input id="setting-row-height" type="number" min="${ROW_MIN}" max="${ROW_MAX}" value="${densityClamp(view.rowHeight, ROW_MIN, ROW_MAX, COMFORT_ROW)}"><small>${ROW_MIN}〜${ROW_MAX}px</small></label>
       <label class="field"><span>文字サイズ</span><input id="setting-text-size" type="number" min="${TEXT_MIN}" max="${TEXT_MAX}" value="${densityClamp(view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT)}"><small>${TEXT_MIN}〜${TEXT_MAX}px</small></label>
       <label class="field"><span>日付幅</span><input id="setting-day-width" type="number" min="2" max="32" step="0.5" value="${densityClamp(view.dayWidth, 2, 32, 12)}"><small>2〜32px/日</small></label>
     </div>
@@ -248,7 +269,7 @@
     const view = currentView();
     if (!view) return;
     if (event.target.id === 'ux-row-height') {
-      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, COMFORT_ROW);
       const wasShape = view.overviewMacroMode === true;
       previewViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false, overviewMacroMode: false });
       if (wasShape) {
@@ -274,7 +295,7 @@
 
   document.addEventListener('change', (event) => {
     if (event.target.id === 'ux-row-height') {
-      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+      const value = densityClamp(event.target.value, ROW_MIN, ROW_MAX, COMFORT_ROW);
       commitViewPatch({ rowHeight: value, preferredRowHeight: value, autoHideCategory: false, overviewMacroMode: false });
     } else if (event.target.id === 'ux-text-size') {
       const value = densityClamp(event.target.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
@@ -303,7 +324,7 @@
       if (error) { error.hidden = false; error.textContent = '一度に表示できる期間は730日までです。'; }
       return;
     }
-    const rowHeight = densityClamp(document.querySelector('#setting-row-height')?.value, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    const rowHeight = densityClamp(document.querySelector('#setting-row-height')?.value, ROW_MIN, ROW_MAX, COMFORT_ROW);
     const textSize = densityClamp(document.querySelector('#setting-text-size')?.value, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     const dayWidth = densityClamp(document.querySelector('#setting-day-width')?.value, 2, 32, 12);
     const listWidth = densityClamp(document.querySelector('#setting-list-width')?.value, LIST_MIN, LIST_MAX, 280);
@@ -359,17 +380,30 @@
   function migrateDensityDefaults() {
     const view = currentView();
     if (!view || localStorage.getItem(MIGRATION_KEY)) return false;
-    if (Number(view.rowHeight) >= 28) view.rowHeight = DEFAULT_ROW;
-    if (!Number.isFinite(Number(view.preferredRowHeight)) || Number(view.preferredRowHeight) >= 28) view.preferredRowHeight = DEFAULT_ROW;
+    if (Number(view.rowHeight) >= 28) view.rowHeight = COMFORT_ROW;
+    if (!Number.isFinite(Number(view.preferredRowHeight)) || Number(view.preferredRowHeight) >= 28) view.preferredRowHeight = COMFORT_ROW;
     if (Number(view.textSize) >= 12) view.textSize = DEFAULT_TEXT;
     view.listWidth = densityClamp(view.listWidth, LIST_MIN, LIST_MAX, 280);
-    view.preferredRowHeight = densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, DEFAULT_ROW);
+    view.preferredRowHeight = densityClamp(view.preferredRowHeight ?? view.rowHeight, ROW_MIN, ROW_MAX, COMFORT_ROW);
     view.preferredTextSize = densityClamp(view.preferredTextSize ?? view.textSize, TEXT_MIN, TEXT_MAX, DEFAULT_TEXT);
     view.preferredListWidth = view.listWidth;
     view.autoHideCategory = false;
     view.overviewAutoFit = true;
     state.storage.saveView(view);
     localStorage.setItem(MIGRATION_KEY, '1');
+    return true;
+  }
+
+  // 既定の行の高さを36pxへ移す(1回だけ)。24px以下だった人は一度36pxに戻る
+  // ponytail: 手で24にしていた人も一度36に戻る。困るなら移行前の値を別キーに退避して戻せるようにする
+  function migrateComfortRow() {
+    const view = currentView();
+    if (!view || localStorage.getItem(COMFORT_KEY)) return false;
+    localStorage.setItem(COMFORT_KEY, '1');
+    if (Number(view.preferredRowHeight ?? view.rowHeight) > 24) return false;
+    view.rowHeight = COMFORT_ROW;
+    view.preferredRowHeight = COMFORT_ROW;
+    state.storage.saveView(view);
     return true;
   }
 
@@ -385,7 +419,7 @@
       setTimeout(bootDensity, 30);
       return;
     }
-    const migrated = migrateDensityDefaults();
+    const migrated = migrateDensityDefaults() | migrateComfortRow();
     ensureDensityControls();
     renderWorkspace();
     renderToolbarState();

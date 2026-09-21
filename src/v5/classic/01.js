@@ -63,6 +63,13 @@ function taskOutsideView(task, view) {
   return task.end < view.start || task.start > view.end;
 }
 
+// バー・索引・一覧・手帳・Presentが共通で使う、予定の状態判定(いま基準)
+function taskState(task, today = todayISO()) {
+  if (task.completed) return 'done';
+  if ((task.milestone ? task.start : task.end) < today) return 'late';
+  return task.start <= today ? 'active' : 'upcoming';
+}
+
 function clamp(value, min, max) {
   const number = Number(value);
   if (!Number.isFinite(number)) return min;

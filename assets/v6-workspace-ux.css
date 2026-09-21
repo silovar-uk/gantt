@@ -2,23 +2,9 @@
 :root {
   --ux-list-min: 240px;
   --ux-list-ideal: 300px;
-  --ux-accent: #3647d7;
 }
 
 .app-header { box-shadow: 0 1px 0 rgba(16,24,40,.03); }
-.topbar { min-height: 52px; padding-block: 6px; }
-.toolbar { min-height: 44px; padding-block: 4px 7px; }
-.project-title-button { max-width: min(480px, 42vw); }
-.save-pill { font-size: 11px; background: transparent; padding-inline: 6px; }
-
-.toolbar > [data-action="today"],
-.toolbar > [data-action="fit"],
-.toolbar > [data-action="display-settings"] { display: none !important; }
-
-.toolbar > #mode-switch { display: none !important; }
-@media (max-width: 767px) {
-  .toolbar > #mode-switch { display: inline-flex !important; }
-}
 
 .ux-ai-json { border-color: #cfd6e2; }
 .ux-present-button { padding-inline: 16px; }
@@ -31,45 +17,54 @@
 .modal-foot .link-button.danger { margin-right: auto; }
 .draft-banner-actions { display: flex; gap: 8px; margin-left: auto; }
 
-/* Timeline first: keep the list deliberately compact. Dates belong to the chart. */
+/* 分割表示の左の列は、表ではなく索引。日付・カテゴリーは図にある */
 .workspace.mode-split .task-panel {
   flex-basis: var(--list-width, var(--ux-list-ideal));
   width: var(--list-width, var(--ux-list-ideal));
   overflow: hidden;
 }
 .workspace.mode-split .task-head,
-.workspace.mode-split .task-row {
-  grid-template-columns: 32px minmax(118px, 1fr) minmax(72px, 88px) 0 0 34px;
+.workspace.mode-split .task-row { grid-template-columns: 24px minmax(0, 1fr) auto 24px; column-gap: 6px; padding-inline: 12px 6px; }
+.workspace.mode-split .task-head .h-cat,
+.workspace.mode-split .task-head .h-span,
+.workspace.mode-split .task-head .h-start,
+.workspace.mode-split .task-head .h-end,
+.workspace.mode-split .task-head .h-days,
+.workspace.mode-split .task-head .h-state,
+.workspace.mode-split .category-cell,
+.workspace.mode-split .span-cell,
+.workspace.mode-split .date-cell,
+.workspace.mode-split .days-cell { display: none; }
+.workspace.mode-split .state-cell { padding: 0; background: none; box-shadow: none; font-size: 11px; }
+.workspace.mode-split .state-cell.is-active { width: 6px; height: 6px; padding: 0; overflow: hidden; border-radius: 50%; background: var(--primary); color: transparent; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent); }
+.workspace.mode-split .state-cell.is-upcoming,
+.workspace.mode-split .state-cell.is-done { display: none; }
+/* 全幅の一覧: 図が無いので、表が幅を使い切る */
+@media (min-width: 768px) {
+  .workspace.mode-list .task-panel { flex: 1 1 auto; width: auto; }
 }
-.workspace.mode-split .task-head > :nth-child(4),
-.workspace.mode-split .task-head > :nth-child(5),
-.workspace.mode-split .task-row .date-cell { display: none; }
-.task-head { height: 36px; }
-.timeline-head { height: 36px; }
-.timeline-head-cell { height: 36px; }
-.task-panel { grid-template-rows: 36px 1fr; }
+.task-panel { overflow: hidden; }
 .pane-resizer { flex-basis: 4px; background: #f5f6f8; }
 .pane-resizer:hover::after { opacity: .7; }
 .timeline-panel { background: #fff; }
-.timeline-row:hover { background: rgba(54,71,215,.025); }
-.timeline-row.is-multi-selected { background: rgba(54,71,215,.085); }
-.task-row.is-multi-selected { background: #e8ebff; box-shadow: inset 3px 0 0 var(--primary); }
+.timeline-row:hover { background: rgba(31, 38, 34, .022); }
+.timeline-row.is-multi-selected { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.task-row.is-multi-selected { background: var(--primary-soft); }
 
 .task-bar.ux-draggable { cursor: grab; overflow: visible; touch-action: pan-y; }
 .task-bar.ux-draggable > span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
-.task-bar.ux-draggable:hover { filter: saturate(1.04); box-shadow: 0 2px 7px rgba(16,24,40,.18); }
-.task-bar.ux-draggable.is-dragging { cursor: grabbing; z-index: 20; opacity: .92; box-shadow: 0 6px 16px rgba(16,24,40,.22); }
+.task-bar.ux-draggable.is-dragging { cursor: grabbing; z-index: 20; opacity: .92; box-shadow: var(--shadow-md); }
 .milestone.ux-draggable { cursor: grab; touch-action: pan-y; }
-.task-bar.is-multi-selected, .milestone.is-multi-selected { outline: 2px solid var(--ux-accent); outline-offset: 2px; z-index: 6; }
+.task-bar.is-multi-selected, .milestone.is-multi-selected { outline: 2px solid var(--primary); outline-offset: 2px; z-index: 6; }
 .ux-resize-handle { position: absolute; top: -1px; bottom: -1px; width: 8px; opacity: 0; z-index: 3; cursor: ew-resize; background: rgba(255,255,255,.68); border-radius: 5px; transition: opacity .1s ease; }
 .ux-resize-start { left: -2px; }
 .ux-resize-end { right: -2px; }
 .task-bar:hover .ux-resize-handle, .task-bar:focus-visible .ux-resize-handle { opacity: 1; }
-.ux-create-ghost { position: absolute; top: 50%; transform: translateY(-50%); height: min(24px, calc(var(--row-height) - 14px)); min-width: 6px; border: 1px dashed #4f5ee8; border-radius: 6px; background: rgba(79,94,232,.13); pointer-events: none; z-index: 9; }
+.ux-create-ghost { position: absolute; top: 50%; transform: translateY(-50%); height: min(24px, calc(var(--row-height) - 14px)); min-width: 6px; border: 1px dashed var(--primary); border-radius: 6px; background: color-mix(in srgb, var(--primary) 13%, transparent); pointer-events: none; z-index: 9; }
 
 .inline-name { font-weight: 650; }
-.category-cell { color: #667085; font-size: 12px; }
-.date-cell input { color: #667085; font-size: 11px; }
+.category-cell { color: var(--ink-2); font-size: 12px; }
+.date-cell input { color: var(--ink-2); font-size: 12px; }
 .row-menu-button { opacity: .45; }
 .task-row:hover .row-menu-button, .task-row.is-selected .row-menu-button { opacity: 1; }
 
@@ -84,7 +79,7 @@
   background: var(--primary-soft, #e4ede8);
 }
 .workspace.is-rhythm-echo .timeline-row.is-rhythm-match:not(.is-selected):not(.is-multi-selected) {
-  background: rgba(62,106,90,.045);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
 }
 .workspace.is-rhythm-echo .task-row.is-selected,
 .workspace.is-rhythm-echo .task-row.is-multi-selected,
@@ -97,13 +92,19 @@ body.is-present-mode .toolbar,
 body.is-present-mode .condition-bar { display: none !important; }
 body.is-present-mode .task-panel { max-width: 290px; overflow: hidden; }
 body.is-present-mode .task-head,
-body.is-present-mode .task-row { grid-template-columns: 0 minmax(150px,1fr) 90px 0 0 0; }
+body.is-present-mode .task-row { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 14px 8px; }
 body.is-present-mode .task-head > :first-child,
-body.is-present-mode .task-head > :nth-child(4),
-body.is-present-mode .task-head > :nth-child(5),
+body.is-present-mode .task-head .h-cat,
+body.is-present-mode .task-head .h-span,
+body.is-present-mode .task-head .h-start,
+body.is-present-mode .task-head .h-end,
+body.is-present-mode .task-head .h-days,
 body.is-present-mode .task-head > :last-child,
 body.is-present-mode .complete-cell,
+body.is-present-mode .category-cell,
+body.is-present-mode .span-cell,
 body.is-present-mode .date-cell,
+body.is-present-mode .days-cell,
 body.is-present-mode .row-menu-button { display: none !important; }
 body.is-present-mode .inline-name { pointer-events: none; border-color: transparent !important; }
 body.is-present-mode .pane-resizer { pointer-events: none; width: 1px; flex-basis: 1px; }
@@ -119,35 +120,20 @@ body.is-present-mode .ux-resize-handle { display: none; }
 @media (max-width: 1199px) {
   .ux-ai-json { display: none; }
   .workspace.mode-split .task-panel { max-width: 300px; }
-  .workspace.mode-split .task-head,
-  .workspace.mode-split .task-row { grid-template-columns: 30px minmax(120px,1fr) 78px 0 0 32px; }
 }
 
 .ux-mobile-only { display: none !important; }
 @media (max-width: 767px) {
   .ux-mobile-only { display: grid !important; }
   html, body, .app-root, .app-shell { max-width: 100vw; overflow-x: hidden; }
-  .topbar { min-height: 54px; width: 100%; min-width: 0; }
+  .topbar { width: 100%; min-width: 0; }
   .brand-area { min-width: 0; flex: 1 1 auto; }
-  .app-mark { flex: 0 0 40px; width: 40px; height: 40px; }
-  .project-title-button { max-width: none; min-width: 0; width: 100%; font-size: 14px; }
+  .project-title-button { max-width: none; min-width: 0; width: 100%; font-size: 15px; }
   .top-actions { flex: 0 0 auto; min-width: 0; }
   .top-actions > [data-action="undo"],
   .top-actions > [data-action="redo"] { display: none !important; }
   .top-actions > .menu-wrap .button { padding-inline: 8px; }
   .ux-present-button { min-height: 44px; padding-inline: 9px; }
-  .toolbar { min-height: 52px; max-width: 100vw; }
-  /* モバイルのツールバー: 1段目は主要4操作、2段目は時間の窓。横スクロールで隠れる操作を作らない */
-  .toolbar { flex-wrap: wrap; overflow: visible; row-gap: 6px; }
-  .toolbar > .search-box, .toolbar > .toolbar-spacer, #ux-view-controls { display: none !important; }
-  .toolbar > .add-button { order: 1; flex: 1 1 auto; min-width: 0; }
-  .toolbar > [data-action="filter"] { order: 2; }
-  .toolbar > #mode-switch { order: 3; padding: 0; border: 0; background: transparent; }
-  .toolbar > #mode-switch button { min-width: 64px; border: 1px solid var(--line-strong); background: var(--surface); }
-  .toolbar > #mode-switch button.is-active { display: none; }
-  .toolbar > .ux-more-wrap { order: 4; margin-left: 0; }
-  .toolbar > #project-ribbon { order: 5; flex: 1 0 100%; width: 100%; max-width: none; }
-  .ux-more-wrap > .icon-button { min-height: 44px; width: 44px; }
-  body.is-present-mode .mobile-timeline-labels { flex-basis: 112px; width: 112px; }
+  body.is-present-mode .mobile-timeline-labels { flex-basis: 96px; width: 96px; }
   .ux-resize-handle { width: 12px; opacity: .5; }
 }

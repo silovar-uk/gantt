@@ -1,0 +1,156 @@
+/* now desk owner — いまの刃・遅れの糸・締切の柱・残像、浮かぶ操作盤・条件の帯・手帳 */
+
+/* ── 題字の帯のボタン ─────────────────────────── */
+@media (min-width: 768px) {
+  .top-actions .icon-button { width: 32px; height: 32px; min-height: 32px; border-color: transparent; background: transparent; }
+  .top-actions .icon-button:hover { background: rgba(31, 38, 34, .05); }
+  .top-actions .button-secondary { height: 32px; min-height: 32px; padding: 0 10px; border-color: var(--line); border-radius: 9px; font-size: 12.5px; }
+  .top-actions .ux-present-button { height: 32px; min-height: 32px; padding: 0 14px; border-radius: 9px; font-size: 12.5px; letter-spacing: .02em; }
+  .top-actions .save-pill { margin-right: 4px; }
+}
+
+/* Present は墨色の塗り。手の色(セージ)は下の「予定を追加」に譲る */
+.top-actions .ux-present-button { border-color: var(--ink); background: var(--ink); color: var(--on-primary); }
+.top-actions .ux-present-button:hover { border-color: #000; background: #000; }
+
+/* ── 離: いまの刃 ───────────────────────────── */
+.today-line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; z-index: 6; transform-origin: top; background: var(--now); box-shadow: 0 0 0 4px color-mix(in srgb, var(--now) 9%, transparent); pointer-events: none; }
+.ux-past { position: absolute; top: 0; bottom: 0; left: 0; background: var(--past); pointer-events: none; }
+.now-flag { position: absolute; top: 3px; z-index: 9; display: flex; align-items: center; white-space: nowrap; border-radius: 999px; box-shadow: 0 2px 8px color-mix(in srgb, var(--now) 30%, transparent); }
+.now-flag .pill { height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--now); color: #fff; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.now-flag .late { height: 20px; margin-left: -10px; padding: 0 9px 0 16px; border: 1.5px solid var(--now); border-radius: 0 999px 999px 0; background: var(--surface); color: var(--now); font-size: 11px; font-weight: 700; cursor: pointer; }
+.now-flag .late:hover, .now-flag .late[aria-pressed="true"] { background: var(--now-soft); }
+
+/* 締切は柱になる */
+.ux-deadline-pillar { position: absolute; top: 0; bottom: 0; border-left: 1.5px dashed color-mix(in srgb, var(--now) 55%, transparent); z-index: 5; pointer-events: none; }
+.deadline-flag { position: absolute; top: 3px; z-index: 9; height: 20px; display: inline-flex; align-items: center; justify-content: center; padding: 0 8px; border: 1.5px solid color-mix(in srgb, var(--now) 45%, transparent); border-radius: 999px; background: var(--surface); color: var(--now); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; pointer-events: none; }
+.deadline-flag.is-done { border-color: var(--line-strong); color: var(--faint); }
+
+/* 遅れは、いまへ伸びる朱の糸 */
+.ux-late-thread { position: absolute; top: 50%; height: 2px; margin-top: -1px; z-index: 2; transform-origin: left; background: repeating-linear-gradient(90deg, var(--now) 0 6px, transparent 6px 9px); pointer-events: none; }
+.ux-late-thread:not(.is-open)::after { content: ""; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--now); box-shadow: 0 0 0 2px var(--surface); }
+.ux-late-label { position: absolute; top: 50%; z-index: 7; transform: translateY(-50%); color: var(--now); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+.workspace.ux-row-compact .ux-late-label { display: none; }
+
+/* 動きは、開いた直後の一度だけ(body.ux-intro は読み込み後に短時間だけ付く) */
+@keyframes blade { from { transform: scaleY(0); } }
+@keyframes thread { from { transform: scaleX(0); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 16px); } }
+@keyframes rise-m { from { opacity: 0; transform: translateY(16px); } }
+body.ux-intro .today-line { animation: blade .55s var(--ease-out) both; }
+body.ux-intro .ux-late-thread { animation: thread .5s .3s var(--ease-out) both; }
+body.ux-intro .ux-late-label { animation: fade .3s .6s both; }
+
+/* ── 破: 操作は下に浮かぶ ───────────────────── */
+.toolbar {
+  position: fixed; left: 50%; bottom: 18px; z-index: 40; max-width: calc(100vw - 24px);
+  display: flex; align-items: center; gap: 4px; padding: 6px; transform: translateX(-50%);
+  border: 1px solid rgba(31, 38, 34, .08); border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: 0 16px 40px rgba(31, 38, 34, .16), 0 2px 6px rgba(31, 38, 34, .06);
+}
+body.ux-intro .toolbar { animation: rise .5s .15s var(--ease-spring) both; }
+.toolbar > [data-action="fit"], .toolbar > [data-action="display-settings"], .toolbar > .palette-open { display: none; }
+.toolbar .button, .toolbar .icon-button { height: 38px; min-height: 38px; padding: 0 12px; border: 0; border-radius: 11px; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+.toolbar .button:hover, .toolbar .icon-button:hover { background: rgba(31, 38, 34, .06); }
+.toolbar .icon-button { width: 38px; padding: 0; }
+.toolbar .add-button { padding: 0 14px 0 11px; background: var(--primary); color: var(--on-primary); }
+.toolbar .add-button:hover { background: var(--primary-dark); }
+.toolbar .search-box { width: 250px; height: 38px; padding: 0 8px 0 11px; border: 0; border-radius: 11px; background: rgba(31, 38, 34, .045); color: var(--muted); }
+.toolbar .search-box input { font-size: 13px; font-weight: 500; }
+.palette-key { flex: 0 0 auto; padding: 0; border: 0; background: transparent; cursor: pointer; }
+kbd { padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--muted); font: 600 11px/1.2 var(--font-ui); }
+.toolbar .segmented { padding: 3px; border: 0; border-radius: 11px; background: rgba(31, 38, 34, .05); }
+.toolbar .segmented button { height: 32px; min-height: 32px; padding: 0 11px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; }
+.toolbar > [data-action="today"], .toolbar > #mode-switch, .toolbar > .ux-view-controls { position: relative; }
+.toolbar > [data-action="today"] { margin-left: 9px; }
+.toolbar > #mode-switch { margin-left: 9px; }
+.toolbar > [data-action="today"]::before, .toolbar > #mode-switch::before { content: ""; position: absolute; left: -5px; top: 8px; bottom: 8px; width: 1px; background: var(--line); }
+.toolbar > #mode-switch::before { top: 6px; bottom: 6px; }
+.toolbar .ux-view-controls { display: inline-flex; align-items: center; gap: 0; }
+.toolbar .ux-view-controls > [data-action="fit"] { height: 38px; min-height: 38px; padding: 0 12px; border: 0; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+.toolbar .ux-zoom { height: auto; display: inline-flex; overflow: visible; border: 0; background: transparent; }
+.toolbar .ux-zoom button { width: 32px; height: 38px; border: 0; border-radius: 11px; background: transparent; font-size: 16px; }
+.toolbar .ux-zoom button:hover { background: rgba(31, 38, 34, .06); }
+.toolbar .ux-more-wrap { margin-left: 0; }
+.toolbar .popup-menu { top: auto; bottom: calc(100% + 8px); }
+
+/* 768〜1023px: 検索欄を絞り、今日は ••• の中にだけ置く */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .toolbar .search-box { width: 140px; }
+  .toolbar > [data-action="today"] { display: none; }
+}
+
+/* スマホ: 左右10px、下は安全域。並びは 追加(残りの幅) / 手帳 / 絞り込み / 一覧⇄ガント / ••• */
+@media (max-width: 767px) {
+  .toolbar { left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); max-width: none; transform: none; gap: 4px; border-radius: 18px; }
+  body.ux-intro .toolbar { animation-name: rise-m; }
+  .toolbar .button, .toolbar .icon-button, .toolbar .segmented button { height: 46px; min-height: 46px; border-radius: 13px; font-size: 13.5px; }
+  .toolbar .icon-button { flex: 0 0 46px; width: 46px; }
+  .toolbar > .button:not(.add-button), .toolbar > #mode-switch { flex: 0 0 auto; }
+  .toolbar .add-button { flex: 1 1 auto; min-width: 0; padding: 0 12px; }
+  .toolbar .search-box, .toolbar > [data-action="today"], .toolbar .ux-view-controls { display: none !important; }
+  .toolbar > .palette-open { display: inline-flex; }
+  .toolbar > #mode-switch { margin-left: 0; padding: 0; background: transparent; }
+  .toolbar > #mode-switch::before, .toolbar > [data-action="today"]::before { display: none; }
+  .toolbar > #mode-switch button { min-width: 64px; }
+  .toolbar > #mode-switch button.is-active { display: none; }
+  .toolbar .popup-menu { right: 0; }
+}
+
+/* ── 条件と変化は、道具の上に浮かぶ ─────────── */
+.condition-bar { position: fixed; left: 50%; bottom: 84px; z-index: 39; max-width: calc(100vw - 24px); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; transform: translateX(-50%); }
+body.ux-intro .condition-bar { animation: rise .5s .35s var(--ease-spring) both; }
+.condition-bar > * { height: 34px; margin: 0; display: inline-flex; align-items: center; padding: 0 14px; border: 0; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-md); color: var(--muted); font-size: 12px; white-space: nowrap; }
+.condition-bar > .condition-chip { height: 30px; padding: 0 12px; color: var(--ink-2); font-size: 12px; }
+.condition-bar > .link-button { color: var(--primary); font-weight: 700; }
+.condition-bar > .pending-link { background: var(--warning-soft); }
+.condition-bar > .diff-chip { gap: 10px; padding: 0 6px 0 14px; background: var(--ink); color: var(--on-primary); }
+.diff-chip b { font-weight: 700; }
+.diff-chip .n { color: rgba(255, 255, 255, .72); }
+.diff-chip .n strong { color: #fff; }
+.diff-chip button { height: 24px; padding: 0 10px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .14); color: #fff; font-size: 11.5px; font-weight: 600; }
+.diff-chip button:hover { background: rgba(255, 255, 255, .24); }
+.diff-chip .x { width: 24px; padding: 0; }
+@media (max-width: 767px) {
+  .condition-bar { left: 10px; right: 10px; bottom: calc(76px + env(safe-area-inset-bottom)); max-width: none; max-height: 74px; overflow-y: auto; transform: none; }
+  body.ux-intro .condition-bar { animation-name: rise-m; }
+  .condition-bar > * { font-size: 11.5px; }
+}
+.toast { bottom: calc(var(--dock-reserve, 0px) + 12px); }
+body.is-present-mode .toast { bottom: 24px; }
+
+/* ── 離: どこからでも呼べる手帳(Ctrl K) ───────── */
+dialog.command-palette { width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 14vh - 12px); margin: 13vh auto auto; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 24px 64px rgba(31, 38, 34, .20), 0 2px 8px rgba(31, 38, 34, .06); }
+dialog.command-palette[open] { display: flex; flex-direction: column; animation: drop .28s var(--ease-spring) both; }
+dialog.command-palette::backdrop { background: rgba(31, 38, 34, .18); backdrop-filter: blur(2px); }
+@keyframes drop { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
+.palette-input { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--line-soft); }
+.palette-input input { flex: 1; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; font-size: 17px; font-weight: 500; }
+.palette-input .ui-icon { color: var(--muted); }
+.palette-list { min-height: 0; overflow-y: auto; }
+.pal-group { padding: 8px; }
+.pal-group + .pal-group { border-top: 1px solid var(--line-soft); }
+.pal-group h4 { margin: 4px 10px 6px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.pal-item { width: 100%; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border: 0; border-radius: 10px; background: transparent; text-align: left; font-size: 13.5px; }
+.pal-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-item.is-active { background: var(--primary-soft); }
+.pal-item small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pal-item small .is-late { color: var(--now); font-weight: 700; }
+.pal-item mark { background: none; color: var(--primary-ink); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent); }
+.pal-dot { width: 9px; height: 9px; justify-self: center; border-radius: 50%; background: var(--c-mid); }
+.pal-diamond { width: 9px; height: 9px; justify-self: center; transform: rotate(45deg); border-radius: 2px; background: var(--now); }
+.pal-icon { justify-self: center; color: var(--muted); }
+.pal-empty { padding: 22px 18px; color: var(--muted); text-align: center; }
+.pal-foot { display: flex; gap: 16px; padding: 10px 18px; border-top: 1px solid var(--line-soft); background: var(--surface-subtle); color: var(--muted); font-size: 11.5px; }
+.pal-foot span:last-child { margin-left: auto; }
+@media (max-width: 767px) {
+  dialog.command-palette { width: calc(100vw - 16px); margin-top: 8px; max-height: calc(100dvh - 16px); }
+  .pal-foot span:not(:last-child) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.command-palette[open] { animation: none; }
+}

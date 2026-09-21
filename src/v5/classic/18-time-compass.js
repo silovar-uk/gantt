@@ -150,6 +150,7 @@
           <span class="time-compass-end"></span>
         </div>
         <div class="time-compass-rail">
+          <div class="time-compass-past" aria-hidden="true"></div>
           <div class="time-compass-busy" aria-hidden="true"></div>
           <div class="time-compass-rhythm" aria-label="プロジェクトの集中期間"></div>
           <div class="time-compass-markers"></div>
@@ -312,19 +313,17 @@
     return values;
   }
 
-  function busyGradient(range) {
+  // プロジェクトの稜線: 同じ区間ごとの件数から、面と線のSVGを作る
+  // ponytail: 48区間の粗い稜線。細かくしたくなったら BUSY_BUCKETS を上げるだけ
+  function ridgeSVG(range) {
     const values = bucketActivity(range);
     const max = Math.max(1, ...values);
-    const stops = [];
-    values.forEach((value, index) => {
-      const start = index / values.length * 100;
-      const end = (index + 1) / values.length * 100;
-      const ratio = value / max;
-      const alpha = .025 + ratio * .22;
-      const color = `rgba(62,106,90,${alpha.toFixed(3)})`;
-      stops.push(`${color} ${start.toFixed(2)}%`, `${color} ${end.toFixed(2)}%`);
-    });
-    return `linear-gradient(90deg, ${stops.join(',')})`;
+    const points = values.map((value, index) => [(index + .5) / values.length * 100, 18 - (value / max) * 15]);
+    if (points.length === 1) points.push([100, points[0][1]]);
+    const line = points.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join('');
+    const first = points[0];
+    const last = points.at(-1);
+    return `<svg viewBox="0 0 100 20" preserveAspectRatio="none" width="100%" height="100%" focusable="false"><defs><linearGradient id="ridge-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3E6A5A" stop-opacity=".34"/><stop offset="1" stop-color="#3E6A5A" stop-opacity=".04"/></linearGradient></defs><path d="M0 20L0 ${first[1].toFixed(2)}${line.replace(/^M[^L]*/, '')}L100 ${last[1].toFixed(2)}L100 20Z" fill="url(#ridge-fill)"/><path d="${line}" fill="none" stroke="#3E6A5A" stroke-width="1.2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
   }
 
   function median(values) {
@@ -547,7 +546,7 @@
     track.querySelector('.time-compass-start').textContent = shortDate(range.start);
     track.querySelector('.time-compass-end').textContent = shortDate(range.end);
     const busy = track.querySelector('.time-compass-busy');
-    if (busy) busy.style.backgroundImage = busyGradient(range);
+    if (busy) busy.innerHTML = ridgeSVG(range);
     renderRhythmLandmarks(track, range);
     renderMilestones(track, range);
   }
@@ -558,9 +557,12 @@
     const today = todayISO();
     const inside = today >= range.start && today <= range.end;
     marker.hidden = !inside;
+    const past = track.querySelector('.time-compass-past');
+    if (past) past.style.width = today > range.end ? '100%' : '0';
     if (!inside) return;
     const ratio = range.days <= 1 ? .5 : clamp(diffDays(range.start, today) / (range.days - 1), 0, 1);
     marker.style.left = `${(ratio * 100).toFixed(3)}%`;
+    if (past) past.style.width = `${(ratio * 100).toFixed(3)}%`;
     marker.title = `今日 ${today}`;
   }
 

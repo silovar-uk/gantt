@@ -70,7 +70,8 @@ try {
   assert.equal(await page.locator('.modal-layer').count(), 0, 'row ••• must not open the modal any more');
 
   await page.locator(`${openCard} [data-card-field="name"]`).fill('Renamed in card');
-  await page.locator('#condition-bar').click({ position: { x: 4, y: 4 } });
+  // 条件の帯は言うことが無いとき出なくなったので、何も無い場所として題字の帯の端を押す
+  await page.locator('.topbar').click({ position: { x: 4, y: 4 } });
   await waitSaved(page);
   assert.equal(await page.locator(`[data-inline-name="${id}"]`).inputValue(), 'Renamed in card', 'list row must show the new name');
   assert.ok((await page.locator(`[data-timeline-task="${id}"]`).getAttribute('title')).startsWith('Renamed in card'), 'bar must show the new name');
