@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const BASE = 'https://silovar-uk.github.io/gantt/';
-const ORIGIN = 'https://silovar-uk.github.io';
+const BASE = process.env.GANTT_BASE || 'https://silovar-uk.github.io/gantt/';
+const ORIGIN = new URL(BASE).origin;
 const browser = await chromium.launch({
   executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome',
   headless: true,
