@@ -56,7 +56,7 @@ try {
 
   const bar = page.locator('[data-timeline-task]').first();
   const id = await bar.getAttribute('data-timeline-task');
-  const name = await page.locator(`[data-inline-name="${id}"]`).inputValue();
+  const name = (await page.locator(`[data-task-title-display="${id}"]`).innerText()).trim();
   await bar.click();
   await page.locator(openCard).waitFor({ state: 'visible' });
   assert.equal(await page.locator(`${openCard} [data-card-field="name"]`).inputValue(), name, 'bar click must open the card for that task');
@@ -73,7 +73,7 @@ try {
   // 条件の帯は言うことが無いとき出なくなったので、何も無い場所として題字の帯の端を押す
   await page.locator('.topbar').click({ position: { x: 4, y: 4 } });
   await waitSaved(page);
-  assert.equal(await page.locator(`[data-inline-name="${id}"]`).inputValue(), 'Renamed in card', 'list row must show the new name');
+  assert.equal((await page.locator(`[data-task-title-display="${id}"]`).innerText()).trim(), 'Renamed in card', 'list row must show the new name');
   assert.ok((await page.locator(`[data-timeline-task="${id}"]`).getAttribute('title')).startsWith('Renamed in card'), 'bar must show the new name');
 
   await page.locator(`[data-timeline-task="${id}"]`).click();
