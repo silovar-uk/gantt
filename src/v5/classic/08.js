@@ -12,7 +12,7 @@ function renderImportModal() {
         ${p.tasks.length || p.pendingItems.length ? `<div class="import-preview-list">${p.tasks.slice(0, 8).map((task) => `<div><strong>${escapeHTML(task.name)}</strong><span>${task.start}〜${task.end}</span></div>`).join('')}${p.tasks.length > 8 ? `<small>ほか${p.tasks.length - 8}件</small>` : ''}${p.pendingItems.slice(0, 4).map((item) => `<div class="pending-preview"><strong>保留: ${escapeHTML(item.name || item.sourceText.slice(0, 30))}</strong><span>${escapeHTML(item.reason)}</span></div>`).join('')}</div>` : '<p>取り込む予定・保留項目がありません。</p>'}
         ${p.duplicate ? `<label class="duplicate-warning"><input id="duplicate-confirm" type="checkbox">同じ内容を取り込み済みです。再度追加する</label>` : ''}
         <fieldset class="choice-group import-mode"><legend>反映方法</legend>${importModeOptions(p)}</fieldset>
-        <p class="form-help">入れ替え後も残るもの: プロジェクト名、既存のカテゴリー</p>
+        <p class="form-help">入れ替え後も残るもの: プロジェクト名、既存のカテゴリー、同じ名前の予定の完了・締切・色</p>
       </div>`;
   const body = `<div class="import-layout"><div class="import-main"><label class="field full"><span>JSON／ChatGPTの回答</span><textarea id="import-input" class="code-area" rows="18" spellcheck="false" placeholder='{"handoffVersion":1,"tasks":[],"needsReview":[]}'>${escapeHTML(state.importRaw)}</textarea></label><button class="button button-secondary" type="button" data-action="validate-import">検証する</button></div><aside class="import-result">${result}</aside></div>`;
   const canApply = p && !p.errors?.length && (p.tasks.length || p.pendingItems.length) && (!p.duplicate);
@@ -39,6 +39,40 @@ function remapIncoming(tasks, categories) {
   return { tasks: mappedTasks, newCategories };
 }
 
+// 旧い予定と新しい予定を、名前で対応づける。同じ名前が複数あれば、開始日の近いものから対にする
+// ponytail: 名前での対応づけ。名前を変えた予定は「削除+追加」に見える。AIに id を返させる形式に広げたら、id で対応づける
+function pairByName(oldTasks, newTasks) {
+  const pool = new Map();
+  oldTasks.forEach((task) => {
+    if (!pool.has(task.name)) pool.set(task.name, []);
+    pool.get(task.name).push(task);
+  });
+  const pairs = [];
+  const added = [];
+  [...newTasks].sort((a, b) => a.start.localeCompare(b.start)).forEach((task) => {
+    const candidates = pool.get(task.name) || [];
+    if (!candidates.length) { added.push(task); return; }
+    let best = 0;
+    candidates.forEach((old, index) => {
+      if (Math.abs(diffDays(old.start, task.start)) < Math.abs(diffDays(candidates[best].start, task.start))) best = index;
+    });
+    pairs.push([candidates.splice(best, 1)[0], task]);
+  });
+  const removed = [...pool.values()].flat();
+  return { pairs, added, removed };
+}
+
+// 取り込みで何が変わるか: 対になって日付が違う=移動、新にだけある=追加、旧にだけある=削除
+function buildImportDiff(oldTasks, newTasks, { append = false } = {}) {
+  if (append) return { moved: new Map(), added: new Set(newTasks.map((task) => task.id)), removedNames: [] };
+  const { pairs, added, removed } = pairByName(oldTasks, newTasks);
+  const moved = new Map();
+  pairs.forEach(([old, next]) => {
+    if (old.start !== next.start || old.end !== next.end) moved.set(next.id, { start: old.start, end: old.end });
+  });
+  return { moved, added: new Set(added.map((task) => task.id)), removedNames: removed.map((task) => task.name) };
+}
+
 function applyImport() {
   const p = state.importPreview;
   if (!p || p.errors?.length) return;
@@ -60,6 +94,22 @@ function applyImport() {
   if (state.project.pendingItems.length + pending.length > MAX_PENDING && mode !== 'restore') {
     showToast(`保留項目は${MAX_PENDING}件までです。`, true); return;
   }
+  // 入れ替えでも、同じ名前の予定は完了・締切・色などの印を引き継ぐ(backup形式は項目を持っているので対象外)
+  if (mode === 'replace' && p.format !== 'backup') {
+    pairByName(state.project.tasks, mapped.tasks).pairs.forEach(([old, next]) => {
+      next.completed = next.completed || old.completed === true;
+      next.isDeadline = next.isDeadline || old.isDeadline === true;
+      next.isHidden = next.isHidden || old.isHidden === true;
+      next.colorOverride = next.colorOverride || old.colorOverride || '';
+      if (!next.displayNamePosition || next.displayNamePosition === 'auto') next.displayNamePosition = old.displayNamePosition || 'auto';
+    });
+  }
+  const nextTasks = mode === 'restore' && p.project ? p.project.tasks : mapped.tasks;
+  // 空のプロジェクトへの最初の取り込みは、全部が「追加」になるだけなので差分を出さない
+  const diff = state.project.tasks.length ? buildImportDiff(state.project.tasks, nextTasks, { append: mode === 'append' }) : null;
+  state.ui.importDiff = diff;
+  state.ui.changedIds = null;
+  const summary = !diff ? '' : mode === 'append' ? `(追加 ${diff.added.size})` : `(移動 ${diff.moved.size}・追加 ${diff.added.size}・削除 ${diff.removedNames.length})`;
   contentCommit((project) => {
     if (mode === 'restore' && p.project) {
       const keepId = project.projectId;
@@ -72,7 +122,7 @@ function applyImport() {
     if (mode === 'replace') project.tasks = mapped.tasks;
     else project.tasks.push(...mapped.tasks.map((task, i) => ({ ...task, order: project.tasks.length + i })));
     project.pendingItems.push(...pending);
-  }, { reason: `import-${mode}`, message: mode === 'restore' ? 'プロジェクトを復元しました' : `${mapped.tasks.length}件を反映しました` });
+  }, { reason: `import-${mode}`, message: mode === 'restore' ? `プロジェクトを復元しました${summary}` : `${mapped.tasks.length}件を反映しました${summary}` });
   state.storage.setLastImportHash(p.hash);
   if (state.inputDraft) {
     state.inputDraft.completed = true;
@@ -142,6 +192,9 @@ function renderModal() {
   root.querySelector('input[autofocus], textarea[autofocus]')?.focus();
 }
 
+// 動きを減らす設定では、飛ぶだけにする
+const scrollBehavior = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
 function scrollToday() {
   const view = state.project.viewSettings;
   const today = todayISO();
@@ -156,7 +209,7 @@ function scrollToday() {
     const scroll = document.querySelector('#timeline-scroll');
     if (!scroll) return;
     const offset = diffDays(state.project.viewSettings.start, today) * state.project.viewSettings.dayWidth;
-    scroll.scrollLeft = Math.max(0, offset - scroll.clientWidth * 0.25);
+    scroll.scrollTo({ left: Math.max(0, offset - scroll.clientWidth * 0.25), behavior: scrollBehavior() });
   });
 }
 
@@ -191,6 +244,7 @@ function clearFilters() {
   state.ui.includeHidden = false;
   state.ui.categoryIds = new Set();
   state.ui.sort = 'manual';
+  state.ui.changedIds = null;
   const search = document.querySelector('#search-input');
   if (search) search.value = '';
   renderToolbarState();
@@ -240,14 +294,14 @@ function revealTask(taskId) {
     setView({ start: addDays(task.start, -3), end: addDays(task.start, span - 3), overviewAutoFit: false });
   }
   requestAnimationFrame(() => {
-    document.querySelector(`[data-task-row="${CSS.escape(task.id)}"]`)?.scrollIntoView({ block: 'nearest' });
+    document.querySelector(`[data-task-row="${CSS.escape(task.id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
     const scroll = document.querySelector('#timeline-scroll');
     const current = state.project.viewSettings;
     if (!scroll) return;
     const left = diffDays(current.start, task.start) * current.dayWidth;
     const right = (diffDays(current.start, task.end) + 1) * current.dayWidth;
     if (left < scroll.scrollLeft || right > scroll.scrollLeft + scroll.clientWidth) {
-      scroll.scrollLeft = Math.max(0, (left + right) / 2 - scroll.clientWidth / 2);
+      scroll.scrollTo({ left: Math.max(0, (left + right) / 2 - scroll.clientWidth / 2), behavior: scrollBehavior() });
     }
   });
 }

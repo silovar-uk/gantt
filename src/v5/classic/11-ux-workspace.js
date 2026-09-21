@@ -152,36 +152,75 @@
     window.syncMultiCard?.(open);
   }
 
-  function taskBarHTML(task, viewStart, viewEnd, dayWidth) {
-    const clippedStart = task.start < viewStart ? viewStart : task.start;
-    const clippedEnd = task.end > viewEnd ? viewEnd : task.end;
-    const left = diffDays(viewStart, clippedStart) * dayWidth;
-    const selectedClass = multiSelected.has(task.id) ? ' is-multi-selected' : '';
-    if (task.milestone) {
-      return `<button tabindex="-1" class="milestone ux-draggable color-${taskColor(task, state.project.categories)}${selectedClass}" style="left:${left + Math.max(3, dayWidth / 2)}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start} 詳細を開く"></button>`;
-    }
-    const width = Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
-    return `<button tabindex="-1" class="task-bar ux-draggable color-${taskColor(task, state.project.categories)} ${task.completed ? 'is-completed' : ''}${selectedClass}" style="left:${left}px;width:${width}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
-      <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
-      ${nameOutside(task, width) ? `<b class="ux-bar-name-out">${escapeHTML(task.name)}</b>` : `<span>${escapeHTML(task.name)}</span>`}
-      <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>
-    </button>`;
-  }
-
   // ponytail: 全角1.0em/半角0.6emの概算。40件×2回のreflowを避けるため実測しない。実測が要るなら canvas.measureText
   const NAME_FONT = 12;
   const nameWidth = (name) => [...name].reduce((sum, ch) => sum + (ch.charCodeAt(0) > 255 ? 1 : 0.6), 0) * NAME_FONT;
-  const nameOutside = (task, width) => task.displayNamePosition === 'right' || (task.displayNamePosition === 'auto' && nameWidth(task.name) > width - 14);
+  const BAR_PAD = 20;
+  const dateText = (task) => (task.milestone ? shortMD(task.start) : `${shortMD(task.start)}–${shortMD(task.end)}`);
 
-  function barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
+  // 1行ぶんの配置。バー・遅れの糸・外に出す名前・••• の位置を、同じ概算で一度に決める
+  function rowLayout(task, viewStart, viewEnd, dayWidth, totalWidth) {
+    const today = todayISO();
+    const status = taskState(task, today);
+    const intersects = task.start <= viewEnd && task.end >= viewStart;
     const clippedStart = task.start < viewStart ? viewStart : task.start;
     const clippedEnd = task.end > viewEnd ? viewEnd : task.end;
-    const left = diffDays(viewStart, clippedStart) * dayWidth;
-    const right = task.milestone ? left + Math.max(3, dayWidth / 2) + 10 : left + Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
-    const outside = !task.milestone && nameOutside(task, right - left);
-    const gap = outside ? nameWidth(task.name) + 10 : 0;
-    const x = right + gap + 20 <= totalWidth ? right + gap + 4 : right - 20;
-    return `<button type="button" class="ux-bar-more" style="left:${x}px" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>`;
+    const left = intersects ? diffDays(viewStart, clippedStart) * dayWidth : 0;
+    const milestone = task.milestone === true;
+    const width = milestone ? 0 : Math.max(6, inclusiveDays(clippedStart, clippedEnd) * dayWidth);
+    const anchor = milestone ? left + Math.max(3, dayWidth / 2) : left; // ひし形の中心 / バーの左端
+    const right = intersects ? (milestone ? anchor + 10 : left + width) : 0;
+    const layout = { status, intersects, left, width, anchor, right, milestone, today, dates: dateText(task) };
+    let trail = intersects ? right : 0;
+
+    if (status === 'late' && today >= viewStart) {
+      const todayX = today > viewEnd ? totalWidth : diffDays(viewStart, today) * dayWidth + dayWidth / 2;
+      layout.thread = { left: right, width: Math.max(0, todayX - right), dot: today <= viewEnd };
+      if (today <= viewEnd) {
+        layout.lateLabel = { left: todayX + 9, text: `${diffDays(milestone ? task.start : task.end, today)}日遅れ` };
+        layout.lateLabel.right = layout.lateLabel.left + flagTextWidth(layout.lateLabel.text);
+        trail = Math.max(trail, layout.lateLabel.right);
+      }
+    }
+
+    if (intersects) {
+      const namePos = task.displayNamePosition;
+      layout.outside = milestone || namePos === 'right' || (namePos !== 'inside' && nameWidth(task.name) > width - BAR_PAD);
+      layout.insideDates = !layout.outside && nameWidth(task.name) + 8 + flagTextWidth(layout.dates) + BAR_PAD <= width;
+      if (layout.outside) {
+        const textWidth = nameWidth(task.name) + 7 + flagTextWidth(layout.dates);
+        const start = (layout.lateLabel ? layout.lateLabel.right + 8 : right + 6);
+        layout.nameSide = start + textWidth <= totalWidth ? 'right' : 'left';
+        layout.nameStart = start;
+        if (layout.nameSide === 'right') trail = Math.max(trail, start + textWidth);
+      }
+    }
+    layout.moreX = trail + 20 <= totalWidth ? trail + 4 : right - 20;
+    return layout;
+  }
+
+  function taskBarHTML(task, viewStart, viewEnd, dayWidth, layout) {
+    const selectedClass = multiSelected.has(task.id) ? ' is-multi-selected' : '';
+    const color = taskColor(task, state.project.categories);
+    if (task.milestone) {
+      const kind = layout.status === 'late' ? ' is-late' : layout.status === 'done' ? ' is-completed' : '';
+      return `<button tabindex="-1" class="milestone ux-draggable color-${color}${task.isDeadline ? ' is-deadline' : ''}${kind}${selectedClass}" style="left:${layout.anchor}px" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}" aria-label="${escapeHTML(task.name)} ${task.start} 詳細を開く"></button>`;
+    }
+    const { left, width } = layout;
+    let elapsed = 0;
+    if (layout.status === 'late') elapsed = 100;
+    else if (layout.status === 'active') elapsed = clampUx(((diffDays(viewStart, layout.today) * dayWidth + dayWidth / 2 - left) / width) * 100, 0, 100);
+    const out = layout.outside
+      ? `<b class="ux-bar-name-out" style="${layout.nameSide === 'left' ? 'left:auto;right:calc(100% + 6px)' : `left:calc(100% + ${layout.nameStart - layout.right}px);margin-left:0`}">${escapeHTML(task.name)}<em>${layout.dates}</em></b>`
+      : '';
+    const inside = layout.outside
+      ? ''
+      : `<span class="bar-name">${escapeHTML(task.name)}</span>${layout.insideDates ? `<span class="bar-dates">${layout.dates}</span>` : ''}`;
+    return `<button tabindex="-1" class="task-bar ux-draggable color-${color} ${task.completed ? 'is-completed' : ''}${layout.status === 'late' ? ' is-late' : ''}${selectedClass}" style="left:${left}px;width:${width}px;--elapsed:${elapsed.toFixed(1)}%" data-timeline-task="${task.id}" data-drag-role="move" title="${escapeHTML(task.name)} · ${task.start}〜${task.end}" aria-label="${escapeHTML(task.name)} ${task.start.replaceAll('-', '/')}〜${task.end.slice(5).replace('-', '/')} 詳細を開く">
+      <i class="ux-resize-handle ux-resize-start" data-resize="start" aria-hidden="true"></i>
+      ${inside}${out}
+      <i class="ux-resize-handle ux-resize-end" data-resize="end" aria-hidden="true"></i>
+    </button>`;
   }
 
   renderWorkspace = ((baseRenderWorkspace) => function enhancedRenderWorkspace() {
@@ -197,8 +236,18 @@
   })(renderWorkspace);
 
   timelineRowHTML = function enhancedTimelineRowHTML(task, viewStart, viewEnd, dayWidth, totalWidth) {
-    const intersects = task.start <= viewEnd && task.end >= viewStart;
-    const shape = intersects ? taskBarHTML(task, viewStart, viewEnd, dayWidth) + barMoreHTML(task, viewStart, viewEnd, dayWidth, totalWidth) : '';
+    const layout = rowLayout(task, viewStart, viewEnd, dayWidth, totalWidth);
+    let shape = '';
+    if (layout.thread) shape += `<i class="ux-late-thread${layout.thread.dot ? '' : ' is-open'}" style="left:${layout.thread.left}px;width:${layout.thread.width}px"></i>`;
+    if (layout.lateLabel) shape += `<span class="ux-late-label" style="left:${layout.lateLabel.left}px">${layout.lateLabel.text}</span>`;
+    if (layout.intersects) {
+      shape += taskBarHTML(task, viewStart, viewEnd, dayWidth, layout);
+      if (layout.milestone) {
+        const side = layout.nameSide === 'left' ? `left:auto;right:${totalWidth - layout.anchor + 12}px` : `left:${layout.nameStart}px`;
+        shape += `<b class="ux-bar-name-out ux-ms-name" style="${side};margin-left:0">${escapeHTML(task.name)}<em>${layout.dates}</em></b>`;
+      }
+      shape += `<button type="button" class="ux-bar-more" style="left:${layout.moreX}px" data-action="details" data-task-id="${task.id}" aria-label="${escapeHTML(task.name)}の詳細">•••</button>`;
+    }
     const selected = task.id === state.selectedTaskId || multiSelected.has(task.id);
     return `<div class="timeline-row ${selected ? 'is-selected' : ''}" data-timeline-row="${task.id}" style="width:${totalWidth}px">${shape}</div>`;
   };
@@ -262,8 +311,7 @@
           <button type="button" data-ux-action="zoom-in" aria-label="拡大" title="拡大">＋</button>
         </div>
       `;
-      const spacer = toolbar.querySelector('.toolbar-spacer');
-      toolbar.insertBefore(controls, spacer?.nextSibling || null);
+      toolbar.insertBefore(controls, toolbar.querySelector('#mode-switch'));
     }
 
     if (!document.querySelector('#ux-more-menu')) {
@@ -275,6 +323,7 @@
           <button type="button" class="ux-mobile-only" data-menu-do="zoom-in"><span>拡大</span><small>日付の幅を広げる</small></button>
           <button type="button" class="ux-mobile-only" data-menu-do="zoom-out"><span>縮小</span><small>日付の幅を狭める</small></button>
           <button type="button" class="ux-mobile-only" data-menu-do="copy-ai-json"><span>AI用JSONをコピー</span><small>外部AIへ渡す入力データ</small></button>
+          <button type="button" data-palette-open><span>予定・操作を探す</span><small>Ctrl+K</small></button>
           <button type="button" data-action="today"><span>今日へ移動</span><small>今日の位置を表示</small></button>
           <button type="button" data-action="display-settings"><span>表示設定</span><small>期間・行高・文字サイズ</small></button>
           <button type="button" data-ux-action="download-ai-json"><span>AI用JSONを保存</span><small>外部AIへ渡す入力データ</small></button>
@@ -307,8 +356,12 @@
     const period = projectPeriod(tasks.length ? tasks : state.project.tasks);
     const date = new Date(state.project.updatedAt || Date.now());
     const updated = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    // 凡例: 表示中の予定が使うカテゴリーだけ。期間の span より後ろに置く(19-ui-polish.js が最初の span を期間として読む)
+    const usedIds = new Set(tasks.map((task) => task.categoryId));
+    const legend = state.project.categories.filter((category) => usedIds.has(category.id))
+      .map((category) => `<span class="cat-${category.color}"><i></i>${escapeHTML(category.name)}</span>`).join('');
     bar.innerHTML = `
-      <div class="ux-present-title"><strong>${escapeHTML(state.project.title)}</strong><span>${period.start || '—'} 〜 ${period.end || '—'}</span></div>
+      <div class="ux-present-title"><strong>${escapeHTML(state.project.title)}</strong><span>${period.start || '—'} 〜 ${period.end || '—'}</span>${legend ? `<span class="ux-present-legend">${legend}</span>` : ''}</div>
       <div class="ux-present-meta"><span>${tasks.length}件</span><span>更新 ${updated}</span></div>
       <div class="ux-present-actions"><button class="button button-secondary" type="button" data-action="export">書き出し</button><button class="button button-primary" type="button" data-ux-action="exit-present">編集に戻る</button></div>`;
   }
@@ -340,8 +393,6 @@
       });
     }, { reason: 'keyboard-shift', message: `${ids.length}件を${Math.abs(deltaDays)}日${deltaDays > 0 ? '後ろ' : '前'}へ移動しました` });
   }
-
-  const shortMD = (iso) => { const [, m, d] = String(iso).split('-'); return `${Number(m)}/${Number(d)}`; };
 
   // ドラッグ中の予定の、置いた後の期間
   function draggedRange(d, original) {
@@ -452,9 +503,22 @@
     event.preventDefault();
   }
 
+  // ドラッグ中は、元の位置に点線の枠を残す(置いた後は 23-afterimage.js の残像が引き継ぐ)
+  function placeDragOrigins(d) {
+    d.ids.forEach((id) => {
+      const bar = document.querySelector(`[data-timeline-task="${CSS.escape(id)}"]`);
+      if (!bar?.parentElement) return;
+      const origin = document.createElement('i');
+      origin.className = 'ux-drag-origin';
+      Object.assign(origin.style, { left: `${bar.offsetLeft}px`, width: `${Math.max(bar.offsetWidth, 13)}px` });
+      bar.parentElement.append(origin);
+    });
+  }
+
   function moveTaskDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     if (!dragState.moved && Math.abs(event.clientX - dragState.startX) < TAP_PX) return;
+    if (!dragState.moved) placeDragOrigins(dragState);
     dragState.moved = true;
     const delta = Math.round((event.clientX - dragState.startX) / dragState.dayWidth);
     positionDragReadout(event);
@@ -476,6 +540,7 @@
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const d = dragState;
     dragState = null;
+    document.querySelectorAll('.ux-drag-origin').forEach((el) => el.remove());
     clearDragReadout(d);
     d.element.classList.remove('is-dragging');
     d.element.style.translate = '';
@@ -592,6 +657,15 @@
     else if (action === 'exit-present') setPresent(false);
   });
 
+  // 今日の旗の「遅れ N」: 既存の「期限超過」の絞り込みを切り替える
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-now-action]')?.dataset.nowAction !== 'overdue') return;
+    event.preventDefault();
+    state.ui.overdue = !state.ui.overdue;
+    renderToolbarState();
+    renderWorkspace();
+  });
+
   // ••• メニューの項目を押したら閉じる(モバイルはここが主要操作の入口になる)
   document.addEventListener('click', (event) => {
     const item = event.target.closest('#ux-more-menu button');
@@ -670,6 +744,9 @@
     renderWorkspace();
     renderToolbarState();
     document.body.dataset.uxVersion = UX_VERSION;
+    // 今日線・遅れの糸・操作盤は、開いた直後の一度だけ動く
+    document.body.classList.add('ux-intro');
+    setTimeout(() => document.body.classList.remove('ux-intro'), 1600);
   }
 
   updateHeaderUX();

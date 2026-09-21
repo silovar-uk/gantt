@@ -2,16 +2,14 @@
 
 /* Advanced density controls remain hidden; the row-height control is surfaced in the Ribbon. */
 #ux-density-controls { display: none !important; }
-.toolbar > .toolbar-spacer { display: none !important; }
 
+/* 地平線(時間の窓): 題字の帯の直後にある、全幅の1行。高さは36pxのまま、上下の余白は margin で取る */
 .project-ribbon {
-  flex: 1 1 320px;
-  min-width: 190px;
-  max-width: min(620px, 48vw);
+  height: 36px;
+  margin: 4px 16px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-inline: 2px;
+  gap: 12px;
 }
 .project-ribbon[hidden] { display: none !important; }
 .project-ribbon-track {
@@ -26,68 +24,10 @@
   display: flex;
   align-items: center;
 }
-.project-ribbon-nav .ux-view-controls { gap: 3px; }
-.project-ribbon-nav .ux-view-controls > [data-action="fit"] {
-  min-height: 28px;
-  height: 28px;
-  padding-inline: 8px;
-  border-color: #d4d9e3;
-  background: #fff;
-  color: #344054;
-  font-size: 10px;
-  font-weight: 750;
-}
-.project-ribbon-nav .ux-zoom {
-  height: 28px;
-  border-radius: 7px;
-}
-.project-ribbon-nav .ux-zoom button {
-  width: 28px;
-  font-size: 16px;
-}
-
-/* Semantic levels are internal: the surface changes meaning without adding mode chrome. */
-body[data-surface-level="plan"] .workspace.mode-split .task-bar > span { opacity: .2; }
-body[data-surface-level="plan"] .workspace.mode-split .category-cell { opacity: .78; }
-body[data-surface-level="edit"] .workspace.mode-split .task-bar > span { opacity: 1; }
 
 body.is-present-mode .project-ribbon { display: none !important; }
 
-/* Chrome reduction is desktop/tablet-only. Mobile keeps 44px-class touch targets. */
-@media (min-width: 768px) {
-  .toolbar {
-    min-height: 38px;
-    padding-block: 3px;
-    gap: 6px;
-  }
-  .toolbar .search-box {
-    flex: 0 1 240px;
-    min-width: 150px;
-    max-width: 280px;
-  }
-  body:not(.is-present-mode) .topbar { min-height: 42px; }
-  body:not(.is-present-mode) .toolbar > .add-button,
-  body:not(.is-present-mode) .toolbar > [data-action="filter"] { min-height: 32px; }
-  body:not(.is-present-mode) .toolbar > .ux-more-wrap > .icon-button { min-height: 32px; height: 32px; }
-}
-
-@media (max-width: 1199px) and (min-width: 768px) {
-  .toolbar .search-box { flex-basis: 180px; max-width: 210px; }
-  .project-ribbon { min-width: 150px; max-width: none; }
-  .project-ribbon-nav .ux-view-controls > [data-action="fit"] { padding-inline: 6px; }
-}
-
-@media (max-width: 900px) and (min-width: 768px) {
-  .toolbar .search-box { flex-basis: 150px; min-width: 120px; }
-  .project-ribbon { min-width: 120px; }
-  .project-ribbon-nav .ux-view-controls > [data-action="fit"] { font-size: 0; width: 28px; padding: 0; }
-  .project-ribbon-nav .ux-view-controls > [data-action="fit"]::after { content: '⌗'; font-size: 14px; }
-}
-
 @media (max-width: 767px) {
   #ux-density-controls { display: none !important; }
-  .toolbar > .toolbar-spacer { display: inline-block !important; flex: 1 1 auto; }
-  .ux-view-controls { order: 2; }
-  .toolbar > .add-button,
-  .toolbar > [data-action="filter"] { min-height: 44px; }
+  .project-ribbon { margin: 4px 10px; }
 }

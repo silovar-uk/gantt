@@ -43,9 +43,11 @@
     document.body.dataset.surfaceLevel = surfaceLevel();
   }
 
+  // 時間の窓(地平線)は、題字の帯の直後の独立した1行。全体・拡大縮小は下の操作盤にある
   function ensureRibbon() {
     const toolbar = document.querySelector('.toolbar');
-    if (!toolbar) return null;
+    const topbar = document.querySelector('.app-header > .topbar');
+    if (!toolbar || !topbar) return null;
     let ribbon = document.querySelector('#project-ribbon');
     if (!ribbon) {
       ribbon = document.createElement('section');
@@ -58,8 +60,7 @@
           <div id="project-ribbon-viewport" class="project-ribbon-viewport" aria-hidden="true"></div>
         </div>
         <div class="project-ribbon-nav"></div>`;
-      const spacer = toolbar.querySelector('.toolbar-spacer');
-      toolbar.insertBefore(ribbon, spacer || null);
+      topbar.insertAdjacentElement('afterend', ribbon);
       bindRibbonEvents(ribbon);
     }
     placeViewControls(ribbon, toolbar);
@@ -69,15 +70,7 @@
   function placeViewControls(ribbon, toolbar) {
     const controls = document.querySelector('#ux-view-controls');
     if (!controls) return;
-    const nav = ribbon.querySelector('.project-ribbon-nav');
-    if (breakpoint() === 'mobile') {
-      if (controls.parentElement !== toolbar) {
-        const more = toolbar.querySelector('.ux-more-wrap');
-        toolbar.insertBefore(controls, more || null);
-      }
-      return;
-    }
-    if (controls.parentElement !== nav) nav.append(controls);
+    if (controls.parentElement !== toolbar) toolbar.insertBefore(controls, toolbar.querySelector('#mode-switch'));
   }
 
   function visibleRange(range) {
@@ -104,12 +97,15 @@
     const ribbon = ensureRibbon();
     const range = projectRange();
     if (!ribbon) return;
+    const controls = document.querySelector('#ux-view-controls');
     if (!range || !(state.project.tasks || []).length) {
       ribbon.hidden = true;
+      if (controls) controls.hidden = true;
       syncSurfaceLevel();
       return;
     }
     ribbon.hidden = false;
+    if (controls) controls.hidden = false;
     syncSurfaceLevel();
     bindScroller();
     syncCompass();

@@ -62,6 +62,8 @@ function setMode(mode) {
   state.storage.saveView(state.project.viewSettings);
   renderWorkspace();
   renderToolbarState();
+  // 表示幅が変わるので、自動フィット中なら描き直した後の幅に合わせる(一覧は図が無いので不要)
+  if (mode !== 'list' && state.project.viewSettings.overviewAutoFit) requestAnimationFrame(() => fitAll());
 }
 
 function pushHistory(snapshot) {
@@ -94,7 +96,7 @@ function contentCommit(mutator, { reason = 'change', message = '', undo = false 
   queueSave(deepCopy(state.project), expectedRevision);
   renderAll();
   if (message) showToast(message, false, undo);
-  document.dispatchEvent(new CustomEvent('gantt-desk:v5-change', { detail: { reason, revision: state.project.revision } }));
+  document.dispatchEvent(new CustomEvent('gantt-desk:v5-change', { detail: { reason, revision: state.project.revision, before: before.tasks } }));
   return true;
 }
 
@@ -135,9 +137,12 @@ function undo() {
   state.project.revision = expectedRevision + 1;
   state.project.updatedAt = new Date().toISOString();
   state.selectedTaskId = null;
+  state.ui.importDiff = null;
+  state.ui.changedIds = null;
   queueSave(deepCopy(state.project), expectedRevision);
   renderAll();
   showToast('元に戻しました');
+  document.dispatchEvent(new CustomEvent('gantt-desk:v5-change', { detail: { reason: 'undo', revision: state.project.revision, before: current.tasks } }));
 }
 
 function redo() {
@@ -151,9 +156,12 @@ function redo() {
   state.project.revision = expectedRevision + 1;
   state.project.updatedAt = new Date().toISOString();
   state.selectedTaskId = null;
+  state.ui.importDiff = null;
+  state.ui.changedIds = null;
   queueSave(deepCopy(state.project), expectedRevision);
   renderAll();
   showToast('やり直しました');
+  document.dispatchEvent(new CustomEvent('gantt-desk:v5-change', { detail: { reason: 'redo', revision: state.project.revision, before: state.history.at(-1)?.tasks } }));
 }
 
 function showToast(message, isError = false, withUndo = false) {
@@ -207,6 +215,7 @@ function shellHTML() {
           <div class="brand-area">
             <button class="app-mark" type="button" data-action="project-settings" aria-label="プロジェクト設定">G</button>
             <button id="project-title-button" class="project-title-button" type="button" data-action="project-settings"></button>
+            <span id="project-meta" class="project-meta"></span>
           </div>
           <div class="top-actions">
             <button id="save-status" class="save-pill" type="button" data-action="save-status"></button>
@@ -225,9 +234,9 @@ function shellHTML() {
         </div>
         <div class="toolbar">
           <button class="button button-primary add-button" type="button" data-action="add">＋ 予定を追加</button>
-          <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="予定・カテゴリーを検索" autocomplete="off"></label>
+          <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="予定を絞り込む" autocomplete="off"><button class="palette-key" type="button" data-palette-open title="予定・操作を探す" aria-label="予定・操作を探す"><kbd>Ctrl K</kbd></button></label>
+          <button class="icon-button palette-open" type="button" data-palette-open aria-label="予定・操作を探す" title="予定・操作を探す"><span aria-hidden="true">⌕</span></button>
           <button class="button button-secondary" type="button" data-action="filter">絞り込み <span id="filter-count" class="count-badge" hidden></span></button>
-          <span class="toolbar-spacer"></span>
           <button class="button button-quiet" type="button" data-action="today">今日</button>
           <button class="button button-quiet" type="button" data-action="fit">全体</button>
           <div id="mode-switch" class="segmented" aria-label="表示モード">
@@ -245,9 +254,25 @@ function shellHTML() {
   `;
 }
 
+// 題字の帯の補助: 期間 · 件数 · 次の締切までの日数
+function projectMetaText() {
+  const tasks = state.project.tasks;
+  if (!tasks.length) return '';
+  const md = (iso) => `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
+  const start = tasks.reduce((min, task) => (task.start < min ? task.start : min), tasks[0].start);
+  const end = tasks.reduce((max, task) => (task.end > max ? task.end : max), tasks[0].end);
+  const parts = [`${md(start)} – ${md(end)}`, `${tasks.length}件`];
+  const today = todayISO();
+  const next = tasks.filter((task) => task.milestone && task.isDeadline && !task.completed && task.start >= today).sort((a, b) => a.start.localeCompare(b.start))[0];
+  if (next) parts.push(`締切「${next.name}」まで ${diffDays(today, next.start)}日`);
+  return parts.join(' · ');
+}
+
 function renderHeader() {
   const title = document.querySelector('#project-title-button');
   if (title) title.textContent = state.project.title;
+  const meta = document.querySelector('#project-meta');
+  if (meta) meta.textContent = projectMetaText();
   renderSaveStatus();
   const undoButton = document.querySelector('[data-action="undo"]');
   const redoButton = document.querySelector('[data-action="redo"]');

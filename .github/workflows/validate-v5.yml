@@ -28,22 +28,26 @@ jobs:
           node --check scripts/validate-css-architecture.mjs
           node --check scripts/public-e2e-one-overview.mjs
           node --check scripts/public-e2e-project-rhythm.mjs
+          node --check scripts/public-e2e-now-desk.mjs
       - name: Verify production entrypoint
         shell: bash
         run: |
           set -euo pipefail
           grep -q 'assets/v5-base.css' index.html
           grep -q 'assets/v5-responsive.css' index.html
-          grep -q 'assets/v6-workspace-ux.css?v=20260919-card1' index.html
-          grep -q 'assets/v9-macro-overview.css?v=20260918-macro6' index.html
+          grep -q 'assets/v6-workspace-ux.css?v=20260921-desk1' index.html
+          grep -q 'assets/v9-macro-overview.css?v=20260921-desk1' index.html
           grep -q 'src/v5/classic/01.js' index.html
           grep -q 'src/v5/classic/10.js' index.html
-          grep -q 'src/v5/classic/13-overview-density.js?v=20260919-card1' index.html
-          grep -q 'src/v5/classic/15-macro-overview.js?v=20260918-macro4' index.html
-          grep -q 'src/v5/classic/18-time-compass.js?v=20260918-window1' index.html
-          grep -q 'assets/v12-time-compass.css?v=20260918-window1' index.html
+          grep -q 'src/v5/classic/13-overview-density.js?v=20260921-desk1' index.html
+          grep -q 'src/v5/classic/15-macro-overview.js?v=20260921-desk1' index.html
+          grep -q 'src/v5/classic/18-time-compass.js?v=20260921-desk1' index.html
+          grep -q 'assets/v12-time-compass.css?v=20260921-desk1' index.html
           grep -q 'assets/v14-task-card.css' index.html
           grep -q 'src/v5/classic/21-task-card.js' index.html
+          grep -q 'assets/v15-now-desk.css' index.html
+          grep -q 'src/v5/classic/22-command-palette.js' index.html
+          grep -q 'src/v5/classic/23-afterimage.js' index.html
           if grep -q 'assets/v8-tighter-rows.css' index.html; then
             echo 'Obsolete tighter-row CSS is still loaded' >&2
             exit 1

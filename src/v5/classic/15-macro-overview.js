@@ -2,7 +2,7 @@
   const MACRO_VERSION = '20260918-macro4';
   const MACRO_MIN_LANE = 26;
   const MACRO_MAX_LANE = 68;
-  const HEADER_HEIGHT = 36;
+  const HEADER_HEIGHT = 44;
 
   function clampMacro(value, min, max, fallback = min) {
     const number = Number(value);
@@ -104,7 +104,8 @@
     const dayWidth = clampMacro(view.dayWidth, 2, 32, 2);
     const totalWidth = days * dayWidth;
     const groups = taskGroups(tasks);
-    const availableHeight = Math.max(180, (root.clientHeight || innerHeight * 0.72) - HEADER_HEIGHT);
+    const reserve = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dock-reserve')) || 0;
+    const availableHeight = Math.max(180, (root.clientHeight || innerHeight * 0.72) - HEADER_HEIGHT - reserve);
     const laneHeight = clampMacro(Math.floor(availableHeight / Math.max(1, groups.length)), MACRO_MIN_LANE, MACRO_MAX_LANE, 40);
     const today = todayISO();
     const todayLeft = today >= start && today <= end ? diffDays(start, today) * dayWidth + dayWidth / 2 : null;
@@ -118,10 +119,11 @@
       </section>
       <section class="macro-timeline-panel">
         <div id="macro-timeline-scroll" class="macro-timeline-scroll">
-          <div class="macro-timeline-inner" style="width:${totalWidth}px">
-            <div class="macro-time-head" style="width:${totalWidth}px">${timelineHeaderHTML(start, days, dayWidth, view.scale)}</div>
+          <div class="macro-timeline-inner" style="width:${totalWidth}px;--day-width:${dayWidth}px;${bandVars(start, dayWidth)}">
+            <div class="macro-time-head" style="width:${totalWidth}px">${timelineHeaderHTML(start, days, dayWidth)}</div>
             <div class="macro-timeline-body" style="width:${totalWidth}px">
-              ${todayLeft != null ? `<div class="macro-today-line" style="left:${todayLeft}px"><span>今日</span></div>` : ''}
+              ${monthRulesHTML(start, days, dayWidth)}${nowLayersHTML(start, end, dayWidth, todayLeft, totalWidth)}
+              ${todayLeft != null ? `<div class="macro-today-line" style="left:${todayLeft}px"></div>` : ''}
               ${groups.map((group) => macroGroupRow(group, start, end, dayWidth, totalWidth, laneHeight)).join('')}
             </div>
           </div>

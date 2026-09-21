@@ -103,6 +103,7 @@ function sortAndFilterTasks(project, ui) {
     if (ui.thisWeek && !(task.start <= weekEnd && task.end >= weekStart)) return false;
     if (ui.incomplete && task.completed) return false;
     if (ui.overdue && (task.completed || task.end >= today)) return false;
+    if (ui.changedIds && !ui.changedIds.has(task.id)) return false;
     return true;
   });
   const manual = (a, b) => a.order - b.order;
