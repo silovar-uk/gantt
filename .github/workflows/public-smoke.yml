@@ -56,13 +56,13 @@ jobs:
             curl -fsSL --retry 3 --retry-delay 1 https://silovar-uk.github.io/gantt/ -o /tmp/live-index.html || true
             if grep -q 'assets/v5-base.css?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v6-workspace-ux.css?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'assets/v7-overview-density.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'assets/v7-overview-density.css?v=20260921-readable2' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v9-macro-overview.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v11-project-surface.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v12-time-compass.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v13-sage-polish.css?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
               && ! grep -q 'assets/v8-tighter-rows.css' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/06.js?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/06.js?v=20260921-readable2' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/08.js?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/10.js?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/11-ux-workspace.js?v=20260921-readable1' /tmp/live-index.html 2>/dev/null \
@@ -86,7 +86,7 @@ jobs:
             exit 1
           fi
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v6-workspace-ux.css?v=20260921-readable1' -o /tmp/v6-workspace.css
-          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v7-overview-density.css?v=20260921-desk1' -o /tmp/v7-density.css
+          curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v7-overview-density.css?v=20260921-readable2' -o /tmp/v7-density.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v9-macro-overview.css?v=20260921-desk1' -o /tmp/v9-macro.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v11-project-surface.css?v=20260921-desk1' -o /tmp/v11-surface.css
           curl -fsSL 'https://silovar-uk.github.io/gantt/assets/v12-time-compass.css?v=20260921-desk1' -o /tmp/v12-compass.css

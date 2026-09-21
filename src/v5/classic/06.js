@@ -318,8 +318,8 @@ function syncVisibleRowHeights() {
   if (!workspace) return;
   const listRows = [...document.querySelectorAll('.task-row[data-task-row]')];
   const timelineRows = [...document.querySelectorAll('.timeline-row[data-timeline-row]')];
-  listRows.forEach((row) => { row.style.height = ''; });
-  timelineRows.forEach((row) => { row.style.height = ''; });
+  listRows.forEach((row) => { row.style.removeProperty('height'); });
+  timelineRows.forEach((row) => { row.style.removeProperty('height'); });
   if (effectiveMode() !== 'split') return;
   const timelineById = new Map(timelineRows.map((row) => [row.dataset.timelineRow, row]));
   const minimum = Number.parseFloat(getComputedStyle(workspace).getPropertyValue('--row-height')) || 36;
@@ -327,8 +327,8 @@ function syncVisibleRowHeights() {
     const timeline = timelineById.get(row.dataset.taskRow);
     if (!timeline) continue;
     const required = Math.ceil(Math.max(minimum, row.getBoundingClientRect().height, row.scrollHeight));
-    row.style.height = `${required}px`;
-    timeline.style.height = `${required}px`;
+    row.style.setProperty('height', `${required}px`, 'important');
+    timeline.style.setProperty('height', `${required}px`, 'important');
   }
 }
 

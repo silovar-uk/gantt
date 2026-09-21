@@ -67,6 +67,12 @@ body.is-present-mode #ux-row-density-dock { display: none !important; }
   height: var(--row-height) !important;
   min-height: var(--row-height) !important;
 }
+/* Readable List: rowHeight is a floor for text, not a clipping command. */
+.workspace.mode-list .task-row,
+.workspace.mode-split .task-row {
+  height: auto !important;
+  min-height: var(--row-height) !important;
+}
 @media (max-width: 767px) {
   .workspace.mode-list .task-row {
     height: auto !important;

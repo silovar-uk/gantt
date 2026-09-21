@@ -38,7 +38,7 @@ jobs:
           grep -q 'assets/v6-workspace-ux.css?v=20260921-readable1' index.html
           grep -q 'assets/v9-macro-overview.css?v=20260921-desk1' index.html
           grep -q 'src/v5/classic/01.js' index.html
-          grep -q 'src/v5/classic/06.js?v=20260921-readable1' index.html
+          grep -q 'src/v5/classic/06.js?v=20260921-readable2' index.html
           grep -q 'src/v5/classic/08.js?v=20260921-readable1' index.html
           grep -q 'src/v5/classic/10.js?v=20260921-readable1' index.html
           grep -q 'src/v5/classic/11-ux-workspace.js?v=20260921-readable1' index.html
