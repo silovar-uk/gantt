@@ -152,12 +152,13 @@ try {
   assert.ok(labelTruth.canvasWidth > labelTruth.dateWidth, 'timeline must reserve a label gutter after the final date');
   assert.ok(labelTruth.labelZ > labelTruth.pillarZ && labelTruth.barZ > labelTruth.pillarZ, 'labels and bars must render above deadline pillars');
 
-  // 6. 「全体」を押したあと、すべての行が浮かぶ操作盤の上に収まる
+  // 6. 「全体」は時間軸を合わせる。読みやすい可変行高は潰さず、分割表示の左右を同期する
   await page.locator('#ux-view-controls [data-action="fit"]').click();
   await page.waitForTimeout(500);
-  const dockTop = (await page.locator('.toolbar').boundingBox()).y;
-  const bottoms = await page.locator('[data-timeline-row]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().bottom));
-  assert.ok(bottoms.length === 26 && Math.max(...bottoms) <= dockTop + 0.5, `rows must end above the dock (${Math.max(...bottoms)} vs ${dockTop})`);
+  const firstId = await page.locator('[data-task-row]').first().getAttribute('data-task-row');
+  const listRowHeight = await page.locator(`[data-task-row="${firstId}"]`).evaluate((el) => el.getBoundingClientRect().height);
+  const timelineRowHeight = await page.locator(`[data-timeline-row="${firstId}"]`).evaluate((el) => el.getBoundingClientRect().height);
+  assert.ok(Math.abs(listRowHeight - timelineRowHeight) <= 1, `split rows must remain aligned after fit: ${listRowHeight} vs ${timelineRowHeight}`);
 
   // 7. 一覧は全幅、ガントは切り替えた直後に幅を使い切る
   await page.locator('#mode-switch [data-mode="list"]').click();
