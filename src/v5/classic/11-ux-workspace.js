@@ -356,8 +356,12 @@
     const period = projectPeriod(tasks.length ? tasks : state.project.tasks);
     const date = new Date(state.project.updatedAt || Date.now());
     const updated = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    // 凡例: 表示中の予定が使うカテゴリーだけ。期間の span より後ろに置く(19-ui-polish.js が最初の span を期間として読む)
+    const usedIds = new Set(tasks.map((task) => task.categoryId));
+    const legend = state.project.categories.filter((category) => usedIds.has(category.id))
+      .map((category) => `<span class="cat-${category.color}"><i></i>${escapeHTML(category.name)}</span>`).join('');
     bar.innerHTML = `
-      <div class="ux-present-title"><strong>${escapeHTML(state.project.title)}</strong><span>${period.start || '—'} 〜 ${period.end || '—'}</span></div>
+      <div class="ux-present-title"><strong>${escapeHTML(state.project.title)}</strong><span>${period.start || '—'} 〜 ${period.end || '—'}</span>${legend ? `<span class="ux-present-legend">${legend}</span>` : ''}</div>
       <div class="ux-present-meta"><span>${tasks.length}件</span><span>更新 ${updated}</span></div>
       <div class="ux-present-actions"><button class="button button-secondary" type="button" data-action="export">書き出し</button><button class="button button-primary" type="button" data-ux-action="exit-present">編集に戻る</button></div>`;
   }

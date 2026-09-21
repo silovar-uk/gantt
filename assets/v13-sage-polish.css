@@ -269,10 +269,13 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .ux-present-title strong { max-width: min(52vw, 720px); font-size: 14px; font-weight: 700; }
 .ux-present-title span { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .ux-present-meta { display: none; }
+.ux-present-legend { display: inline-flex; gap: 12px; margin-left: 6px; overflow: hidden; }
+.ux-present-legend > span { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); font-size: 12px; white-space: nowrap; }
+.ux-present-legend i { width: 8px; height: 8px; border-radius: 2px; background: var(--c-mid); }
 .ux-present-actions { display: flex; gap: 4px; align-items: center; }
 .ux-present-actions .button { min-height: 30px; height: 30px; padding-inline: 9px; border-radius: var(--radius-md); font-size: 12px; }
 body.is-present-mode .ux-present-bar { display: grid; }
-body.is-present-hud-quiet .ux-present-title span,
+body.is-present-hud-quiet .ux-present-title > span:not(.ux-present-legend),
 body.is-present-hud-quiet .ux-present-actions .button-secondary {
   opacity: 0;
   max-width: 0;
@@ -281,7 +284,7 @@ body.is-present-hud-quiet .ux-present-actions .button-secondary {
   overflow: hidden;
   pointer-events: none;
 }
-.ux-present-title span,
+.ux-present-title > span,
 .ux-present-actions .button-secondary {
   transition: opacity 140ms ease, max-width 140ms ease, padding 140ms ease, border-width 140ms ease;
 }
@@ -300,7 +303,8 @@ body.is-present-hud-quiet .ux-present-actions .button-secondary {
   }
   .ux-present-title { display: grid; gap: 0; align-content: center; }
   .ux-present-title strong { max-width: 58vw; font-size: 14px; line-height: 1.2; }
-  .ux-present-title span { display: block; font-size: 11px; line-height: 1.2; }
+  .ux-present-title > span { display: block; font-size: 11px; line-height: 1.2; }
+  .ux-present-title > .ux-present-legend { display: none; }
   .ux-present-actions .button-primary { min-height: 44px; height: 44px; padding-inline: 10px; }
   .ux-present-actions .button-secondary { display: none; }
   body.is-present-hud-quiet .ux-present-title span { opacity: 1; max-width: none; }

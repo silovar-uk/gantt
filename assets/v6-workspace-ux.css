@@ -96,14 +96,17 @@ body.is-present-mode .topbar,
 body.is-present-mode .toolbar,
 body.is-present-mode .condition-bar { display: none !important; }
 body.is-present-mode .task-panel { max-width: 290px; overflow: hidden; }
-body.is-present-mode .task-head,
-body.is-present-mode .task-row { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 14px 8px; }
+body.is-present-mode .workspace .task-head,
+body.is-present-mode .workspace .task-row { grid-template-columns: minmax(0, 1fr); padding-inline: 14px 8px; }
+body.is-present-mode .workspace .name-cell { grid-column: 1; grid-row: 1; }
 body.is-present-mode .task-head > :first-child,
 body.is-present-mode .task-head .h-cat,
 body.is-present-mode .task-head .h-span,
 body.is-present-mode .task-head .h-start,
 body.is-present-mode .task-head .h-end,
 body.is-present-mode .task-head .h-days,
+body.is-present-mode .task-head .h-state,
+body.is-present-mode .state-cell,
 body.is-present-mode .task-head > :last-child,
 body.is-present-mode .complete-cell,
 body.is-present-mode .category-cell,
@@ -140,5 +143,6 @@ body.is-present-mode .ux-resize-handle { display: none; }
   .top-actions > .menu-wrap .button { padding-inline: 8px; }
   .ux-present-button { min-height: 44px; padding-inline: 9px; }
   body.is-present-mode .mobile-timeline-labels { flex-basis: 96px; width: 96px; }
+  body.is-present-mode .workspace.mode-list .task-panel { max-width: none; }
   .ux-resize-handle { width: 12px; opacity: .5; }
 }

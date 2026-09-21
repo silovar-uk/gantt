@@ -19,6 +19,11 @@
 .task-card:popover-open,
 .task-card.is-fallback:not([hidden]) { display: grid; gap: 8px; }
 .task-card:focus { outline: none; }
+/* 出現は300msの弾み。対応していない環境では動きが無くなるだけ */
+@media (prefers-reduced-motion: no-preference) {
+  .task-card:popover-open { transition: opacity 150ms var(--ease-out), transform 300ms var(--ease-spring); }
+  @starting-style { .task-card:popover-open { opacity: 0; transform: scale(.96); } .task-card.is-sheet:popover-open { transform: translateY(16px); } }
+}
 
 .task-card-head { display: flex; align-items: center; gap: 8px; }
 .task-card-head .icon-button { width: 32px; min-height: 32px; flex: 0 0 32px; border-color: transparent; background: transparent; }
