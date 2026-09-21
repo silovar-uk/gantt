@@ -146,6 +146,39 @@ try {
   await page.keyboard.press('Escape');
   await page.locator('.task-card:popover-open').waitFor({ state: 'hidden' });
 
+  // 9a. 予定を1日ずらすと、前の姿が点線で残り、付箋に +1日 が出る
+  await page.evaluate(() => taskSelection.selectOnly(state.project.tasks.find((task) => task.name === 'これから 03').id));
+  await page.keyboard.press('Alt+ArrowRight');
+  await page.locator('.ux-afterimage').first().waitFor({ state: 'attached', timeout: 3000 });
+  assert.equal(await page.locator('.ux-delta-chip').first().innerText(), '+1日');
+  await page.waitForFunction(() => !document.querySelector('.ux-afterimage'), null, { timeout: 4000 }); // 残像は消える
+
+  // 9b. AIから戻したJSONで「予定をすべて入れ替え」: 移動2(9aでずらした予定が元の日付に戻る分を含む)・追加1が図に残り、「変更だけ表示」で3件になる。印は消えない
+  const returned = handoff();
+  const moved = returned.tasks.find((task) => task.name === '進行中A');
+  moved.end = iso(10); // 6日後 → 10日後(+4日)
+  returned.tasks.push({ name: '追加された予定', start: iso(3), end: iso(8), categoryName: '企画', note: '', milestone: false });
+  await importProject(page, returned);
+  await page.locator('.ux-afterimage').first().waitFor({ state: 'attached' });
+  assert.equal(await page.locator('.ux-afterimage').count(), 2, 'each moved task keeps its afterimage');
+  assert.equal(await page.locator('.ux-new-badge').count(), 1, 'one added task is marked new');
+  const diffText = await page.locator('.diff-chip').innerText();
+  assert.match(diffText, /移動 2/);
+  assert.match(diffText, /追加 1/);
+  await page.locator('[data-diff-action="only"]').click();
+  assert.equal(await page.locator('[data-timeline-row]').count(), 3, 'changed-only view shows the moved and the added tasks');
+  await page.locator('[data-diff-action="only"]').click();
+  assert.equal(await page.locator('[data-timeline-row]').count(), 27);
+  const kept = await page.evaluate(() => ({
+    done: state.project.tasks.filter((task) => task.completed).map((task) => task.name).sort(),
+    deadline: state.project.tasks.filter((task) => task.isDeadline).map((task) => task.name),
+  }));
+  assert.deepEqual(kept.done, ['完了済みA', '完了済みB'], 'completed marks must survive a full replace');
+  assert.deepEqual(kept.deadline, ['締切ゴール'], 'the deadline mark must survive a full replace');
+  await page.locator('[data-diff-action="dismiss"]').click();
+  assert.equal(await page.locator('.diff-chip').count(), 0);
+  assert.equal(await page.locator('.ux-afterimage').count(), 0);
+
   assert.equal(desktop.errors.length, 0, desktop.errors.join('\n'));
   await desktop.context.close();
 

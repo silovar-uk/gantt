@@ -7,6 +7,7 @@ function renderConditionBar() {
   if (state.ui.thisWeek) chips.push('<span class="condition-chip">今週</span>');
   if (state.ui.incomplete) chips.push('<span class="condition-chip">未完了</span>');
   if (state.ui.overdue) chips.push('<span class="condition-chip">期限超過</span>');
+  if (state.ui.changedIds) chips.push('<span class="condition-chip">変更だけ</span>');
   if (state.ui.includeHidden) chips.push('<span class="condition-chip">非表示を含む</span>');
   if (state.ui.categoryIds.size) chips.push(`<span class="condition-chip">カテゴリー ${state.ui.categoryIds.size}</span>`);
   if (state.ui.sort !== 'manual') chips.push(`<span class="condition-chip">並び: ${state.ui.sort === 'start' ? '開始日' : 'カテゴリー'}</span>`);

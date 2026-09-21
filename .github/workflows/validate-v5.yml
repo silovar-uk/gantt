@@ -47,6 +47,7 @@ jobs:
           grep -q 'src/v5/classic/21-task-card.js' index.html
           grep -q 'assets/v15-now-desk.css' index.html
           grep -q 'src/v5/classic/22-command-palette.js' index.html
+          grep -q 'src/v5/classic/23-afterimage.js' index.html
           if grep -q 'assets/v8-tighter-rows.css' index.html; then
             echo 'Obsolete tighter-row CSS is still loaded' >&2
             exit 1

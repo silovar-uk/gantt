@@ -42,6 +42,17 @@ body.ux-intro .today-line { animation: blade .55s var(--ease-out) both; }
 body.ux-intro .ux-late-thread { animation: thread .5s .3s var(--ease-out) both; }
 body.ux-intro .ux-late-label { animation: fade .3s .6s both; }
 
+/* ── 離: 変化は残像で語る(前の姿を点線でバーの上に重ねる) ── */
+.ux-afterimage, .ux-drag-origin { position: absolute; top: 50%; z-index: 4; height: calc(max(16px, min(calc(var(--row-height) - 4px), calc(var(--row-height) * .72))) + 4px); transform: translateY(-50%); border: 1.5px dashed var(--ink-2); border-radius: 8px; background: repeating-linear-gradient(135deg, rgba(31, 38, 34, .07) 0 3px, transparent 3px 7px); pointer-events: none; }
+.ux-afterimage:not(.is-static) { animation: ghost-out 1.2s .1s ease-out forwards; }
+.ux-delta-chip, .ux-new-badge { position: absolute; top: 50%; z-index: 8; transform: translateY(-50%); padding: 2px 7px; border-radius: 999px; background: var(--ink); color: var(--on-primary); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; animation: pop .45s .1s var(--ease-spring) both; }
+.ux-delta-chip:not(.is-static) { animation: pop .45s .1s var(--ease-spring) both, ghost-out .4s .9s ease-out forwards; }
+.ux-new-badge { background: var(--primary); }
+.task-bar.is-new { box-shadow: inset 3px 0 0 var(--c-mid), 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in srgb, var(--primary) 60%, transparent); }
+@keyframes ghost-out { to { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: translateY(-50%) scale(.6); } }
+.workspace.ux-row-compact .ux-delta-chip, .workspace.ux-row-compact .ux-new-badge { display: none; }
+
 /* ── 破: 操作は下に浮かぶ ───────────────────── */
 .toolbar {
   position: fixed; left: 50%; bottom: 18px; z-index: 40; max-width: calc(100vw - 24px);

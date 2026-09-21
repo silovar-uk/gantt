@@ -29,6 +29,7 @@ jobs:
           node --check src/v5/classic/20-quiet-coach.js
           node --check src/v5/classic/21-task-card.js
           node --check src/v5/classic/22-command-palette.js
+          node --check src/v5/classic/23-afterimage.js
           test ! -e src/v5/classic/14-tighter-rows.js
           test ! -e assets/v8-tighter-rows.css
           node --check scripts/validate-css-architecture.mjs
@@ -65,7 +66,8 @@ jobs:
               && grep -q 'assets/v14-task-card.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'src/v5/classic/21-task-card.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
               && grep -q 'assets/v15-now-desk.css?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
-              && grep -q 'src/v5/classic/22-command-palette.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null; then
+              && grep -q 'src/v5/classic/22-command-palette.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null \
+              && grep -q 'src/v5/classic/23-afterimage.js?v=20260921-desk1' /tmp/live-index.html 2>/dev/null; then
               matched=1
               break
             fi

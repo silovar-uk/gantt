@@ -499,9 +499,22 @@
     event.preventDefault();
   }
 
+  // ドラッグ中は、元の位置に点線の枠を残す(置いた後は 23-afterimage.js の残像が引き継ぐ)
+  function placeDragOrigins(d) {
+    d.ids.forEach((id) => {
+      const bar = document.querySelector(`[data-timeline-task="${CSS.escape(id)}"]`);
+      if (!bar?.parentElement) return;
+      const origin = document.createElement('i');
+      origin.className = 'ux-drag-origin';
+      Object.assign(origin.style, { left: `${bar.offsetLeft}px`, width: `${Math.max(bar.offsetWidth, 13)}px` });
+      bar.parentElement.append(origin);
+    });
+  }
+
   function moveTaskDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     if (!dragState.moved && Math.abs(event.clientX - dragState.startX) < TAP_PX) return;
+    if (!dragState.moved) placeDragOrigins(dragState);
     dragState.moved = true;
     const delta = Math.round((event.clientX - dragState.startX) / dragState.dayWidth);
     positionDragReadout(event);
@@ -523,6 +536,7 @@
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const d = dragState;
     dragState = null;
+    document.querySelectorAll('.ux-drag-origin').forEach((el) => el.remove());
     clearDragReadout(d);
     d.element.classList.remove('is-dragging');
     d.element.style.translate = '';

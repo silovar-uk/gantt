@@ -137,6 +137,8 @@ function undo() {
   state.project.revision = expectedRevision + 1;
   state.project.updatedAt = new Date().toISOString();
   state.selectedTaskId = null;
+  state.ui.importDiff = null;
+  state.ui.changedIds = null;
   queueSave(deepCopy(state.project), expectedRevision);
   renderAll();
   showToast('元に戻しました');
@@ -154,6 +156,8 @@ function redo() {
   state.project.revision = expectedRevision + 1;
   state.project.updatedAt = new Date().toISOString();
   state.selectedTaskId = null;
+  state.ui.importDiff = null;
+  state.ui.changedIds = null;
   queueSave(deepCopy(state.project), expectedRevision);
   renderAll();
   showToast('やり直しました');
