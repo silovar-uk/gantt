@@ -252,13 +252,92 @@ function clearFilters() {
   if (state.modal === 'filter') renderModal();
 }
 
+function selectTaskInWorkspace(taskId) {
+  if (!taskId) return;
+  state.selectedTaskId = taskId;
+  document.querySelectorAll('[data-task-row]').forEach((row) => {
+    const selected = row.dataset.taskRow === taskId;
+    row.classList.toggle('is-selected', selected);
+    if (row.matches('.task-row')) row.setAttribute('aria-selected', String(selected));
+  });
+  document.querySelectorAll('[data-timeline-row]').forEach((row) => {
+    row.classList.toggle('is-selected', row.dataset.timelineRow === taskId);
+  });
+}
+
+function autosizeInlineNameEditor(editor) {
+  if (!editor || editor.hidden) return;
+  editor.style.height = '0px';
+  editor.style.height = `${Math.max(32, editor.scrollHeight)}px`;
+}
+
+function beginInlineNameEdit(taskId) {
+  if (!taskId || document.body.classList.contains('is-present-mode')) return;
+  const row = document.querySelector(`.task-row[data-task-row="${CSS.escape(taskId)}"]`);
+  const task = state.project.tasks.find((item) => item.id === taskId);
+  if (!row || !task) return;
+  const display = row.querySelector('[data-task-title-display]');
+  const editor = row.querySelector('[data-inline-name]');
+  if (!display || !editor) return;
+  selectTaskInWorkspace(taskId);
+  editor.value = task.name;
+  display.hidden = true;
+  editor.hidden = false;
+  row.classList.add('is-editing-title');
+  requestAnimationFrame(() => {
+    autosizeInlineNameEditor(editor);
+    editor.focus();
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+    syncVisibleRowHeights();
+  });
+}
+
+function closeInlineNameEditor(editor, { focusDisplay = false } = {}) {
+  const row = editor?.closest('.task-row');
+  const display = row?.querySelector('[data-task-title-display]');
+  if (!row || !display || !editor) return;
+  editor.hidden = true;
+  editor.style.height = '';
+  display.hidden = false;
+  row.classList.remove('is-editing-title');
+  requestAnimationFrame(() => {
+    syncVisibleRowHeights();
+    if (focusDisplay) display.focus();
+  });
+}
+
 function updateInlineName(input) {
   const task = state.project.tasks.find((item) => item.id === input.dataset.inlineName);
-  if (!task) return;
-  const name = input.value.trim();
-  if (!name) { input.value = task.name; showToast('予定名を入力してください。', true); return; }
-  if (name === task.name) return;
-  contentCommit((project) => { project.tasks.find((item) => item.id === task.id).name = name.slice(0, 200); }, { reason: 'inline-name' });
+  if (!task) return 'unchanged';
+  const name = input.value.replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
+  if (!name) {
+    input.value = task.name;
+    showToast('予定名を入力してください。', true);
+    return 'unchanged';
+  }
+  input.value = name;
+  if (name === task.name) return 'unchanged';
+  const committed = contentCommit((project) => {
+    project.tasks.find((item) => item.id === task.id).name = name;
+  }, { reason: 'inline-name' });
+  return committed ? 'committed' : 'blocked';
+}
+
+function finishInlineNameEdit(editor, { cancel = false, focusDisplay = false } = {}) {
+  const task = state.project.tasks.find((item) => item.id === editor?.dataset.inlineName);
+  if (!editor || !task) return;
+  if (cancel) {
+    editor.value = task.name;
+    closeInlineNameEditor(editor, { focusDisplay });
+    return;
+  }
+  const result = updateInlineName(editor);
+  if (result === 'committed') return;
+  if (result === 'blocked') {
+    requestAnimationFrame(() => editor.focus());
+    return;
+  }
+  closeInlineNameEditor(editor, { focusDisplay });
 }
 
 function updateInlineDate(input, edge) {
