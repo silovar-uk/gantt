@@ -128,3 +128,87 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .timeline-body { position: relative; min-height: calc(100% - var(--head, 44px)); padding-bottom: var(--dock-reserve, 0px); }
 .timeline-row { position: relative; height: var(--row-height); border-bottom: 1px solid rgba(228,232,240,.72); }
 .timeline-row.is-selected { background: rgba(54,71,215,.07); }
+
+
+/* readable project index — task title is content, editor is a tool */
+.task-main {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.task-title-zone { min-width: 0; }
+.task-title-display {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: max(14px, var(--text-size));
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  cursor: text;
+}
+.task-title-editor {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  padding: 4px 6px;
+  overflow: hidden;
+  resize: none;
+  border: 1px solid var(--focus);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: max(14px, var(--text-size));
+  font-weight: 700;
+  line-height: 1.4;
+}
+.task-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.task-meta-category.category-cell {
+  min-width: 0;
+  display: inline-flex;
+  padding: 0;
+  overflow: visible;
+}
+.task-meta-category.category-cell span:last-child {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+.task-meta-dates.date-cell {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+}
+.task-meta-dates.date-cell input {
+  width: 8.7em;
+  min-width: 0;
+  padding: 2px 3px;
+}
+.task-date-arrow { color: var(--faint); }
+.task-meta-range-text { display: none; font-variant-numeric: tabular-nums; }
+.task-meta-days.days-cell { font-variant-numeric: tabular-nums; }
+.task-mini-time.span-cell {
+  min-width: 0;
+  padding: 0;
+}
