@@ -313,3 +313,21 @@ body.is-present-hud-quiet .ux-present-actions .button-secondary {
 @media (prefers-reduced-motion: reduce) {
   .button, .icon-button, .ux-present-title span, .ux-present-actions .button-secondary { transition: none; }
 }
+
+
+/* Readable List polish */
+.task-title-display:hover { color: var(--primary-ink); }
+.task-title-display:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.task-row.is-selected .task-title-display { color: var(--primary-ink); }
+.task-row.is-completed .task-title-display { color: var(--muted); }
+.task-row.is-editing-title { background: var(--surface); }
+.task-row.is-selected .task-mini-time { opacity: 1; }
+.task-title-editor:hover,
+.task-title-editor:focus {
+  background: var(--surface);
+  outline: none;
+}
